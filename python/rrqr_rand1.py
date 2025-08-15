@@ -1,6 +1,6 @@
 import numpy as np
 from jax.numpy.linalg import norm
-from jax.numpy.linalg import norm
+from scipy.linalg import norm
 import jax.numpy as jnp
 import jax
 

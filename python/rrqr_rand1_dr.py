@@ -1,11 +1,10 @@
 import jax
-jax.config.update('jax_enable_x64', True)
-
 import numpy as np
 import jax.numpy as jnp
 import rrqr_rand1 as rand1
 import time
-from jax.numpy.linalg import norm
+from scipy.linalg import norm
+jax.config.update('jax_enable_x64', True)
 
 def driver():
 
