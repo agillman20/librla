@@ -7,12 +7,10 @@ from scipy import linalg
 
 def driver():
 
-    n = 4000
-    m = 2000
+    m = 4000
+    n = 2000
     
     a = h.hilb(m,n)
-    
-    a = a[0:m,:]
     
     print('a shape', a.shape)
     
