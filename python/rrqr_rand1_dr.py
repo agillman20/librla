@@ -27,7 +27,7 @@ def driver():
     print(f"Elapsed time: {elapsed_time:.4f} seconds")
     
     print('r.shape = ', r.shape)
-    k= r.shape[1]
+    k= r.shape[0]
     
     relerr = norm(jnp.matmul(q,r)-a[:,p],'fro')/norm(a,'fro')
     

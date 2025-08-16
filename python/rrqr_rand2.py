@@ -14,7 +14,8 @@ def rrqr_rand1(A,m,n,rtol):
        [q,r] = linalg.qr(y, mode='economic')
        nn = r.shape[0]
 #       err = norm(np.matmul(q,r)-y)
-       d = norm(r[nn-1,:])/norm(A,'fro')/10
+#       d = norm(r[nn-1,:])/norm(A,'fro')/10
+       d = norm(r[nn-1,nn-1])/max(norm(y,axis=0))
        if (d > rtol): 
           block_size = min(block_size*4,min(m,n))
        else:
@@ -25,7 +26,13 @@ def rrqr_rand1(A,m,n,rtol):
     rr = q.T@A
     [Q2,R,p] = linalg.qr(rr, mode='economic', pivoting=True)   
     Q = q@Q2
-    
+
+    k = sum(norm(R,axis=1) >= rtol*norm(rr))
+    #print("k = ", k)
+
+    Q = Q[:,0:k]
+    R = R[0:k,:]
+
     return(Q, R,p)
            
 
