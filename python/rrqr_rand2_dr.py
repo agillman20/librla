@@ -16,11 +16,12 @@ def driver():
     
     tol = 1e-15
     
-    start_time = time.perf_counter()
-    [q,r,p] = rand2.rrqr_rand1(a,m,n,tol)
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-    print(f"Elapsed time: {elapsed_time:.4f} seconds")
+    for i in range(1,10):
+        start_time = time.perf_counter()
+        [q,r,p] = rand2.rrqr_rand1(a,m,n,tol)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"Elapsed time: {elapsed_time:.4f} seconds")
     
     print('r.shape = ', r.shape)
     k= r.shape[0]

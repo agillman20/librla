@@ -11,7 +11,7 @@ def rrqr_rand1(A,m,n,rtol):
     for i in range(20):
        x = 2*np.random.uniform(size=(n, block_size))-1
        y = np.matmul(A,x)
-       [q,r] = linalg.qr(y, mode='economic')
+       [q,r,p] = linalg.qr(y, mode='economic', pivoting=True)
        nn = r.shape[0]
 #       err = norm(np.matmul(q,r)-y)
 #       d = norm(r[nn-1,:])/norm(A,'fro')/10
@@ -20,7 +20,7 @@ def rrqr_rand1(A,m,n,rtol):
           block_size = min(block_size*4,min(m,n))
        else:
           break
-       if (block_size == min(m,n)):
+       if (block_size >= min(m,n)):
           [q,r,p] = linalg.qr(A, mode='economic', pivoting=True)
           k = block_size
     rr = q.T@A
@@ -33,6 +33,4 @@ def rrqr_rand1(A,m,n,rtol):
     Q = Q[:,0:k]
     R = R[0:k,:]
 
-    return(Q, R,p)
-           
-
+    return(Q,R,p)
