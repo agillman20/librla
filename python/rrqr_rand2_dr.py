@@ -4,6 +4,7 @@ import rrqr_rand2 as rand2
 import time
 from scipy.linalg import norm
 from scipy import linalg
+import scipy.linalg.interpolative as sli
 
 def driver():
 
@@ -56,6 +57,21 @@ def driver():
         print('k =', k)
         print('relerr = ', relerr)
     """
+    
+    for i in range(1,10):
+        start_time = time.perf_counter()
+        [k, J, proj] =sli.interp_decomp(a,tol)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"Elapsed time: {elapsed_time:.4f} seconds")
+    B = sli.reconstruct_skel_matrix(a, k, J)
+    P = sli.reconstruct_interp_matrix(J, proj)
+     
+    print('Flam k=',k) 
+    err = norm(a-B@P)
+    print('Flam relerr = ', err/norm(a))
+    
+    
     
     return
 
