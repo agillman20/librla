@@ -14,6 +14,7 @@ def rrqr_rand1(A,m,n,rtol):
        ##x = np.random.normal(size=(n, block_size))
        x = jnp.array(x)
        y = jnp.matmul(A,x)
+       ##[q,r] = jax.scipy.linalg.qr(y, mode = 'economic')
        [q,r,p] = jax.scipy.linalg.qr(y, mode = 'economic', pivoting=True)
        nn = r.shape[0]
        ##err = norm(np.matmul(q,r)-y[:,p])

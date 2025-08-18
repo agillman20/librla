@@ -13,6 +13,7 @@ def rrqr_rand1(A,m,n,rtol):
        x = 2*np.random.uniform(size=(n, block_size))-1
        ##x = np.random.normal(size=(n, block_size))
        y = np.matmul(A,x)
+       ##[q,r] = linalg.qr(y, mode='economic')
        [q,r,p] = linalg.qr(y, mode='economic', pivoting=True)
        nn = r.shape[0]
        ##err = norm(np.matmul(q,r)-y[:,p])
