@@ -1,0 +1,141 @@
+------------------------------------------------------------------------------
+
+Low rank matrix compression, aka libid project
+==============================================
+
+- block size optimizations
+- range projector function
+- image projector function
+- refactor random qr, svd and id to include projectors
+- qr, eig, svd, id
+- power method for slow decaying matrices
+- better handling of full-rank matrices
+- tall and thin matrices
+- range vs image projection accuracy
+- singular value accuracy
+- id accuracy, range vs image based scheme comparison
+- matlab, julia, python, fortran, c timings
+- software package
+- software paper
+- paperwork
+- informal distribution
+- compare with LAPACK, libid, FLAM
+- other randomized linear algebra packages
+- theoretical analysis
+- licensing
+- better naming conventions
+
+------------------------------------------------------------------------------
+
+https://ar5iv.labs.arxiv.org/html/2002.01387
+
+Algorithm 13: Incremental rangefinder.
+Algorithm 14: Incremental rangefinder with updating.
+
+Implement, compare timings
+
+------------------------------------------------------------------------------
+
+https://www.siam.org/publications/siam-news/articles/randomized-linear-algebra-in-scientific-computing/
+
+Volume 58
+Issue 06
+July/August 2025
+RESEARCH
+Randomized Linear Algebra in Scientific Computing
+July 07, 2025
+By Arvind K. Saibaba
+
+People often think of randomness as a nuisance — something that we
+must contend with, rather than fully embrace. But what if
+randomization could be a useful tool instead of a hinderance?
+
+Randomized numerical linear algebra (RandNLA) is an interdisciplinary
+area that spans mathematics, computer science, and statistics. This
+exciting field uses randomization, or sketching, to reduce the
+computational cost of core numerical linear algebra tasks such as
+matrix multiplication, the solution of linear systems and least
+squares problems, and low-rank compression. Since matrices are
+ubiquitous in data science and scientific computing, advances in
+RandNLA can reverberate across science and engineering. During the
+2025 SIAM Conference on Computational Science and Engineering (CSE25),
+which took place in Fort Worth, Texas, this past March, Daniel
+Kressner of École Polytechnique Fédérale de Lausanne delivered an
+invited presentation about his recent work to advance RandNLA.
+
+Origins and Current State of the Field
+
+Kressner opened his CSE25 talk by tracing the origins of randomization
+in numerical linear algebra. It has long been common practice to use a
+vector with random numbers to initialize the power method and find an
+eigenpair. In this sense, the numerical linear algebra community has
+always utilized randomization, even if we did not explicitly analyze
+the impact of randomness. Over the last few decades, RandNLA has found
+new life in theoretical computer science and data science; it is now
+slowly starting to make its way into “mainstream” numerical analysis
+and scientific computing.
+
+[...]
+
+------------------------------------------------------------------------------
+
+Riley Murray, James Demmel, Michael W. Mahoney, N. Benjamin Erichson,
+Maksim Melnichenko, Osman Asif Malik, Laura Grigori, Piotr Luszczek,
+Michał Dereziński, Miles E. Lopes, Tianyu Liang, Hengrui Luo, and Jack
+Dongarra. Randomized numerical linear algebra : A perspective on the
+field with an eye to software, 2023.
+
+Maike Meier, Yuji Nakatsukasa, Alex Townsend, and Marcus Webb. Are
+sketch-and-precondition least squares solvers numerically stable?,
+2023.
+
+Per-Gunnar Martinsson and Joel A. Tropp. Randomized numerical linear
+algebra: Foundations and algorithms. Acta Numerica, 29:403–572, 2020.
+
+
+------------------------------------------------------------------------------
+
+
+https://github.com/lavaman131/sketch-n-solve
+
+https://arxiv.org/html/2409.14309v2
+
+Sketch 'n Solve: An Efficient Python Package for Large-Scale Least
+Squares Using Randomized Numerical Linear Algebra
+
+Alex Lavaee1  alavaee@bu.edu
+Abstract
+
+We present Sketch 'n Solve, an open-source Python package that
+implements efficient randomized numerical linear algebra (RandNLA)
+techniques for solving large-scale least squares problems. While
+sketch-and-solve algorithms have demonstrated theoretical promise,
+their practical adoption has been limited by the lack of robust,
+user-friendly implementations. Our package addresses this gap by
+providing an optimized implementation built on NumPy and SciPy,
+featuring both dense and sparse sketching operators with a clean
+API. Through extensive benchmarking, we demonstrate that our
+implementation achieves up to 50x speedup over traditional LSQR while
+maintaining high accuracy, even for ill-conditioned matrices. The
+package shows particular promise for applications in machine learning
+optimization, signal processing, and scientific computing.
+
+Boston University   May 2023
+
+
+------------------------------------------------------------------------------
+
+https://github.com/eepperly/Iterative-Sketching-Is-Stable
+
+https://arxiv.org/pdf/2311.04362
+
+Fast and Forward Stable Randomized Algorithms
+for Linear Least-Squares Problems*
+Ethan N. Epperly†
+April 15, 2024
+
+
+------------------------------------------------------------------------------
+
+https://github.com/eepperly/Stable-Randomized-Least-Squares
+
