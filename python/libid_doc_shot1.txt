@@ -1,0 +1,226 @@
+Thinking...
+We need to summarize the file. Provide explanation of functions, 
+algorithm, usage, notes. Probably concise.
+...done thinking.
+
+**File Overview**  
+The module implements *fast, adaptive* randomized algorithms for 
+rank‑revealing matrix factorizations:
+
+| Function | What it returns | Main idea |
+|----------|----------------|-----------|
+| `range_randomized` | an estimate of the numerical rank **k** and an 
+orthonormal basis **Q** for the column space of `A` | Repeatedly draws a 
+small random test matrix, projects `A` onto it, and checks a simple 
+residual‐based stopping criterion. The block size is enlarged 
+automatically until the residual is below `rtol`. |
+| `rrqr_randomized` | `(Q_k, R_k, p)` such that `A ≈ Q_k @ R_k @ Pᵀ` 
+(rank‑revealing QR) | Uses the basis `Q` from `range_randomized` to form a 
+low‑dimensional projected matrix `Aproj = Qᵀ A`. A pivoted QR on `Aproj` 
+gives the final factors; the permutation `p` is the column pivoting that 
+reveals the rank. |
+| `rrsvd_randomized` | `(U_k, S_k, V_k)` such that `A ≈ U_k @ diag(S_k) @ 
+V_kᵀ` (rank‑revealing SVD) | Same projection trick as `rrqr_randomized`, 
+but a full SVD is performed on the small projected matrix. The left 
+singular vectors are lifted back with `U = Q @ U`. |
+
+All three functions share the same interface:
+
+```python
+def func(A, rtol, block_size=42):
+    """
+    A          : (m, n) array_like – the matrix to factorise
+    rtol       : float            – relative tolerance; singular values / 
+                                   diagonal entries < rtol * ||A|| are 
+                                   considered numerically zero
+    block_size : int (default 42) – initial size of the random test 
+matrix;
+                                   the algorithm expands it 
+automatically
+    """
+```
+
+---
+
+## 1. `range_randomized(A, rtol, block_size=42)`
+
+### Goal
+Estimate the numerical rank **k** and obtain an orthonormal basis **Q** 
+for the dominant column space of `A`.
+
+### Algorithm (pseudo‑code)
+
+```
+[m, n] = A.shape
+for i = 0 .. 19:                     # safety cap on iterations
+    X = 2*rand(n, block_size) - 1    # uniform in [-1, 1]
+    Y = A @ X                        # sample the range of A
+    Q, R, piv = qr(Y, economic, pivot=True)   # orthonormal basis of Y
+    r = diag(R)                      # diagonal of R
+    d = max(|r_last|) / max( ||Y[:,j]||_2 )   # residual estimate
+    if d ≤ rtol:  break               # desired accuracy reached
+    else:   block_size = min(block_size*4, min(m,n))
+    if block_size ≥ min(m,n): return (min(m,n), [])
+return (block_size, Q)
+```
+
+* **Stopping criterion** – `d` measures the size of the smallest diagonal 
+entry of `R` relative to the largest column norm of `Y`. When this ratio 
+falls below `rtol` the sampled subspace is deemed accurate enough.
+* **Adaptivity** – If the criterion is not met, the block size is 
+quadrupled (capped by `min(m,n)`) and the process repeats.
+* **Fallback** – If the block size reaches the full dimension, the routine 
+returns `k = min(m,n)` and an empty basis, signalling that a deterministic 
+factorisation should be used.
+
+**Return values**
+
+* `k` – the (tentative) numerical rank, i.e. the final block size when the 
+loop terminates.
+* `Q` – an `m × k` orthonormal matrix whose columns span the dominant 
+column space of `A`.  
+  If `Q` is empty, the caller knows to fall back to a full QR/SVD.
+
+---
+
+## 2. `rrqr_randomized(A, rtol, block_size=42)`
+
+### Goal
+Compute a *rank‑revealing QR* (RRQR) factorisation  
+\[
+A \approx Q_k \, R_k \, P^{\top},
+\]
+where `P` is a column permutation (returned as a 1‑D array `p`), `Q_k` has 
+orthonormal columns, and `R_k` is upper‑triangular. The numerical rank `k` 
+is inferred automatically from `rtol`.
+
+### Steps
+
+1. **Range estimation** – call `range_randomized` → `(k, Q)`.
+2. **Full‑dimensional fallback** – if `k == min(m,n)` (or `Q` empty):
+   ```python
+   Q_full, R_full, p = qr(A, economic, pivot=True)
+   k = np.sum( norm(R_full, axis=1) >= rtol * norm(A) )
+   return Q_full[:, :k], R_full[:k, :], p
+   ```
+3. **Projection** – otherwise form the small matrix  
+   `Aproj = Q.T @ A` (size `k × n`).
+4. **Pivoted QR on the projection**  
+   ```python
+   Qp, Rp, p = qr(Aproj, economic, pivot=True)
+   Q = Q @ Qp               # lift back to the original space
+   ```
+5. **Rank determination** – count rows of `R` whose 2‑norm exceeds `rtol * 
+||Aproj||`.
+6. **Truncate** – keep only the first `k` columns/rows.
+
+**Returned objects**
+
+* `Q[:,:k]` – `m × k` orthonormal matrix.
+* `R[:k,:]` – `k × n` upper‑triangular (first `k` rows of the QR of the 
+projection).
+* `p` – permutation array such that `A[:, p] ≈ Q @ R`.
+
+---
+
+## 3. `rrsvd_randomized(A, rtol, block_size=42)`
+
+### Goal
+Compute a *rank‑revealing singular value decomposition* (RR‑SVD)  
+\[
+A \approx U_k \, \Sigma_k \, V_k^{\top},
+\]
+where `U_k` and `V_k` have orthonormal columns, `Σ_k` is diagonal, and `k` 
+is chosen automatically.
+
+### Procedure (mirrors `rrqr_randomized`)
+
+1. **Range estimation** – `(k, Q) = range_randomized(A, rtol, 
+block_size)`.
+2. **Full‑dimensional fallback** – if `k == min(m,n)`:
+   ```python
+   U, S, Vt = svd(A, full_matrices=False)
+   k = np.sum( np.abs(S) >= rtol * norm(A) )
+   return U[:, :k], S[:k], Vt[:k, :]
+   ```
+3. **Projection** – `Aproj = Q.T @ A` (size `k × n`).
+4. **SVD of the projection** – `U_s, S, Vt = svd(Aproj, 
+full_matrices=False)`.
+5. **Lift left singular vectors** – `U = Q @ U_s`.
+6. **Rank selection** – keep singular values ≥ `rtol * ||Aproj||`.
+7. **Truncate** – return the first `k` columns/rows.
+
+**Returned objects**
+
+* `U_k` – `m × k` matrix with orthonormal columns.
+* `S_k` – length‑`k` vector of singular values.
+* `V_k` – `n × k` matrix (`V_k = Vt.T[:,:k]`).
+
+---
+
+## 4. Common Design Choices & Practical Tips
+
+| Aspect | Detail |
+|--------|--------|
+| **Random test matrix** | Uniform in `[-1, 1]`; any full‑rank random 
+distribution works (Gaussian is also common). |
+| **Safety iteration limit** | 20 draws – prevents infinite loops on 
+pathological matrices. |
+| **Block‑size growth** | Quadrupled each time (`*4`) until it reaches the 
+smaller dimension; this gives rapid convergence for matrices with a clear 
+spectral gap. |
+| **Rank determination** | Uses a simple norm‑based threshold: a 
+row/diagonal element is kept if `≥ rtol * ||A||` (or `||Aproj||`). This 
+mimics MATLAB’s `rank`/`svd` tolerance rule. |
+| **Fallback to deterministic algorithms** | If the randomized stage would 
+need the full dimension, the code simply runs the standard pivoted QR or 
+full SVD, avoiding unnecessary overhead. |
+| **Dependencies** | Only `numpy` and `scipy.linalg`; all heavy lifting 
+(QR, SVD) is delegated to highly‑optimised LAPACK/BLAS wrappers. |
+| **Performance** | The dominant cost is a few matrix‑matrix products (`A 
+@ X` and `Q.T @ A`). For `m ≫ n` or `n ≫ m`, the cost is roughly `O(m n 
+block_size)`, far cheaper than a full QR (`O(m n²)`) when the true rank is 
+much smaller than `min(m,n)`. |
+| **Numerical stability** | Pivoted QR on the *projected* matrix preserves 
+the rank‑revealing property while operating on a well‑conditioned, 
+low‑dimensional system. |
+
+---
+
+## 5. Typical Usage Example
+
+```python
+import numpy as np
+from my_rrqr_module import rrqr_randomized, rrsvd_randomized
+
+A = np.random.randn(5000, 300)          # tall‑skinny matrix
+rtol = 1e-10
+
+# Rank‑revealing QR
+Q, R, p = rrqr_randomized(A, rtol)
+# Verify approximation
+np.allclose(A[:, p], Q @ R, atol=1e-8)
+
+# Rank‑revealing SVD
+U, s, V = rrsvd_randomized(A, rtol)
+# Low‑rank reconstruction
+A_approx = U @ np.diag(s) @ V.T
+```
+
+The functions automatically pick a suitable rank (often far smaller than 
+300) and run in a fraction of the time required for a full QR/SVD on the 
+original `5000 × 300` matrix.
+
+---
+
+### TL;DR (as in the original docstring)
+
+The module supplies **fast, adaptive randomized RRQR and RR‑SVD**.  
+1. Build a cheap random basis for the column space of `A`.  
+2. Project `A` onto that basis, perform a standard pivoted QR (or SVD) on 
+the tiny projected matrix, and lift the result back.  
+3. Return the orthogonal factor, the triangular (or diagonal) factor, and 
+the column permutation, with the numerical rank inferred from a 
+user‑supplied relative tolerance `rtol`.
+
+

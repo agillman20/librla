@@ -1,0 +1,70 @@
+Thinking...
+We need to summarize the file. Provide concise description of functionality, algorithms, usage. Include key functions and their purpose. Probably a TL;DR. Let's craft.
+...done thinking.
+
+**File:** `libid.py`  
+**Purpose:** Provide fast, adaptive *randomised* rank‑revealing factorizations for dense matrices: QR, SVD and Interpolative Decomposition (ID). The algorithms first sketch the column space of the input matrix with a cheap random basis, then perform a standard (pivoted) factorisation on the tiny sketch and lift the result back to the original space. The numerical rank is inferred automatically from a user‑supplied relative tolerance `rtol`.
+
+---
+
+### Core ideas
+1. **Random sketch of the column space** –  
+   `range_randomized` builds a low‑dimensional orthonormal basis `Q` for `range(A)` by multiplying `A` with a random Gaussian‑like matrix, then orthogonalising with a pivoted QR. The sketch size (`block_size`) is increased until the residual of the last basis vector is below `rtol` or the full dimension is reached.
+
+2. **Rank‑revealing QR (RRQR)** –  
+   `rrqr_randomized` uses the basis `Q` to project `A` (`Aproj = QᵀA`). A cheap pivoted QR is performed on the small projected matrix, the orthogonal factor is lifted back (`Q @ Qproj`), and the numerical rank `k` is taken as the number of rows of `R` whose norm exceeds `rtol·‖A‖`. If the sketch already spans the whole space, a full QR with column pivoting is used.
+
+3. **Rank‑revealing SVD (RRSVD)** –  
+   `rrsvd_randomized` follows the same pattern but applies a full SVD to the projected matrix. For tall‑skinny matrices (`m < n`) the routine recurses on the transpose. The rank `k` is the count of singular values ≥ `rtol·‖A‖`.
+
+4. **Randomised Interpolative Decomposition (RRID)** –  
+   `rrid_randomized` obtains a column‑pivoted QR via `rrqr_randomized`, then solves the triangular system  
+   `R₁₁ X = R₁₂`  
+   to produce the interpolation matrix `proj`. It returns `(k, p, proj)`, where `p` is the permutation of columns and `proj` contains the coefficients that express the remaining columns as linear combinations of the first `k`.
+
+5. **Image (row‑space) estimator** –  
+   `image_randomized` simply calls `range_randomized` on the transpose, giving a basis for the row space.
+
+---
+
+### API
+
+| Function | Input | Output | Description |
+|----------|-------|--------|-------------|
+| `range_randomized(A, rtol, block_size=42)` | `A` (m×n), tolerance, initial block size | `(block_size_used, Q)` | Returns an orthonormal basis `Q` for the column space of `A` whose residual is ≤ `rtol`. If the full space is needed, returns `block_size = min(m,n)` and `Q = []`. |
+| `rrqr_randomized(A, rtol, block_size=42)` | same | `(Q_k, R_k, p)` | Rank‑revealing QR: `A ≈ Q_k·R_k·Pᵀ`. `k` is inferred from `rtol`. |
+| `rrsvd_randomized(A, rtol, block_size=42)` | same | `(U_k, s_k, V_k)` | Rank‑revealing SVD: `A ≈ U_k·diag(s_k)·V_kᵀ`. |
+| `rrid_randomized(A, rtol, block_size=42)` | same | `(k, p, proj)` | Interpolative decomposition: columns `p[:k]` form a basis, `proj` gives coefficients for the rest. |
+| `image_randomized(A, rtol, block_size=42)` | same | `(block_size_used, Q)` | Basis for the row space (i.e. column space of `Aᵀ`). |
+
+All functions use `scipy.linalg.qr` (economy mode, with pivoting) and `scipy.linalg.svd`. Norms are computed with `numpy.linalg.norm`.
+
+---
+
+### Typical usage
+
+```python
+import numpy as np
+from libid import rrqr_randomized, rrsvd_randomized, rrid_randomized
+
+A = np.random.randn(1000, 300)
+
+# rank‑revealing QR
+Q, R, p = rrqr_randomized(A, rtol=1e-10)
+
+# rank‑revealing SVD
+U, s, Vt = rrsvd_randomized(A, rtol=1e-10)
+
+# interpolative decomposition
+k, piv, proj = rrid_randomized(A, rtol=1e-10)
+```
+
+The routines are **adaptive**: they start with a modest sketch size (`block_size=42`) and automatically increase it (up to the full matrix size) until the desired relative accuracy is achieved, making them much cheaper than a full QR/SVD for large, low‑rank matrices.
+
+---
+
+### Remarks
+* The implementation is deliberately lightweight—no external random‑projection libraries, only `numpy` and `scipy`.  
+* The tolerance `rtol` is interpreted relative to the Frobenius norm of `A` (or its projection).  
+* The functions fall back to the classical (full) factorisations when the random sketch would need to be as large as the original matrix, guaranteeing correctness even for full‑rank inputs.  
+

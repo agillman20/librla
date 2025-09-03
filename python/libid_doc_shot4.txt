@@ -1,0 +1,51 @@
+Thinking...
+We need to summarize the file. Provide description of functions, behavior, algorithm. Also note imports. Provide TL;DR. Probably concise.
+...done thinking.
+
+**File:** `libid.py`  
+**Purpose:** Provide fast, adaptive *randomised* rank‑revealing factorizations (RRQR, RR‑SVD, RR‑ID) and a helper for estimating the numerical rank of a matrix.
+
+---
+
+## Overview
+The module builds a cheap low‑dimensional random basis for the column space of a matrix `A`.  
+* The basis is obtained by repeatedly multiplying `A` with random sign vectors, orthogonalising the result (QR with column pivoting), and checking a simple residual criterion against a user‑supplied relative tolerance `rtol`.  
+* Once a satisfactory basis size `k` (or a maximum block size) is found, the original matrix is projected onto that basis (`Aproj = Qᵀ A`).  
+* On the *small* projected matrix a standard **pivoted QR** or **full SVD** is performed.  
+* The factors are then lifted back to the original space using the random basis `Q`.
+
+Because the expensive decomposition is carried out on a matrix whose size is at most `block_size × min(m,n)`, the overall cost is close to `O(m n block_size)` – much cheaper than a full QR/SVD when `A` is large and numerically low‑rank.
+
+All functions return only the components that are needed for the respective decomposition, and they automatically infer the numerical rank by comparing column/row norms (or singular values) to `rtol·‖A‖`.
+
+---
+
+## Public API
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| **`range_randomized(A, rtol, block_size=42)`** | Estimate the numerical rank and produce an orthonormal basis `Q` for the column space of `A`. The block size is increased (up to `min(m,n)`) until the residual `d` falls below `rtol`. | `(k, Q)` where `k` is the chosen basis size (or `min(m,n)` if the algorithm gives up) and `Q` is `m × k` with orthonormal columns (empty list if `k = min(m,n)`). |
+| **`rrqr_randomized(A, rtol, block_size=42)`** | Randomised **Rank‑Revealing QR** (`A ≈ Q·R·Pᵀ`). Uses `range_randomized` to get a basis, projects, runs pivoted QR on the projection, and lifts the result. If the basis ends up as large as the matrix, falls back to a standard QR. | `(Q, R, p)` where `Q` is orthogonal (`m×k`), `R` is upper‑triangular (`k×n`), `p` is a permutation array for the columns, and `k` is the inferred numerical rank. |
+| **`rrsvd_randomized(A, rtol, block_size=42)`** | Randomised **Rank‑Revealing SVD** (`A ≈ U·diag(s)·Vᵀ`). Works similarly to `rrqr_randomized` but uses `svd` on the projected matrix. Handles the case `m < n` by transposing. | `(U, s, V)` where `U` (`m×k`) and `V` (`n×k`) have orthonormal columns, `s` holds the retained singular values, and `k` is the numerical rank. |
+| **`rrid_randomized(A, rtol, block_size=42)`** | Randomised **Rank‑Revealing Interpolative Decomposition** (`A ≈ A[:,p[:k]]·[I, proj]`). Calls `rrqr_randomized`, then solves `R₁·proj = R₂` to obtain the interpolation matrix. | `(k, p, proj)` where `k` is the rank, `p` is the column permutation, and `proj` is the coefficient matrix such that `A ≈ A[:,p[:k]]·[I, proj]`. |
+| **`image_randomized(A, rtol, block_size=42)`** | Convenience wrapper that returns the basis for the *row* space (i.e. the column space of `Aᵀ`). | Same as `range_randomized(A.T, …)`. |
+
+---
+
+## Key Implementation Details
+
+* **Random test matrix** – `x = 2*np.random.uniform(size=(n, block_size)) - 1` produces a matrix with entries in `[-1, 1]`. Multiplying `A @ x` yields a sketch of the column space.
+* **QR with pivoting** – `linalg.qr(y, mode='economic', pivoting=True)` returns `Q`, `R`, and a column permutation `p`. Only the diagonal of `R` is used to compute the residual `d = max|R_diag| / max‖y‖_col`.
+* **Adaptive block size** – If `d > rtol`, the block size is quadrupled (capped at `min(m,n)`). After up to 20 attempts the function either succeeds or returns the full dimension, falling back to a deterministic QR/SVD.
+* **Rank determination** –  
+  * For QR: `k = sum( norm(R,axis=1) >= rtol*norm(A) )` (row‑wise 2‑norm of `R`).  
+  * For SVD: `k = sum( abs(s) >= rtol*norm(A) )`.  
+  * For ID: `k = R.shape[0]` (the size of the triangular factor returned by the QR).
+* **Numerical stability** – The small projected problem is solved with the highly‑optimised LAPACK routines inside `scipy.linalg`, ensuring that the final factors are as accurate as a direct decomposition would be for a matrix of that size.
+
+---
+
+## TL;DR (one‑sentence)
+
+`libid.py` implements cheap, adaptive randomised versions of rank‑revealing QR, SVD and Interpolative Decomposition that first sketch the column space of a matrix, then perform a standard factorisation on the tiny sketch and lift the result back, automatically returning the numerical rank based on a user‑specified relative tolerance.
+
