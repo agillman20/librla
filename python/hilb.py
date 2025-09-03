@@ -1,8 +1,9 @@
 import numpy as np
+from scipy import linalg
 
 def hilb(n,m):
     """
-    Creates an n x m Hilbert matrix using NumPy.
+    Creates an n x m Hilbert matrix using NumPy/SciPy.
 
     Args:
         n (int): The order of the Hilbert matrix.
@@ -10,9 +11,10 @@ def hilb(n,m):
 
     Returns:
         numpy.ndarray: The n x m Hilbert matrix.
-        
-    Shamelessly taken from internet    
     """
+
+    """
+    # Shamelessly taken from internet
     # Create an empty n x m array
     a = np.zeros((n, m))
     
@@ -21,4 +23,16 @@ def hilb(n,m):
         for j in range(m):
             a[i, j] = 1.0 / (i + j + 1)  # Adjust for 0-based indexing
     return a
+    """
 
+    # Optimized version, via scipy.linalg.hankel
+    c = np.zeros(n)
+    r = np.zeros(m)
+
+    for i in range(n):
+        c[i] = 1.0 / (i + 1)  # Adjust for 0-based indexing
+
+    for i in range(m):
+        r[i] = 1.0 / (i + n)  # Adjust for 0-based indexing
+
+    return linalg.hankel(c,r)

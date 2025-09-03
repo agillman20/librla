@@ -74,15 +74,14 @@ The functions automatically select the numerical rank `k` by comparing column (o
 """
 
 
-def range_power(A,x,flag_power=0):
-    
-    for j in range(flag_power):
-        x = A.T @ (A @ x)
-        x, _R, _p = linalg.qr(x, mode='economic', pivoting=True)
-    return x
-
-
 def range_randomized(A,rtol,block_size=42,flag_power=0):
+
+    def _range_power(A,x,flag_power=0):
+
+        for j in range(flag_power):
+            x = A.T @ (A @ x)
+            x, _R, _p = linalg.qr(x, mode='economic', pivoting=True)
+        return x
 
     m, n = np.shape(A)
 
@@ -91,7 +90,7 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
     
     for i in range(20):
         x = 2*np.random.uniform(size=(n, block_size))-1
-        x = range_power(A,x,flag_power)
+        x = _range_power(A,x,flag_power)
         y = A @ x
         Q, R, p = linalg.qr(y, mode='economic', pivoting=True)
         r = R.diagonal()
