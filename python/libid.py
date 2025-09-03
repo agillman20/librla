@@ -74,7 +74,7 @@ The functions automatically select the numerical rank `k` by comparing column (o
 """
 
 
-def range_power(A, x, flag_power=0):
+def range_power(A,x,flag_power=0):
     
     for j in range(flag_power):
         x = A.T @ (A @ x)
@@ -84,7 +84,7 @@ def range_power(A, x, flag_power=0):
 
 def range_randomized(A,rtol,block_size=42,flag_power=0):
 
-    [m,n] = np.shape(A)
+    m, n = np.shape(A)
 
     if (block_size >= min(m,n)):
         return min(m,n), []
@@ -112,7 +112,6 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
 def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
     m, n = np.shape(A)
-
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
@@ -133,7 +132,6 @@ def rrsvd_randomized(A,rtol,block_size=42,flag_power=0):
 #    if (m < n):
 #        [Vt,s,Ut] = rrsvd_randomized(A.T,rtol,block_size)
 #        return Ut.T, s, Vt.T
-
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
@@ -155,4 +153,7 @@ def rrid_randomized(A,rtol,block_size=42,flag_power=0):
     proj = linalg.solve(np.triu(R[:k,:k]), R[:,k:])
     return k, p, proj
 
+
+def image_randomized(A,rtol,block_size=42,flag_power=0):
+    return range_randomized(A.T,rtol,block_size,flag_power)
 
