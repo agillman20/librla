@@ -30,7 +30,7 @@ def driver():
 #    rtol = 1e-15
 #    rtol = 1e-15*max(m,n)
     rtol = np.max(a)*np.finfo(a.dtype).eps*max(m,n)
-    print('rtol =', rtol)
+    print(f"rtol = {rtol}")
 
     print('### rrqr')
         
@@ -41,13 +41,13 @@ def driver():
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
     
-    print('r.shape =', R.shape)
+    print(f"r.shape = {R.shape}")
     k = R.shape[0]
     
     relerr = norm(np.matmul(Q,R)-a[:,p],'fro')/norm(a,'fro')
     
-    print('k =', k)
-    print('relerr =', relerr)
+    print(f"k = {k}")
+    print(f"relerr = {relerr}")
 
     print('### rrsvd')
         
@@ -58,14 +58,14 @@ def driver():
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
     
-    print('s.shape =', s.shape)
+    print(f"s.shape = {s.shape}")
     k = s.shape[0]
     
     print(np.shape(U),np.shape(s),np.shape(Vt))
     relerr = norm(np.matmul(np.matmul(U,np.diag(s)),Vt)-a,'fro')/norm(a,'fro')
     
-    print('k =', k)
-    print('relerr =', relerr)
+    print(f"k = {k}")
+    print(f"relerr = {relerr}")
 
     """
     # np arrays are mutable
@@ -88,10 +88,10 @@ def driver():
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
     
         print('k =', k)
-        print('relerr =', relerr)
+        print('relerr =', relerr/norm(a))
     """
 
-    print('### rrid')    
+    print('### rrid')
 
     for i in range(1,10):
         start_time = time.perf_counter()
@@ -104,6 +104,7 @@ def driver():
      
     print('rrid_randomized, k =',k) 
     err = norm(a-B@P)
+    print('rrid_randomized, max(proj) =', np.max(proj))
     print('rrid_randomized, relerr =', err/norm(a))
     
     print('### rrid_flam')
@@ -119,6 +120,7 @@ def driver():
      
     print('rrid_flam, k =',k) 
     err = norm(a-B@P)
+    print('rrid_flam, max(proj) =', np.max(proj))
     print('rrid_flam, relerr =', err/norm(a))
        
     return

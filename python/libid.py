@@ -83,12 +83,12 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
             x, _R, _p = linalg.qr(x, mode='economic', pivoting=True)
         return x
 
-    m, n = np.shape(A)
+    m, n = A.shape
 
     if (block_size >= min(m,n)):
-        return min(m,n), []
+        return min(m,n), np.empty_like(A, shape=(0, 0))
     
-    for i in range(20):
+    while 1:
         x = 2*np.random.uniform(size=(n, block_size))-1
         x = _range_power(A,x,flag_power)
         y = A @ x
@@ -97,20 +97,18 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
         d = max(abs(r[-1:]))/max(norm(y,axis=0))
 
         if (d <= rtol): 
-            break
+            return block_size, Q
 
         if (d > rtol): 
             block_size = min(block_size*4,min(m,n))
 
         if (block_size >= min(m,n)):
-            return min(m,n), []
-
-    return block_size, Q
+            return min(m,n), np.empty_like(A, shape=(0, 0))
 
 
 def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
-    m, n = np.shape(A)
+    m, n = A.shape
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
@@ -127,10 +125,7 @@ def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
 def rrsvd_randomized(A,rtol,block_size=42,flag_power=0):
 
-    m, n = np.shape(A)
-#    if (m < n):
-#        [Vt,s,Ut] = rrsvd_randomized(A.T,rtol,block_size)
-#        return Ut.T, s, Vt.T
+    m, n = A.shape
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
