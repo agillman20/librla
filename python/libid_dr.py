@@ -104,7 +104,8 @@ def driver():
      
     print('rrid_randomized, k =',k) 
     err = norm(a-B@P)
-    print('rrid_randomized, max(proj) =', np.max(proj))
+    if( proj.shape[1] > 0 ):
+        print('rrid_randomized, max(proj) =', np.max(proj))
     print('rrid_randomized, relerr =', err/norm(a))
     
     print('### rrid_flam')
@@ -120,7 +121,8 @@ def driver():
      
     print('rrid_flam, k =',k) 
     err = norm(a-B@P)
-    print('rrid_flam, max(proj) =', np.max(proj))
+    if( proj.shape[1] > 0 ):
+        print('rrid_flam, max(proj) =', np.max(proj))
     print('rrid_flam, relerr =', err/norm(a))
        
     return
