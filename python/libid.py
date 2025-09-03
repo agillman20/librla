@@ -48,7 +48,8 @@ user‑supplied relative tolerance `rtol`.
 
 Overall, `libid.py` provides a lightweight, easy<E2><80><91>to<E2><80><91>use toolbox for fast low<E2><80><91>rank approximations suitable for large<E2><80><91>scale data<E2><80><91>analysis or scientific<E2><80><91>computing pipelines.
 
-### Overall purpose
+### Overall purpose  
+
 The module provides lightweight, <E2><80><9C>sketch<E2><80><91>and<E2><80><91>solve<E2><80><9D> versions of RRQR, RRSVD, and RRID that are much faster than deterministic counterparts for large matrices, while still delivering accurate low<E<E2><80><91>rank approximations. The functions return the usual factors (`Q, R, p` for QR; `U, s, V` for SVD; rank, permutation, interpolation matrix for ID) together with an automatically determined rank based on `rtol`.
 """
 
@@ -133,9 +134,5 @@ def rrid_randomized(A,rtol,block_size=42,flag_power=0):
     k = R.shape[0]
     proj = linalg.solve(np.triu(R[:k,:k]), R[:,k:])
     return k, p, proj
-
-
-def image_randomized(A,rtol,block_size=42):
-    return range_randomized(A.T, rtol, block_size)
 
 
