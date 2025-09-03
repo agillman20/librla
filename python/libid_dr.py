@@ -17,14 +17,15 @@ def driver():
 
     print('a shape', a.shape)
     
-    tol = 1e-15*max(m,n)
-    print('tol =', tol)
+    rtol = 1e-15*max(m,n)
+    rtol = np.finfo(a.dtype).eps*max(m,n)
+    print('rtol =', rtol)
 
     print('### rrqr')
         
     for i in range(1,10):
         start_time = time.perf_counter()
-        [Q,R,p] = libid.rrqr_randomized(a,tol)
+        [Q,R,p] = libid.rrqr_randomized(a,rtol)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
@@ -41,7 +42,7 @@ def driver():
         
     for i in range(1,10):
         start_time = time.perf_counter()
-        [U,s,Vt] = libid.rrsvd_randomized(a,tol)
+        [U,s,Vt] = libid.rrsvd_randomized(a,rtol)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
@@ -83,7 +84,7 @@ def driver():
 
     for i in range(1,10):
         start_time = time.perf_counter()
-        [k, J, proj] =libid.rrid_randomized(a,tol)
+        [k, J, proj] =libid.rrid_randomized(a,rtol)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
@@ -98,7 +99,7 @@ def driver():
         
     for i in range(1,10):
         start_time = time.perf_counter()
-        [k, J, proj] =sli.interp_decomp(a,tol)
+        [k, J, proj] =sli.interp_decomp(a,rtol)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")

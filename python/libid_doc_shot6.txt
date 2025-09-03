@@ -1,0 +1,60 @@
+Thinking...
+The user asks: "Use American English. Summarize file: ..." The file content is given. Need to produce a summary in American English. Should be concise but cover purpose, key functions, algorithm steps, parameters, outputs. Probably a TL;DR style. Provide overall purpose and brief description of each function. Let's craft.
+...done thinking.
+
+**Summary of `libid.py` (American English)**  
+
+`libid.py` implements fast, adaptive, randomized versions of three classic low‑rank matrix factorizations:
+
+* **RRQR** – rank‑revealing QR  
+* **RRSVD** – rank‑revealing singular value decomposition  
+* **RRID** – rank‑revealing interpolative decomposition  
+
+The core idea is to **sketch** the column space of a matrix with a cheap random basis, then perform a standard deterministic factorization on the tiny sketch and lift the result back to the original space.  This “sketch‑and‑solve” approach is much faster than the full deterministic algorithms for large matrices while still delivering accurate low‑rank approximations.  The numerical rank is determined automatically from a user‑supplied relative tolerance `rtol`.
+
+---
+
+### Key Functions  
+
+| Function | Purpose | Main Steps | Returns |
+|----------|---------|------------|---------|
+| `range_power(A, x, flag_power=0)` | Apply optional power‑iteration to improve the quality of a random basis. | Repeatedly compute `x ← Aᵀ(Ax)` and re‑orthogonalize with a pivoted QR. | Refined basis `x`. |
+| `range_randomized(A, rtol, block_size=42, flag_power=0)` | Build a low‑dimensional random basis that approximates the column space of `A`. | 1. Generate a random matrix `x`. <br>2. Optionally improve it with `range_power`. <br>3. Form `y = A·x` and compute a pivoted QR of `y`. <br>4. Estimate the approximation error `d`. <br>5. Increase `block_size` until `d ≤ rtol` or the matrix is fully captured. | `(k, Q)` where `k` is the basis size and `Q` is an orthonormal basis for the range of `A`. |
+| `rrqr_randomized(A, rtol, block_size=42, flag_power=0)` | Compute a randomized rank‑revealing QR factorization `A ≈ Q·R·Pᵀ`. | 1. Get a sketch basis `(k, q)` from `range_randomized`. <br>2. If the sketch already spans the whole matrix, fall back to a full pivoted QR. <br>3. Project `A` onto the sketch: `Aproj = qᵀ A`. <br>4. Pivoted QR on `Aproj`, then lift `Q = q·Qproj`. <br>5. Determine the numerical rank `k` from `R` and `rtol`. | `(Q_k, R_k, p)` – orthogonal factor, upper‑triangular factor, and column permutation. |
+| `rrsvd_randomized(A, rtol, block_size=42, flag_power=0)` | Compute a randomized rank‑revealing SVD `A ≈ U·Σ·Vᵀ`. | Same sketching strategy as `rrqr_randomized`. <br>1. Project `A` onto the sketch. <br>2. SVD of the small projected matrix. <br>3. Lift left singular vectors `U = q·Uproj`. <br>4. Truncate based on `rtol`. | `(U_k, Σ_k, V_k)` – truncated singular vectors and singular values. |
+| `rrid_randomized(A, rtol, block_size=42, flag_power=0)` | Compute a randomized rank‑revealing Interpolative Decomposition. | 1. Call `rrqr_randomized` to obtain `Q, R, p`. <br>2. Solve `R₁₁⁻¹ R₁₂` to get the interpolation matrix. | `(k, p, proj)` – numerical rank, column permutation, and interpolation matrix. |
+| `image_randomized(A, rtol, block_size=42)` | Convenience wrapper that returns the sketch basis for the **row** space (i.e., applies `range_randomized` to `Aᵀ`). | – | Same output as `range_randomized` but for `Aᵀ`. |
+
+---
+
+### Typical Usage  
+
+```python
+import numpy as np
+from libid import rrqr_randomized, rrsvd_randomized, rrid_randomized
+
+A = np.random.randn(1000, 500)
+
+# Rank‑revealing QR
+Q, R, p = rrqr_randomized(A, rtol=1e-6)
+
+# Rank‑revealing SVD
+U, s, Vt = rrsvd_randomized(A, rtol=1e-6)
+
+# Rank‑revealing Interpolative Decomposition
+k, perm, interp = rrid_randomized(A, rtol=1e-6)
+```
+
+The functions automatically select the numerical rank `k` by comparing column (or singular) norms to `rtol * ‖A‖`.
+
+---
+
+### Design Highlights  
+
+* **Randomized sketching** reduces the computational cost from O(m n min(m,n)) to roughly O(m n block_size) where `block_size << min(m,n)`.  
+* **Power iteration (`flag_power`)** optional improvement for matrices with slowly decaying singular spectra.  
+* **Adaptive block size** – the algorithm enlarges the sketch until the error estimate meets the tolerance.  
+* **Fallback to deterministic QR** when the sketch ends up spanning the whole matrix, ensuring correctness for small problems.  
+
+Overall, `libid.py` provides a lightweight, easy‑to‑use toolbox for fast low‑rank approximations suitable for large‑scale data‑analysis or scientific‑computing pipelines.
+
