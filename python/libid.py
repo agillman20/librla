@@ -78,7 +78,7 @@ def range_power(A, x, flag_power=0):
     
     for j in range(flag_power):
         x = A.T @ (A @ x)
-        [x,_R,_p] = linalg.qr(x, mode='economic', pivoting=True)
+        x, _R, _p = linalg.qr(x, mode='economic', pivoting=True)
     return x
 
 
@@ -93,7 +93,7 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
         x = 2*np.random.uniform(size=(n, block_size))-1
         x = range_power(A,x,flag_power)
         y = A @ x
-        [Q,R,p] = linalg.qr(y, mode='economic', pivoting=True)
+        Q, R, p = linalg.qr(y, mode='economic', pivoting=True)
         r = R.diagonal()
         d = max(abs(r[-1:]))/max(norm(y,axis=0))
 
@@ -111,17 +111,17 @@ def range_randomized(A,rtol,block_size=42,flag_power=0):
 
 def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
-    [m,n] = np.shape(A)
+    m, n = np.shape(A)
 
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
-        [Q,R,p] = linalg.qr(A, mode='economic', pivoting=True)
+        Q, R, p = linalg.qr(A, mode='economic', pivoting=True)
         k = sum(norm(R,axis=1) >= rtol*norm(A))
         return Q[:,:k],R[:k,:],p
   
     Aproj = q.T @ A
-    [Qproj,R,p] = linalg.qr(Aproj, mode='economic', pivoting=True)   
+    Qproj, R, p = linalg.qr(Aproj, mode='economic', pivoting=True)   
     Q = q @ Qproj
     k = sum(norm(R,axis=1) >= rtol*norm(Aproj))
     return Q[:,:k],R[:k,:],p
@@ -129,7 +129,7 @@ def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
 def rrsvd_randomized(A,rtol,block_size=42,flag_power=0):
 
-    [m,n] = np.shape(A)
+    m, n = np.shape(A)
 #    if (m < n):
 #        [Vt,s,Ut] = rrsvd_randomized(A.T,rtol,block_size)
 #        return Ut.T, s, Vt.T
@@ -137,12 +137,12 @@ def rrsvd_randomized(A,rtol,block_size=42,flag_power=0):
     k, q = range_randomized(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
-        [U,s,V] = linalg.svd(A,full_matrices=False)
+        U, s, V = linalg.svd(A,full_matrices=False)
         k = sum(abs(s) >= rtol*norm(A))
         return U[:,:k],s[:k],V[:k,:]
   
     Aproj = q.T @ A
-    [Uproj,s,V] = linalg.svd(Aproj,full_matrices=False)
+    Uproj, s, V = linalg.svd(Aproj,full_matrices=False)
     U = q @ Uproj
     k = sum(abs(s) >= rtol*norm(Aproj))
     return U[:,:k],s[:k],V[:k,:]
