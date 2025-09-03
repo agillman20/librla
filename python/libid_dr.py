@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import hilb as h
 import libid as libid
@@ -6,19 +7,29 @@ from scipy import linalg
 from scipy.linalg import norm
 import scipy.linalg.interpolative as sli
 
+
+def rankdef_matrix(m,n,k,rtol,flag_complex=0):
+    d = (1.0-(np.arange(0,min(m,n))/min(m,n)))**(k-1)
+    a = np.random.normal(size=(m,n))
+    u, s, v = linalg.svd(a,full_matrices=False)
+    return np.matmul(np.matmul(u,np.diag(d)),v)
+
+
 def driver():
 
     m = 4000
     n = 2000
     
     a = h.hilb(m,n)
+#    a = rankdef_matrix(m,n,k=5,rtol=1e-12)
 #    a = 2*np.random.uniform(size=(m,n))-1
 #    a = np.random.normal(size=(m,n))
 
     print('a shape', a.shape)
     
-    rtol = 1e-15*max(m,n)
-    rtol = np.finfo(a.dtype).eps*max(m,n)
+#    rtol = 1e-15
+#    rtol = 1e-15*max(m,n)
+    rtol = np.max(a)*np.finfo(a.dtype).eps*max(m,n)
     print('rtol =', rtol)
 
     print('### rrqr')
