@@ -39,6 +39,10 @@ user‑supplied relative tolerance `rtol`.
 """
 (local) $ ollama run gpt-oss:120b "Use American English. Summarize file: $(cat libid.py)"
 
+### Overall purpose  
+
+The module provides lightweight, <E2><80><9C>sketch<E2><80><91>and<E2><80><91>solve<E2><80><9D> versions of RRQR, RRSVD, and RRID that are much faster than deterministic counterparts for large matrices, while still delivering accurate low<E<E2><80><91>rank approximations. The functions return the usual factors (`Q, R, p` for QR; `U, s, V` for SVD; rank, permutation, interpolation matrix for ID) together with an automatically determined rank based on `rtol`.
+
 ### Design Highlights  
 
 * **Randomized sketching** reduces the computational cost from O(m<E2><80><AF>n<<E2><80><AF>min(m,n)) to roughly O(m<E2><80><AF>n<E2><80><AF>block_size) where `block_size << min(m,n)`.  
@@ -48,9 +52,25 @@ user‑supplied relative tolerance `rtol`.
 
 Overall, `libid.py` provides a lightweight, easy<E2><80><91>to<E2><80><91>use toolbox for fast low<E2><80><91>rank approximations suitable for large<E2><80><91>scale data<E2><80><91>analysis or scientific<E2><80><91>computing pipelines.
 
-### Overall purpose  
+### Typical Usage  
 
-The module provides lightweight, <E2><80><9C>sketch<E2><80><91>and<E2><80><91>solve<E2><80><9D> versions of RRQR, RRSVD, and RRID that are much faster than deterministic counterparts for large matrices, while still delivering accurate low<E<E2><80><91>rank approximations. The functions return the usual factors (`Q, R, p` for QR; `U, s, V` for SVD; rank, permutation, interpolation matrix for ID) together with an automatically determined rank based on `rtol`.
+```python
+import numpy as np
+from libid import rrqr_randomized, rrsvd_randomized, rrid_randomized
+
+A = np.random.randn(1000, 500)
+
+# Rank<E2><80><91>revealing QR
+Q, R, p = rrqr_randomized(A, rtol=1e-6)
+
+# Rank<E2><80><91>revealing SVD
+U, s, Vt = rrsvd_randomized(A, rtol=1e-6)
+
+# Rank<E2><80><91>revealing Interpolative Decomposition
+k, perm, interp = rrid_randomized(A, rtol=1e-6)
+```
+
+The functions automatically select the numerical rank `k` by comparing column (or singular) norms to `rtol * <E2><80><96>A<E2><80><96>`.
 """
 
 
