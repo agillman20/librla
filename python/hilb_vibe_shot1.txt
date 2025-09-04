@@ -1,0 +1,101 @@
+Thinking...
+We need to summarize and convert and vectorize to python this file. Probably they want a more concise, vectorized implementation using NumPy broadcasting, maybe without loops, and using SciPy's hankel as alternative. Provide summary and final code.
+
+We should produce explanation, then the vectorized function.
+
+We should use American English.
+
+Let's produce final answer.
+...done thinking.
+
+**Summary**
+
+The original script builds an *n × m* Hilbert matrix— a classic example of a poorly‑conditioned, symmetric, positive‑definite matrix whose entries are  
+
+\[
+H_{ij}= \frac{1}{i+j+1},\qquad i,j=0,\dots ,\text{size}-1 .
+\]
+
+Two approaches are shown:
+
+1. **Straight‑forward double loop** – easy to understand but slow for large matrices.  
+2. **Optimized version using `scipy.linalg.hankel`** – still relies on Python loops to fill the first column and row before calling `hankel`.
+
+Both implementations are correct, but they can be made even faster and more concise by exploiting NumPy’s broadcasting rules, which eliminate explicit Python loops entirely. The resulting function is fully vectorized, works for any positive‑integer `n` and `m`, and returns a `numpy.ndarray` of dtype `float64`.
+
+---
+
+## Vectorized Implementation
+
+```python
+import numpy as np
+
+def hilbert(n: int, m: int) -> np.ndarray:
+    """
+    Return an n‑by‑m Hilbert matrix.
+
+    The (i, j) entry is 1 / (i + j + 1) where i and j are zero‑based indices.
+    The implementation is fully vectorized – no explicit Python loops.
+
+    Parameters
+    ----------
+    n : int
+        Number of rows (must be > 0).
+    m : int
+        Number of columns (must be > 0).
+
+    Returns
+    -------
+    numpy.ndarray
+        An (n, m) array of dtype float64 containing the Hilbert matrix.
+    """
+    if n <= 0 or m <= 0:
+        raise ValueError("Both n and m must be positive integers.")
+
+    # Create row and column index vectors.
+    i = np.arange(n).reshape(-1, 1)   # shape (n, 1)
+    j = np.arange(m).reshape(1, -1)   # shape (1, m)
+
+    # Broadcast addition and compute the reciprocal.
+    H = 1.0 / (i + j + 1)
+
+    return H
+```
+
+### Why This Is Faster
+
+* **No Python‑level loops** – the heavy lifting is done by NumPy’s C‑backend.
+* **Memory‑efficient broadcasting** – only two 1‑D arrays (`i` and `j`) are created; the final matrix is produced in a single arithmetic pass.
+* **Pure NumPy** – avoids the extra import of `scipy.linalg.hankel`, which itself builds an intermediate matrix.
+
+---
+
+## Quick Test
+
+```python
+if __name__ == "__main__":
+    # Small sanity check
+    print(hilbert(3, 3))
+    # Expected output:
+    # [[1.         0.5        0.33333333]
+    #  [0.5        0.33333333 0.25      ]
+    #  [0.33333333 0.25       0.2       ]]
+
+    # Compare with SciPy’s hankel‑based version for a rectangular case
+    from scipy import linalg
+    n, m = 4, 6
+    H_vec = hilbert(n, m)
+
+    # Build the same matrix using the original hankel approach
+    c = 1.0 / (np.arange(n) + 1)          # first column
+    r = 1.0 / (np.arange(m) + n)          # first row
+    H_hankel = linalg.hankel(c, r)
+
+    assert np.allclose(H_vec, H_hankel), "Vectorized version differs!"
+    print("Vectorized implementation matches the hankel version.")
+```
+
+Running the test prints the 3 × 3 Hilbert matrix, then confirms that the vectorized version produces identical results to the original `hankel`‑based implementation for a non‑square matrix.
+
+Feel free to drop the function into any codebase that needs a fast Hilbert matrix generator!
+

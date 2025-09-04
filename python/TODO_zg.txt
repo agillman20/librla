@@ -27,6 +27,14 @@ Low rank matrix compression, aka libid project
 
 ------------------------------------------------------------------------------
 
+Vibe coding and documentation
+
+ollama run gpt-oss:120b  "Must use American English. Summarize this file: $(cat libid.py)" > libid_doc_shot1.txt
+ 
+ollama run gpt-oss:120b  "Must use American English. Summarize and convert and vectorize to python this file: $(cat libid.py)" > libid_shot1.txt
+ 
+------------------------------------------------------------------------------
+
 https://ar5iv.labs.arxiv.org/html/2002.01387
 
 Algorithm 13: Incremental rangefinder.

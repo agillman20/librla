@@ -26,13 +26,19 @@ def driver():
     n = 2000
 
     ntest = 10
-    
-    a = h.hilb(m,n)
-#    a = power_matrix(a,1.0)
-#    a = rankdef_matrix(m,n,k=5,rtol=1e-12)
-#    a = 2*np.random.uniform(size=(m,n))-1
-#    a = np.random.normal(size=(m,n))
 
+    for i in range(10):
+        start_time = time.perf_counter()
+        a = h.hilb(m,n)
+        #    a = power_matrix(a,1.0)
+        #    a = rankdef_matrix(m,n,k=5,rtol=1e-12)
+        #    a = 2*np.random.uniform(size=(m,n))-1
+        #    a = np.random.normal(size=(m,n))
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"Forming matrix, elapsed time: {elapsed_time:.4f} seconds")
+
+    
     print('a shape', a.shape)
     
 #    rtol = 1e-15
@@ -42,7 +48,7 @@ def driver():
 
     print('### rrqr')
         
-    for i in range(1,ntest):
+    for i in range(ntest):
         start_time = time.perf_counter()
         [Q,R,p] = libid.rrqr_randomized(a,rtol)
         end_time = time.perf_counter()
@@ -59,7 +65,7 @@ def driver():
 
     print('### rrsvd')
         
-    for i in range(1,ntest):
+    for i in range(ntest):
         start_time = time.perf_counter()
         [U,s,Vt] = libid.rrsvd_randomized(a,rtol)
         end_time = time.perf_counter()
@@ -79,7 +85,7 @@ def driver():
     # np arrays are mutable
     # r.shape is in economic format, as requested
     
-    for i in range(1,ntest):
+    for i in range(ntest):
         start_time = time.perf_counter()
         [q,r,p] = linalg.qr(a, mode='economic', pivoting=True)
         end_time = time.perf_counter()
@@ -101,7 +107,7 @@ def driver():
 
     print('### rrid')
 
-    for i in range(1,ntest):
+    for i in range(ntest):
         start_time = time.perf_counter()
         [k, J, proj] =libid.rrid_randomized(a,rtol)
         end_time = time.perf_counter()
@@ -118,7 +124,7 @@ def driver():
     
     print('### rrid_flam')
         
-    for i in range(1,ntest):
+    for i in range(ntest):
         start_time = time.perf_counter()
         [k, J, proj] =sli.interp_decomp(a,rtol)
         end_time = time.perf_counter()

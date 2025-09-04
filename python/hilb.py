@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import linalg
 
-def hilb(n,m):
+def hilb(n:int,m:int):
     """
     Creates an n x m Hilbert matrix using NumPy/SciPy.
 
