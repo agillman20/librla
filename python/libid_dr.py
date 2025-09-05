@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import hilb as h
-import libid as libid
+import libid_vibe as libid
 import time
 from scipy import linalg
 from scipy.linalg import norm
