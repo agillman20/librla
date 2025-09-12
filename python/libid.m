@@ -14,6 +14,7 @@
 % Author: Your Name
 % SPDX-License-Identifier: TBD
 
+
 classdef libid
     % libid
     %
@@ -67,7 +68,7 @@ classdef libid
         %
         % Example
         % -------
-        %   A = hilb(4000,2000);
+        %   A = libid.hilb(4000,2000);
         %   tic, [k,Q] = libid.range_randomized(A,1e-8); toc
         %   k, size(Q)
         %
@@ -172,7 +173,7 @@ classdef libid
         %
         % Example
         % -------
-        %   A = hilb(4000,2000);
+        %   A = libid.hilb(4000,2000);
         %   tic, [Q,R,p] = libid.rrqr_randomized(A,1e-15); toc
         %   rel_err = norm(Q*R - A(:,p),'fro')/norm(A,'fro')
         %   tic, [Q,R,p] = qr(A,'econ'); toc
@@ -256,7 +257,7 @@ classdef libid
         %
         % Example
         % -------
-        %   A = hilb(4000,2000);
+        %   A = libid.hilb(4000,2000);
         %   tic, [U,s,Vt] = libid.rrsvd_randomized(A,1e-15); toc
         %   rel_err = norm(U*diag(s)*Vt - A,'fro')/norm(A,'fro')
         %   tic, [U,S,V] = svd(A,'econ'); toc
@@ -342,7 +343,7 @@ classdef libid
         %
         % Example
         % -------
-        %   A = hilb(4000,2000);
+        %   A = libid.hilb(4000,2000);
         %   tic, [k,p,proj] = libid.rrid_randomized(A,1e-8); toc
         %   rel_err = norm(A(:,p((k+1):end)) - A(:,p(1:k))*proj, 'fro')
         %
@@ -404,7 +405,7 @@ classdef libid
         %
         % Example
         % -------
-        %   A = hilb(4000,2000);
+        %   A = libid.hilb(4000,2000);
         %   [k,Q] = libid.image_randomized(A,1e-8);
         %
         % See also: range_randomized
@@ -418,6 +419,14 @@ classdef libid
     end
 
     methods (Static, Access = private)
+
+	function a = hilb(m,n)
+	    if( nargin == 1 ) n = m; end
+	    a = zeros(m,n);
+	    i = [1:n];
+	    j = [1:m]';
+	    a = 1./(bsxfun(@plus,i,j)-1);
+	end
 
         function X = powerIteration(A, X, power)
         % POWERITERATION Apply power iteration to improve the quality of the sampling matrix.
