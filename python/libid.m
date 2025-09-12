@@ -1,19 +1,18 @@
-% Description
 % ----------
-% This class implements several randomized linear‑algebra routines that
-% approximate the rank, QR factorization, singular‑value decomposition
+% This class implements several randomized linear-algebra routines that
+% approximate the rank, QR factorization, singular-value decomposition
 % (SVD), and interpolative decomposition (ID) of a matrix A.
 %
-% User‑callable methods
+% User-callable methods
 % ---------------------
 %   range_randomized   - Build an orthonormal basis for the column space.
-%   rrqr_randomized    - Rank‑revealing QR using a randomized basis.
+%   rrqr_randomized    - Rank-revealing QR using a randomized basis.
 %   rrsvd_randomized   - Truncated SVD using a randomized basis.
 %   rrid_randomized    - Interpolative decomposition using randomized QR.
 %   image_randomized   - Basis for the row space via transpose.
 %
 % Author: Your Name
-% SPDX‑License‑Identifier: TBD
+% SPDX-License-Identifier: TBD
 
 classdef libid
     % libid
@@ -50,7 +49,7 @@ classdef libid
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
@@ -76,7 +75,7 @@ classdef libid
         %   Code flow
         %   -------------------------------------------------
         %   1. Determine matrix dimensions.
-        %   2. Check early‑exit condition.
+        %   2. Check early-exit condition.
         %   3. Loop:
         %        a) Generate random test matrix X.
         %        b) Apply power iteration (if flag_power > 0).
@@ -131,7 +130,7 @@ classdef libid
 
 
         function [Qk, Rk, p] = rrqr_randomized(A, rtol, block_size, flag_power)
-        % RRQR_RANDOMIZED Rank‑revealing QR factorization using a randomized basis.
+        % RRQR_RANDOMIZED Rank-revealing QR factorization using a randomized basis.
         %
         % Calling sequence (options shown)
         % ---------------------------------
@@ -141,7 +140,7 @@ classdef libid
         %
         % Description
         % -----------
-        % Compute a rank‑revealing QR factorization of A by first building a
+        % Compute a rank-revealing QR factorization of A by first building a
         % randomized orthonormal basis for the column space.  If the matrix
         % is effectively full rank, a deterministic QR is performed.
         %
@@ -154,20 +153,20 @@ classdef libid
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
         % Qk         : double matrix
         %   Leading k columns of the orthogonal factor.
         % Rk         : double matrix
-        %   Leading k rows of the upper‑triangular factor.
+        %   Leading k rows of the upper-triangular factor.
         % p          : int vector
         %   Pivot permutation vector.
         %
         % Notes
         % -----
-        % 1. The rank k is chosen as the number of rows of R whose 2‑norm
+        % 1. The rank k is chosen as the number of rows of R whose 2-norm
         %    exceeds ``rtol * ||A||`` (or ``||A_proj||`` for the projected case).
         % 2. The private method ``powerIteration`` is used internally.
         %
@@ -216,7 +215,7 @@ classdef libid
 
 
         function [Uk, sk, Vk] = rrsvd_randomized(A, rtol, block_size, flag_power)
-        % RRSVD_RANDOMIZED Truncated singular‑value decomposition using a randomized basis.
+        % RRSVD_RANDOMIZED Truncated singular-value decomposition using a randomized basis.
         %
         % Calling sequence (options shown)
         % ---------------------------------
@@ -239,7 +238,7 @@ classdef libid
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
@@ -313,7 +312,7 @@ classdef libid
         % Description
         % -----------
         % Form an interpolative decomposition (ID) of A by first computing a
-        % randomized rank‑revealing QR and then solving a triangular system to
+        % randomized rank-revealing QR and then solving a triangular system to
         % obtain the interpolation matrix.
         %
         % Parameters
@@ -325,7 +324,7 @@ classdef libid
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
@@ -334,7 +333,7 @@ classdef libid
         % p          : int vector
         %   Pivot permutation vector.
         % proj       : double matrix
-        %   Interpolation matrix such that A(:,p) ≈ A(:,p(1:k))*proj.
+        %   Interpolation matrix such that A(:,p) approx A(:,p(1:k))*proj.
         %
         % Notes
         % -----
@@ -351,7 +350,7 @@ classdef libid
         %   Code flow
         %   -------------------------------------------------
         %   1. Call rrqr_randomized to obtain Q, R, and pivot vector p.
-        %   2. Extract R11 (upper‑triangular leading block) and R12.
+        %   2. Extract R11 (upper-triangular leading block) and R12.
         %   3. Solve R11 * X = R12 for the interpolation matrix X.
         %   4. Return rank k, pivot vector, and X.
         %   -------------------------------------------------
@@ -394,14 +393,14 @@ classdef libid
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
         % k          : int
         %   Number of basis vectors found.
         % Q          : double matrix
-        %   Orthonormal basis for the row space (size n‑by‑k).
+        %   Orthonormal basis for the row space (size n-by-k).
         %
         % Example
         % -------
@@ -432,7 +431,7 @@ classdef libid
         % -----------
         % Multiply the test matrix X by A and A' repeatedly to amplify the
         % dominant singular directions.  After each iteration a QR factorization
-        % re‑orthogonalizes X.
+        % re-orthogonalizes X.
         %
         % Parameters
         % ----------
@@ -441,7 +440,7 @@ classdef libid
         % X     : double matrix
         %   Random test matrix.
         % power : int, optional (default = 0)
-        %   Number of power‑iteration steps.
+        %   Number of power-iteration steps.
         %
         % Returns
         % -------
@@ -470,3 +469,5 @@ classdef libid
 
     end
 end
+
+
