@@ -242,9 +242,3 @@ def image_randomized(
     to the transpose of A.
     """
     return range_randomized(A.T, rtol, block_size, flag_power)
-```
-
-
-> EOF by user
-
-
