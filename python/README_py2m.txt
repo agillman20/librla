@@ -5,4 +5,4 @@ llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt  "You are a friendly ass
 
 llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Include calling sequence examples with options at the top of documentation to all functions. Preserve all other documentation." --file libid.m --ctx-size 0
 
-llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Convert dashes, Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Preserve all other documentation and code."  --file libid.m --ctx-size 0 | tee libid.m.filtered
+llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Convert dashes, Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Preserve all other documentation and code."  --file libid.m --ctx-size 0 | tee output.txt
