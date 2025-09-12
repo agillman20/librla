@@ -1,3 +1,23 @@
+"""
+Description
+-----------
+
+This module implements several randomized linear‑algebra routines that
+approximate the rank, QR factorization, singular‑value decomposition
+(SVD), and interpolative decomposition (ID) of a matrix ``A``.
+
+User‑callable methods
+---------------------
+range_randomized   - Build an orthonormal basis for the column space.
+rrqr_randomized    - Rank‑revealing QR using a randomized basis.
+rrsvd_randomized   - Truncated SVD using a randomized basis.
+rrid_randomized    - Interpolative decomposition using randomized QR.
+image_randomized   - Basis for the row space via transpose.
+
+Author: Your Name
+SPDX-License-Identifier: TBD
+"""
+
 import numpy as np
 from scipy import linalg
 from numpy.linalg import norm
@@ -80,3 +100,79 @@ def rrid_randomized(A,rtol,block_size=42,flag_power=0):
 def image_randomized(A,rtol,block_size=42,flag_power=0):
     return range_randomized(A.T,rtol,block_size,flag_power)
 
+
+
+
+
+
+def _hilb(n: int, m: int) -> np.ndarray:
+    """
+    Creates an n x m Hilbert matrix using NumPy/SciPy.
+
+    Args:
+        n (int): The order of the Hilbert matrix.
+        m (int): other direction
+
+    Returns:
+        numpy.ndarray: The n x m Hilbert matrix.
+    """
+
+    # Optimized version, via scipy.linalg.hankel
+    c = np.zeros(n)
+    r = np.zeros(m)
+
+    for i in range(n):
+        c[i] = 1.0 / (i + 1)  # Adjust for 0-based indexing
+
+    for i in range(m):
+        r[i] = 1.0 / (i + n)  # Adjust for 0-based indexing
+
+    return linalg.hankel(c,r)
+
+
+if __name__ == "__main__":
+    # Simple sanity checks for the public API.
+    np.random.seed(0)
+
+    # Small test matrix.
+    m, n = 4000, 2000
+    A = _hilb(m, n)
+
+    # --------------------------------------------------------------
+    # Test range_randomized
+    # --------------------------------------------------------------
+    k_range, Q_range = range_randomized(A, rtol=1e-12)
+    orth_err = np.linalg.norm(Q_range.T @ Q_range - np.eye(k_range))
+    print(f"range_randomized: k={k_range}, basis shape={Q_range.shape}")
+    print(f"range_randomized: k={k_range}, orthonormality error={orth_err:e}")
+
+    # --------------------------------------------------------------
+    # Test rrqr_randomized
+    # --------------------------------------------------------------
+    Q_rrqr, R_rrqr, piv = rrqr_randomized(A, rtol=1e-12)
+    A_perm = A[:, piv]
+    recon_err = np.linalg.norm(Q_rrqr @ R_rrqr - A_perm) / np.linalg.norm(A_perm)
+    print(f"rrqr_randomized: reconstruction relative error={recon_err:e}")
+
+    # --------------------------------------------------------------
+    # Test rrsvd_randomized
+    # --------------------------------------------------------------
+    U_rrsvd, s_rrsvd, Vt_rrsvd = rrsvd_randomized(A, rtol=1e-12)
+    A_svd = U_rrsvd @ np.diag(s_rrsvd) @ Vt_rrsvd
+    svd_err = np.linalg.norm(A_svd - A) / np.linalg.norm(A)
+    print(f"rrsvd_randomized: reconstruction relative error={svd_err:e}")
+
+    # --------------------------------------------------------------
+    # Test rrid_randomized
+    # --------------------------------------------------------------
+    k_id, piv_id, proj_id = rrid_randomized(A, rtol=1e-12)
+    A_id_approx = A[:, piv_id[:k_id]] @ proj_id
+    id_err = np.linalg.norm(A[:, piv_id[k_id:]] - A_id_approx) / np.linalg.norm(A)
+    print(f"rrid_randomized: interpolation relative error={id_err:e}")
+
+    # --------------------------------------------------------------
+    # Test image_randomized
+    # --------------------------------------------------------------
+    k_img, Q_img = image_randomized(A, rtol=1e-12)
+    print(f"image_randomized: k={k_img}, basis shape={Q_img.shape}")
+    
