@@ -2,14 +2,14 @@
 Description
 -----------
 
-This module implements several randomized linear‑algebra routines that
-approximate the rank, QR factorization, singular‑value decomposition
+This module implements several randomized linear-algebra routines that
+approximate the rank, QR factorization, singular-value decomposition
 (SVD), and interpolative decomposition (ID) of a matrix ``A``.
 
-User‑callable methods
+User-callable methods
 ---------------------
 range_randomized   - Build an orthonormal basis for the column space.
-rrqr_randomized    - Rank‑revealing QR using a randomized basis.
+rrqr_randomized    - Rank-revealing QR using a randomized basis.
 rrsvd_randomized   - Truncated SVD using a randomized basis.
 rrid_randomized    - Interpolative decomposition using randomized QR.
 image_randomized   - Basis for the row space via transpose.
