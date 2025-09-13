@@ -12,7 +12,7 @@ hilb.py and libid.py have built-in testing routines, to execute, please run:
 
 hilb.m - n x m Hilbert matrix, optimized version, using broadcast
 libid.m - rank-revealing decompositions, QR, SVD, ID, randomized, 
-          native matlab gpt-oss:120b assisted translation of libid.py
+          native matlab, gpt-oss:120b assisted translation of libid.py
 
 --------------------------------------------------------------------------------
 
