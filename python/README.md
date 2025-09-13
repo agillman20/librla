@@ -1,28 +1,28 @@
 
 
-hilb.py - n x m Hilbert matrix, optimized version, via scipy.linalg.hankel
+hilb.py - n x m Hilbert matrix, optimized version, using scipy.linalg.hankel
 libid.py - rank-revealing decompositions, QR, SVD, ID, randomized, native python
-
 
 hilb.py and libid.py have built-in testing routines, to execute, please run:
 
-python3 hilb.py
-python3 libid.py
+  python3 hilb.py
+  python3 libid.py
 
 --------------------------------------------------------------------------------
 
-hilb.m - n x m Hilbert matrix, optimized version, via scipy.linalg.hankel
-libid.m - rank-revealing decompositions, QR, SVD, ID, randomized, native matlab
-          gpt-oss:120b assisted translation of libid.py via libid_vibe.py
+hilb.m - n x m Hilbert matrix, optimized version, using broadcast
+libid.m - rank-revealing decompositions, QR, SVD, ID, randomized, 
+          native matlab gpt-oss:120b assisted translation of libid.py
 
 --------------------------------------------------------------------------------
 
-hilb_vibe.py - vibe-coded version of hilb.py
-libid_vibe.py - vibe-coded version of libid.py
-libid_m2py.py - vibe-coded version of libid.py, ouroboros,
-                inherit class structure from libid.m
 
---------------------------------------------------------------------------------
+ollama run gpt-oss:120b "Must use American English. Avoid \
+em-dashes. Avoid en-dashes. Avoid Unicode symbols. Summarize and \
+convert to python this file: $(cat libid.py)"
+
+
+libid_vibe.py - gpt-oss:120b assisted summarization of libid.py
 
 
 Description
@@ -43,14 +43,6 @@ image_randomized   - Basis for the row space via transpose.
 Author: Your Name
 SPDX-License-Identifier: TBD
 
-
---------------------------------------------------------------------------------
-
-
-
-ollama run gpt-oss:120b "Must use American English. Avoid \
-em-dashes. Avoid en-dashes. Avoid Unicode symbols. Summarize and \
-convert to python this file: $(cat libid.py)" > libid_vibe.txt
 
 **Summary**
 
@@ -113,28 +105,5 @@ full-rank problems.
 The helper `range_randomized` returns the size of the sketch (`k`) and
 the orthonormal basis `Q`. `image_randomized` does the same for the
 row space by calling `range_randomized` on `A.T`.
-
-
---------------------------------------------------------------------------------
-
-
-# convert python to matlab, editing is required between steps
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt  "You are a friendly assistant. Must use American English. No em-dashes in comments. No en-dashes in comments. No Unicode symbols in documentation or comment lines. Convert Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Convert to Matlab, keeping function ordering, use numbered dot code flow using dash underline above and below, never include any info summary or documentation before function or subroutine name, always include info/documentation after implicit statement after function or subroutine name, document structure fields, document input and output parameters with type information followed with description next lines with section name spelled out with parameters using underline with ASCII dashes, notes, numbered code flow sections, preserve original comments and notes, format documentation available for fortran help, add Your Name placeholder author, TBD placeholder SPDX-License-Identifier, author before spdx, documentation section name should be capitalized but must not be in all caps and should be underlined and should use moderate indentation at least two spaces, always show description section at the top of main documentation block, always use real or complex names with name followed by single colon formatted table in describing parameter types, always include main documentation synopsis string after the function or subroutine name, preserve unused functions and subroutines, place description block containing a list of all user-callable routines and functions at the top of the file, using class and classdef with proper documentation indentation, include examples, separate functions by three lines, this file:" --file libid_vibe.py --ctx-size 0 | tee output.txt
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt  "You are a friendly assistant. Must use American English. No em-dashes in comments. No en-dashes in comments. No Unicode symbols in documentation or comment lines. Convert Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Convert to python, keeping function ordering, use numbered dot code flow using dash underline above and below, never include any info summary or documentation before function or subroutine name, always include info/documentation after implicit statement after function or subroutine name, document structure fields, document input and output parameters with type information followed with description next lines with section name spelled out with parameters using underline with ASCII dashes, notes, numbered code flow sections, preserve original comments and notes, format documentation available for fortran help, add Your Name placeholder author, TBD placeholder SPDX-License-Identifier, author before spdx, documentation section name should be capitalized but must not be in all caps and should be underlined and should use moderate indentation at least two spaces, always show description section at the top of main documentation block, always use real or complex names with name followed by single colon formatted table in describing parameter types, always include main documentation synopsis string after the function or subroutine name, preserve unused functions and subroutines, place description block containing a list of all user-callable routines and functions at the top of the file, using class and classdef with proper documentation indentation, include examples, separate functions by three lines, this file:" --file libid.m --ctx-size 0 | tee output.txt
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Include calling sequence examples with options at the top of documentation to all functions. Preserve all other documentation." --file libid.m --ctx-size 0 | tee output.txt
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Convert dashes, Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Preserve all other documentation and code."  --file libid.m --ctx-size 0 | tee output.txt
-
-
-# convert matlab to python, editing is required between steps
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt  "You are a friendly assistant. Must use American English. No em-dashes in comments. No en-dashes in comments. No Unicode symbols in documentation or comment lines. Convert Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Convert to python, keeping function ordering, use numbered dot code flow using dash underline above and below, never include any info summary or documentation before function or subroutine name, always include info/documentation after implicit statement after function or subroutine name, document structure fields, document input and output parameters with type information followed with description next lines with section name spelled out with parameters using underline with ASCII dashes, notes, numbered code flow sections, preserve original comments and notes, format documentation available for fortran help, add Your Name placeholder author, TBD placeholder SPDX-License-Identifier, author before spdx, documentation section name should be capitalized but must not be in all caps and should be underlined and should use moderate indentation at least two spaces, always show description section at the top of main documentation block, always use real or complex names with name followed by single colon formatted table in describing parameter types, always include main documentation synopsis string after the function or subroutine name, preserve unused functions and subroutines, place description block containing a list of all user-callable routines and functions at the top of the file, using class and classdef with proper documentation indentation, include examples, separate functions by three lines, preserve top file synopsis, preserve function calling sequence examples, preserve examples, this file:" --file libid.m --ctx-size 0 | tee output.txt
-
-echo \ | llama-cli -hf unsloth/gpt-oss-120b-GGUF --system-prompt "Build __main__ testing unit. Convert dashes, Unicode and math symbols to use only printable ASCII symbols in documentation or comment lines. Preserve all other documentation and code."  --file libid_m2py.py --ctx-size 0 | tee output.txt
-
-
 
 
