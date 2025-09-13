@@ -1,12 +1,14 @@
 
+--------------------------------------------------------------------------------
 
 hilb.py - n x m Hilbert matrix, optimized version, using scipy.linalg.hankel
 libid.py - rank-revealing decompositions, QR, SVD, ID, randomized, native python
 
+
 hilb.py and libid.py have built-in testing routines, to execute, please run:
 
-  python3 hilb.py
-  python3 libid.py
+python3 hilb.py
+python3 libid.py
 
 --------------------------------------------------------------------------------
 
