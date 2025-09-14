@@ -47,8 +47,7 @@ All functions accept the same optional arguments:
 * `block_size` - initial number of random vectors (default 42);
 * `flag_power` - number of power-iteration steps (default 0).
 
-The implementation relies on NumPy and SciPy, and it avoids any
-non-ASCII symbols or special dash characters.
+The implementation relies on NumPy and SciPy.
 
 All three algorithms share the same workflow:
 
