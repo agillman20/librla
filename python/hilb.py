@@ -13,17 +13,10 @@ def hilb(n: int, m: int) -> np.ndarray:
         numpy.ndarray: The n x m Hilbert matrix.
     """
 
-    # Optimized version, via scipy.linalg.hankel
-    c = np.zeros(n)
-    r = np.zeros(m)
-
-    for i in range(n):
-        c[i] = 1.0 / (i + 1)  # Adjust for 0-based indexing
-
-    for i in range(m):
-        r[i] = 1.0 / (i + n)  # Adjust for 0-based indexing
-
-    return linalg.hankel(c,r)
+    # Build first column and last row for the Hankel representation.
+    c = 1.0 / (np.arange(n) + 1)  # Adjust for 0-based indexing
+    r = 1.0 / (np.arange(m) + n)  # Adjust for 0-based indexing
+    return linalg.hankel(c, r)
 
 
 def _test():
