@@ -5,11 +5,10 @@
 %
 % User-callable methods
 % ---------------------
-%   range_randomized   - Build an orthonormal basis for the column space.
+%   orth_randomized    - Build an orthonormal basis for the column space.
 %   rrqr_randomized    - Rank-revealing QR using a randomized basis.
 %   rrsvd_randomized   - Truncated SVD using a randomized basis.
 %   rrid_randomized    - Interpolative decomposition using randomized QR.
-%   image_randomized   - Basis for the row space via transpose.
 %
 % Author: Your Name
 % SPDX-License-Identifier: TBD
@@ -22,18 +21,18 @@ classdef libid
     % randomized matrix factorizations.
     %
     % See also: rrid_randomized, rrqr_randomized, rrsvd_randomized,
-    %           range_randomized, image_randomized
+    %           orth_randomized
 
     methods (Static)
 
-        function [k, Q] = range_randomized(A, rtol, block_size, flag_power)
-        % RANGE_RANDOMIZED Compute an orthonormal basis for the column space of A using random sampling.
+        function [k, Q] = orth_randomized(A, rtol, block_size, flag_power)
+        % ORTH_RANDOMIZED Compute an orthonormal basis for the column space of A using random sampling.
         %
         % Calling sequence (options shown)
         % ---------------------------------
-        %   [k,Q]          = libid.range_randomized(A,rtol);
-        %   [k,Q]          = libid.range_randomized(A,rtol,block_size);
-        %   [k,Q]          = libid.range_randomized(A,rtol,block_size,flag_power);
+        %   [k,Q]          = libid.orth_randomized(A,rtol);
+        %   [k,Q]          = libid.orth_randomized(A,rtol,block_size);
+        %   [k,Q]          = libid.orth_randomized(A,rtol,block_size,flag_power);
         %
         % Description
         % -----------
@@ -57,7 +56,8 @@ classdef libid
         % k          : int
         %   Number of basis vectors found (may equal min(m,n)).
         % Q          : double matrix
-        %   Orthonormal basis matrix with size (m,k).  If k == 0 the array is empty.
+        %   Orthonormal basis matrix with size (m,k).
+	%   If k == min(m,n) the array is empty.
         %
         % Notes
         % -----
@@ -69,7 +69,7 @@ classdef libid
         % Example
         % -------
         %   A = libid.hilb(4000,2000);
-        %   tic, [k,Q] = libid.range_randomized(A,1e-8); toc
+        %   tic, [k,Q] = libid.orth_randomized(A,1e-8); toc
         %   k, size(Q)
         %
         %   -------------------------------------------------
@@ -182,20 +182,20 @@ classdef libid
         %   -------------------------------------------------
         %   Code flow
         %   -------------------------------------------------
-        %   1. Call range_randomized to obtain basis Q_basis.
+        %   1. Call orth_randomized to obtain basis Q_basis.
         %   2. If full rank, compute deterministic QR of A.
         %   3. Otherwise project A onto the basis and QR the small matrix.
         %   4. Determine numerical rank k from R.
         %   5. Return truncated factors and pivot vector.
         %   -------------------------------------------------
         %
-        % See also: range_randomized, rrsvd_randomized, rrid_randomized
+        % See also: orth_randomized, rrsvd_randomized, rrid_randomized
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
 
             [m, n] = size(A);
-            [k, Q_basis] = libid.range_randomized(A, rtol, block_size, flag_power);
+            [k, Q_basis] = libid.orth_randomized(A, rtol, block_size, flag_power);
 
             if k >= min(m,n)
                 [Q,R,p] = qr(A,0);
@@ -266,7 +266,7 @@ classdef libid
         %   -------------------------------------------------
         %   Code flow
         %   -------------------------------------------------
-        %   1. Obtain basis Q_basis via range_randomized.
+        %   1. Obtain basis Q_basis via orth_randomized.
         %   2. If full rank, call deterministic svd.
         %   3. Otherwise form A_proj = Q_basis' * A.
         %   4. Compute svd of the small matrix.
@@ -274,13 +274,13 @@ classdef libid
         %   6. Truncate to k based on rtol.
         %   -------------------------------------------------
         %
-        % See also: range_randomized, rrqr_randomized, rrid_randomized
+        % See also: orth_randomized, rrqr_randomized, rrid_randomized
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
 
             [m, n] = size(A);
-            [k, Q_basis] = libid.range_randomized(A, rtol, block_size, flag_power);
+            [k, Q_basis] = libid.orth_randomized(A, rtol, block_size, flag_power);
 
             if k >= min(m,n)
                 [U,S,V] = svd(A, 'econ');
@@ -301,14 +301,14 @@ classdef libid
         end
 
 
-        function [k, p, proj] = rrid_randomized(A, rtol, block_size, flag_power)
+        function [k, p, T] = rrid_randomized(A, rtol, block_size, flag_power)
         % RRID_RANDOMIZED Interpolative decomposition using a randomized QR factorization.
         %
         % Calling sequence (options shown)
         % ---------------------------------
-        %   [k,p,X]        = libid.rrid_randomized(A,rtol);
-        %   [k,p,X]        = libid.rrid_randomized(A,rtol,block_size);
-        %   [k,p,X]        = libid.rrid_randomized(A,rtol,block_size,flag_power);
+        %   [k,p,T]        = libid.rrid_randomized(A,rtol);
+        %   [k,p,T]        = libid.rrid_randomized(A,rtol,block_size);
+        %   [k,p,T]        = libid.rrid_randomized(A,rtol,block_size,flag_power);
         %
         % Description
         % -----------
@@ -333,8 +333,8 @@ classdef libid
         %   Numerical rank (size of R11).
         % p          : int vector
         %   Pivot permutation vector.
-        % proj       : double matrix
-        %   Interpolation matrix such that A(:,p) approx A(:,p(1:k))*proj.
+        % T          : double matrix
+        %   Interpolation matrix such that A(:,p) approx A(:,p(1:k))*T.
         %
         % Notes
         % -----
@@ -344,19 +344,19 @@ classdef libid
         % Example
         % -------
         %   A = libid.hilb(4000,2000);
-        %   tic, [k,p,proj] = libid.rrid_randomized(A,1e-8); toc
-        %   rel_err = norm(A(:,p((k+1):end)) - A(:,p(1:k))*proj, 'fro')
+        %   tic, [k,p,T] = libid.rrid_randomized(A,1e-8); toc
+        %   rel_err = norm(A(:,p((k+1):end)) - A(:,p(1:k))*T, 'fro')
         %
         %   -------------------------------------------------
         %   Code flow
         %   -------------------------------------------------
         %   1. Call rrqr_randomized to obtain Q, R, and pivot vector p.
         %   2. Extract R11 (upper-triangular leading block) and R12.
-        %   3. Solve R11 * X = R12 for the interpolation matrix X.
-        %   4. Return rank k, pivot vector, and X.
+        %   3. Solve R11 * X = R12 for the interpolation matrix T.
+        %   4. Return rank k, pivot vector, and T.
         %   -------------------------------------------------
         %
-        % See also: rrqr_randomized, rrsvd_randomized, range_randomized
+        % See also: rrqr_randomized, rrsvd_randomized, orth_randomized
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
@@ -367,58 +367,8 @@ classdef libid
             % Solve R11 * X = R12 for X, where R = [R11 R12].
             R11 = triu(R(1:k,1:k));
             R12 = R(1:k,k+1:end);
-            proj = R11 \ R12;
+            T = R11 \ R12;
         end
-
-
-        function [k, Q] = image_randomized(A, rtol, block_size, flag_power)
-        % IMAGE_RANDOMIZED Compute a basis for the row space of A by applying range_randomized to the transpose.
-        %
-        % Calling sequence (options shown)
-        % ---------------------------------
-        %   [k,Q]          = libid.image_randomized(A,rtol);
-        %   [k,Q]          = libid.image_randomized(A,rtol,block_size);
-        %   [k,Q]          = libid.image_randomized(A,rtol,block_size,flag_power);
-        %
-        % Description
-        % -----------
-        % A thin wrapper that calls ``range_randomized`` on ``A.'`` to obtain
-        % a basis for the row space.
-        %
-        % Parameters
-        % ----------
-        % A          : double matrix
-        %   Input matrix.
-        % rtol       : double
-        %   Relative tolerance for stopping criterion.
-        % block_size : int, optional (default = 42)
-        %   Initial number of random vectors.
-        % flag_power : int, optional (default = 0)
-        %   Number of power-iteration steps.
-        %
-        % Returns
-        % -------
-        % k          : int
-        %   Number of basis vectors found.
-        % Q          : double matrix
-        %   Orthonormal basis for the row space (size n-by-k).
-        %
-        % Example
-        % -------
-        %   A = libid.hilb(4000,2000);
-        %   [k,Q] = libid.image_randomized(A,1e-8);
-        %
-        % See also: range_randomized
-
-            if nargin < 4, flag_power = 0; end
-            if nargin < 3, block_size = 42; end
-
-            [k, Q] = libid.range_randomized(A.', rtol, block_size, flag_power);
-        end
-
-    end
-
-    methods (Static, Access = private)
 
 	function a = hilb(m,n)
 	    if( nargin == 1 ) n = m; end
@@ -427,6 +377,10 @@ classdef libid
 	    j = [1:m]';
 	    a = 1./(bsxfun(@plus,i,j)-1);
 	end
+
+    end
+
+    methods (Static, Access = private)
 
         function X = powerIteration(A, X, power)
         % POWERITERATION Apply power iteration to improve the quality of the sampling matrix.
@@ -458,7 +412,7 @@ classdef libid
         %
         % Notes
         % -----
-        % This routine is used internally by ``range_randomized``.
+        % This routine is used internally by ``orth_randomized``.
         %
         % Example
         % -------
@@ -466,7 +420,7 @@ classdef libid
         %   X = libid.powerIteration(A, X, 2);
         %   k, size(Q)
         %
-        % See also: range_randomized
+        % See also: orth_randomized
 
             if nargin < 3, power = 0; end
 
