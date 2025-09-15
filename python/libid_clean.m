@@ -104,7 +104,6 @@ classdef libid
             A_proj = Q_basis' * A;
             [U_proj,S_proj,V_proj] = svd(A_proj, 'econ');
             k = sum(abs(diag(S_proj)) >= rtol*norm(A_proj,'fro'));
-
             Uk = Q_basis * U_proj(:,1:k);
             sk = diag(S_proj(1:k,1:k));
             Vk = V_proj(:,1:k)';
