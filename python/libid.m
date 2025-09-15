@@ -1,11 +1,11 @@
 % ----------
-% This class implements several randomized linear-algebra routines that
-% approximate the rank, QR factorization, singular-value decomposition
-% (SVD), and interpolative decomposition (ID) of a matrix A.
+% This module implements several randomized routines that approximate the
+% column space, QR factorization, singular-value decomposition (SVD), and
+% interpolative decomposition (ID) of a matrix A.
 %
 % User-callable methods
 % ---------------------
-%   orth_randomized    - Build an orthonormal basis for the column space.
+%   orth_sketch        - Build an orthonormal basis for the column space.
 %   rrqr_randomized    - Rank-revealing QR using a randomized basis.
 %   rrsvd_randomized   - Truncated SVD using a randomized basis.
 %   rrid_randomized    - Interpolative decomposition using randomized QR.
@@ -21,31 +21,33 @@ classdef libid
     % randomized matrix factorizations.
     %
     % See also: rrid_randomized, rrqr_randomized, rrsvd_randomized,
-    %           orth_randomized
+    %           orth_sketch
 
     methods (Static)
 
-        function [k, Q] = orth_randomized(A, rtol, block_size, flag_power)
-        % ORTH_RANDOMIZED Compute an orthonormal basis for the column space of A using random sampling.
+        function [k, Q] = orth_sketch(A, rtol, block_size, flag_power)
+        % ORTH_SKETCH Compute an orthonormal basis for the column space of A using random sketching.
         %
         % Calling sequence (options shown)
         % ---------------------------------
-        %   [k,Q]          = libid.orth_randomized(A,rtol);
-        %   [k,Q]          = libid.orth_randomized(A,rtol,block_size);
-        %   [k,Q]          = libid.orth_randomized(A,rtol,block_size,flag_power);
+        %   [k,Q]          = libid.orth_sketch(A,rtol);
+        %   [k,Q]          = libid.orth_sketch(A,rtol,block_size);
+        %   [k,Q]          = libid.orth_sketch(A,rtol,block_size,flag_power);
         %
         % Description
         % -----------
-        % Build an orthonormal basis for the column space of A using random
-        % sampling and optional power iterations.  The routine stops when
-        % the relative residual falls below ``rtol``.
+        % The algorithm draws a random matrix, optionally improves it with
+        % power iteration, and then performs a QR factorization with
+        % column pivoting.  The process repeats with a larger sketch until
+        % the smallest diagonal element of R, relative to the column
+        % norms, falls below `rtol`.
         %
         % Parameters
         % ----------
         % A          : double matrix
         %   Input matrix.
         % rtol       : double
-        %   Relative tolerance that determines when to stop sampling.
+        %   Relative tolerance that determines when to stop sketching.
         % block_size : int, optional (default = 42)
         %   Initial number of random vectors.
         % flag_power : int, optional (default = 0)
@@ -56,20 +58,20 @@ classdef libid
         % k          : int
         %   Number of basis vectors found (may equal min(m,n)).
         % Q          : double matrix
-        %   Orthonormal basis matrix with size (m,k).
-	%   If k == min(m,n) the array is empty.
+        %   Orthonormal basis matrix Q of size (m, k). If the rank
+        %   equals min(m, n) an empty array with shape (m, 0) is returned.
         %
         % Notes
         % -----
-        % 1. If the initial block already covers the whole space, the function
-        %    returns early.
+        % 1. If the initial block already covers the whole space,
+	%    the function returns early.
         % 2. The random matrix X has entries in [-1,1].
-        % 3. Power iteration is performed by the private method powerIteration.
+        % 3. Power iteration is performed by the private method _power_iteration.
         %
         % Example
         % -------
         %   A = libid.hilb(4000,2000);
-        %   tic, [k,Q] = libid.orth_randomized(A,1e-8); toc
+        %   tic, [k,Q] = libid.orth_sketch(A,1e-8); toc
         %   k, size(Q)
         %
         %   -------------------------------------------------
@@ -103,7 +105,7 @@ classdef libid
             while true
                 % Random matrix with entries in [-1,1]
                 X = 2*rand(n, block_size) - 1;
-                X = libid.powerIteration(A, X, flag_power);
+                X = libid._power_iteration(A, X, flag_power);
 
                 Y = A * X;
                 [Qtmp,R,~] = qr(Y,0);   % economy QR
@@ -169,7 +171,7 @@ classdef libid
         % -----
         % 1. The rank k is chosen as the number of rows of R whose 2-norm
         %    exceeds ``rtol * ||A||`` (or ``||A_proj||`` for the projected case).
-        % 2. The private method ``powerIteration`` is used internally.
+        % 2. The private method ``_power_iteration`` is used internally.
         %
         % Example
         % -------
@@ -182,20 +184,20 @@ classdef libid
         %   -------------------------------------------------
         %   Code flow
         %   -------------------------------------------------
-        %   1. Call orth_randomized to obtain basis Q_basis.
+        %   1. Call orth_sketch to obtain basis Q_basis.
         %   2. If full rank, compute deterministic QR of A.
         %   3. Otherwise project A onto the basis and QR the small matrix.
         %   4. Determine numerical rank k from R.
         %   5. Return truncated factors and pivot vector.
         %   -------------------------------------------------
         %
-        % See also: orth_randomized, rrsvd_randomized, rrid_randomized
+        % See also: orth_sketch, rrsvd_randomized, rrid_randomized
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
 
             [m, n] = size(A);
-            [k, Q_basis] = libid.orth_randomized(A, rtol, block_size, flag_power);
+            [k, Q_basis] = libid.orth_sketch(A, rtol, block_size, flag_power);
 
             if k >= min(m,n)
                 [Q,R,p] = qr(A,0);
@@ -266,7 +268,7 @@ classdef libid
         %   -------------------------------------------------
         %   Code flow
         %   -------------------------------------------------
-        %   1. Obtain basis Q_basis via orth_randomized.
+        %   1. Obtain basis Q_basis via orth_sketch.
         %   2. If full rank, call deterministic svd.
         %   3. Otherwise form A_proj = Q_basis' * A.
         %   4. Compute svd of the small matrix.
@@ -274,13 +276,13 @@ classdef libid
         %   6. Truncate to k based on rtol.
         %   -------------------------------------------------
         %
-        % See also: orth_randomized, rrqr_randomized, rrid_randomized
+        % See also: orth_sketch, rrqr_randomized, rrid_randomized
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
 
             [m, n] = size(A);
-            [k, Q_basis] = libid.orth_randomized(A, rtol, block_size, flag_power);
+            [k, Q_basis] = libid.orth_sketch(A, rtol, block_size, flag_power);
 
             if k >= min(m,n)
                 [U,S,V] = svd(A, 'econ');
@@ -338,7 +340,7 @@ classdef libid
         %
         % Notes
         % -----
-        % 1. The method uses the private ``powerIteration`` routine indirectly
+        % 1. The method uses the private ``_power_iteration`` routine indirectly
         %    through ``rrqr_randomized``.
         %
         % Example
@@ -356,7 +358,7 @@ classdef libid
         %   4. Return rank k, pivot vector, and T.
         %   -------------------------------------------------
         %
-        % See also: rrqr_randomized, rrsvd_randomized, orth_randomized
+        % See also: rrqr_randomized, rrsvd_randomized, orth_sketch
 
             if nargin < 4, flag_power = 0; end
             if nargin < 3, block_size = 42; end
@@ -378,17 +380,67 @@ classdef libid
 	    a = 1./(bsxfun(@plus,i,j)-1);
 	end
 
+
+        function test()
+        % TEST Simple sanity checks for the public API.
+        %
+        % Notes
+        % -----
+        %  The test uses a fixed random seed for reproducibility.
+
+        rng(0);  % Fixed seed
+
+        % ------------------------------------------------
+        % Small test matrix.
+        % ------------------------------------------------
+        m = 4000; n = 2000;
+        A = libid.hilb(m, n);
+
+        % ------------------------------------------------
+        % Test orth_sketch
+        % ------------------------------------------------
+        [k_range, Q_range] = libid.orth_sketch(A, 1e-12);
+        orth_err = norm(Q_range' * Q_range - eye(k_range), 'fro');
+        fprintf('orth_sketch: k=%d, basis shape=%s\n', k_range, mat2str(size(Q_range)));
+        fprintf('orth_sketch: orthonormality error=%e\n', orth_err);
+
+        % ------------------------------------------------
+        % Test rrqr_randomized
+        % ------------------------------------------------
+        [Q_rrqr, R_rrqr, piv] = libid.rrqr_randomized(A, 1e-12);
+        A_perm = A(:, piv);
+        recon_err = norm(Q_rrqr * R_rrqr - A_perm, 'fro') / norm(A_perm, 'fro');
+        fprintf('rrqr_randomized: reconstruction relative error=%e\n', recon_err);
+
+        % ------------------------------------------------
+        % Test rrsvd_randomized
+        % ------------------------------------------------
+        [U_rrsvd, s_rrsvd, Vt_rrsvd] = libid.rrsvd_randomized(A, 1e-12);
+        A_svd = U_rrsvd * diag(s_rrsvd) * Vt_rrsvd;
+        svd_err = norm(A_svd - A, 'fro') / norm(A, 'fro');
+        fprintf('rrsvd_randomized: reconstruction relative error=%e\n', svd_err);
+
+        % ------------------------------------------------
+        % Test rrid_randomized
+        % ------------------------------------------------
+        [k_id, piv_id, T_id] = libid.rrid_randomized(A, 1e-12);
+        A_id_approx = A(:, piv_id(1:k_id)) * T_id;
+        id_err = norm(A(:, piv_id(k_id+1:end)) - A_id_approx, 'fro') / norm(A, 'fro');
+        fprintf('rrid_randomized: interpolation relative error=%e\n', id_err);
+        end
+	
     end
 
+    
     methods (Static, Access = private)
 
-        function X = powerIteration(A, X, power)
-        % POWERITERATION Apply power iteration to improve the quality of the sampling matrix.
+        function X = _power_iteration(A, X, power)
+        % _POWER_ITERATION Apply power iteration to improve the quality of the sketch.
         %
         % Calling sequence (options shown)
         % ---------------------------------
-        %   X = libid.powerIteration(A,X);
-        %   X = libid.powerIteration(A,X,power);
+        %   X = libid._power_iteration(A,X);
+        %   X = libid._power_iteration(A,X,power);
         %
         % Description
         % -----------
@@ -412,20 +464,20 @@ classdef libid
         %
         % Notes
         % -----
-        % This routine is used internally by ``orth_randomized``.
+        % This routine is used internally by ``orth_sketch``.
         %
         % Example
         % -------
         %   X = hilb(4000,2000);
-        %   X = libid.powerIteration(A, X, 2);
+        %   X = libid._power_iteration(A, X, 2);
         %   k, size(Q)
         %
-        % See also: orth_randomized
+        % See also: orth_sketch
 
             if nargin < 3, power = 0; end
 
             for ii = 1:power
-                X = A.' * (A * X);
+                X = A' * (A * X);
                 [X,~,~] = qr(X,0);
             end
         end

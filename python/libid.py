@@ -3,12 +3,12 @@ Description
 -----------
 
 This module implements several randomized linear-algebra routines that
-approximate the rank, QR factorization, singular-value decomposition
+approximate the column space, QR factorization, singular-value decomposition
 (SVD), and interpolative decomposition (ID) of a matrix ``A``.
 
 User-callable methods
 ---------------------
-orth_randomized    - Build an orthonormal basis for the range space.
+orth_sketch        - Build an orthonormal basis for the column space.
 rrqr_randomized    - Rank-revealing QR using a randomized basis.
 rrsvd_randomized   - Truncated SVD using a randomized basis.
 rrid_randomized    - Interpolative decomposition using randomized QR.
@@ -31,7 +31,7 @@ def _power_iteration(A,x,flag_power=0):
     return x
 
 
-def orth_randomized(A,rtol,block_size=42,flag_power=0):
+def orth_sketch(A,rtol,block_size=42,flag_power=0):
 
     m, n = A.shape
 
@@ -59,7 +59,7 @@ def orth_randomized(A,rtol,block_size=42,flag_power=0):
 def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 
     m, n = A.shape
-    k, q = orth_randomized(A,rtol,block_size,flag_power)
+    k, q = orth_sketch(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
         Q, R, p = linalg.qr(A, mode='economic', pivoting=True)
@@ -76,7 +76,7 @@ def rrqr_randomized(A,rtol,block_size=42,flag_power=0):
 def rrsvd_randomized(A,rtol,block_size=42,flag_power=0):
 
     m, n = A.shape
-    k, q = orth_randomized(A,rtol,block_size,flag_power)
+    k, q = orth_sketch(A,rtol,block_size,flag_power)
 
     if (k >= min(m,n)):
         U, s, V = linalg.svd(A,full_matrices=False)
@@ -94,8 +94,8 @@ def rrid_randomized(A,rtol,block_size=42,flag_power=0):
 
     Q, R, p = rrqr_randomized(A,rtol,block_size,flag_power)
     k = R.shape[0]
-    interp = linalg.solve(np.triu(R[:k,:k]), R[:,k:])
-    return k, p, interp
+    T = linalg.solve(np.triu(R[:k,:k]), R[:,k:])
+    return k, p, T
 
 
 
@@ -136,10 +136,10 @@ if __name__ == "__main__":
     # --------------------------------------------------------------
     # Test range_randomized
     # --------------------------------------------------------------
-    k_range, Q_range = orth_randomized(A, rtol=1e-12)
+    k_range, Q_range = orth_sketch(A, rtol=1e-12)
     orth_err = np.linalg.norm(Q_range.T @ Q_range - np.eye(k_range))
-    print(f"orth_randomized: k={k_range}, basis shape={Q_range.shape}")
-    print(f"orth_randomized: k={k_range}, orthonormality error={orth_err:e}")
+    print(f"orth_sketch: k={k_range}, basis shape={Q_range.shape}")
+    print(f"orth_sketch: k={k_range}, orthonormality error={orth_err:e}")
 
     # --------------------------------------------------------------
     # Test rrqr_randomized
@@ -160,8 +160,8 @@ if __name__ == "__main__":
     # --------------------------------------------------------------
     # Test rrid_randomized
     # --------------------------------------------------------------
-    k_id, piv_id, interp_id = rrid_randomized(A, rtol=1e-12)
-    A_id_approx = A[:, piv_id[:k_id]] @ interp_id
+    k_id, piv_id, T_id = rrid_randomized(A, rtol=1e-12)
+    A_id_approx = A[:, piv_id[:k_id]] @ T_id
     id_err = np.linalg.norm(A[:, piv_id[k_id:]] - A_id_approx) / np.linalg.norm(A)
     print(f"rrid_randomized: interpolation relative error={id_err:e}")
 

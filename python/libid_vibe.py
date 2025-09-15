@@ -1,293 +1,221 @@
 """
 Randomized linear-algebra utilities.
 
-Provides functions to compute a randomized orthonormal basis, a
-rank-revealing QR factorization, a truncated SVD and an interpolative
-decomposition (ID) of a matrix `A`.
+This module implements several randomized routines that approximate the
+column space, QR factorization, singular-value decomposition (SVD), and
+interpolative decomposition (ID) of a matrix A.
+
+Public functions
+----------------
+orth_sketch        - Build an orthonormal basis for the column space.
+rrqr_randomized    - Rank-revealing QR using a randomized basis.
+rrsvd_randomized   - Truncated SVD using a randomized basis.
+rrid_randomized    - Interpolative decomposition using randomized QR.
 
 Author: Your Name
 SPDX-License-Identifier: TBD
 """
 
-"""
-
-gpt-oss:120b assisted summarization of libid.py, refactored
-
-**Summary**
-
-The module implements several randomized linear-algebra routines that
-approximate the rank, QR factorization, singular-value decomposition
-(SVD), and interpolative decomposition (ID) of a matrix `A`.
-
-* `orth_randomized` builds an orthonormal basis for the column space
-  of `A` using random sampling. It repeatedly draws a random test
-  matrix, optionally applies a power iteration (`flag_power`), and
-  checks a relative-error tolerance (`rtol`). The routine returns the
-  size of the basis and the basis matrix `Q`.
-
-* `rrqr_randomized` uses the basis from `range_randomized` to compute
-  a rank-revealing QR factorization. If the full rank is needed, it
-  falls back to a deterministic QR. It returns the leading `k` columns
-  of `Q`, the leading `k` rows of `R`, and the pivot permutation
-  vector `p`.
-
-* `rrsvd_randomized` builds on the same basis to obtain a truncated
-  SVD. When the matrix is effectively full rank it computes the full
-  SVD directly. It returns the leading `k` left singular vectors,
-  singular values, and right singular vectors.
-
-* `rrid_randomized` forms an interpolative decomposition by solving a
-  triangular system that extracts the interpolation matrix from the QR
-  factors produced by `rrqr_randomized`. It returns the numerical rank
-  `k`, the pivot vector `p`, and the interpolation matrix `proj`.
-
-All functions accept the same optional arguments:
-
-* `rtol` - relative tolerance that controls the truncation level;
-* `block_size` - initial number of random vectors (default 42);
-* `flag_power` - number of power-iteration steps (default 0).
-
-The implementation relies on NumPy and SciPy.
-
-All three algorithms share the same workflow:
-
-* A cheap random sketch of the column space of the input matrix `A` is built by multiplying `A` with a random matrix.
-* Optional power iterations (`flag_power`) improve the sketch when the singular values decay slowly.
-* The sketch is orthogonalized with a QR factorization.
-* The original matrix is projected onto the sketch (`Aproj = Q.T @ A`).
-* A standard deterministic factorization (QR, SVD, or QR again for ID) is performed on the tiny projected matrix.
-* The result is lifted back to the original space (`Q = Q @ Qproj` for QR/SVD).
-
-The numerical rank `k` is chosen automatically: a row (or singular
-value) is kept if its norm (or absolute value) is at least `rtol *
-||A||` (or `rtol * ||Aproj||`).
-
-If the random sketch grows to the full size of the matrix, the
-functions fall back to a deterministic factorization of the whole
-matrix, guaranteeing correct results for small or effectively
-full-rank problems.
-
----
-
-**Converted Python code (American English, ASCII only)**
-
-"""
-
-
 import numpy as np
-from numpy.linalg import norm
 from scipy import linalg
+from numpy.linalg import norm
 
 
-def _power_iteration(A: np.ndarray, X: np.ndarray, flag_power: int = 0) -> np.ndarray:
+def _power_iteration(A, X, flag_power=0):
     """
-    Apply subspace power iteration to improve the quality of a random basis.
+    Apply `flag_power` steps of power iteration to improve the sketch.
 
     Parameters
     ----------
     A : ndarray
         Input matrix.
     X : ndarray
-        Random test matrix (size n x block_size).
+        Random sketch matrix.
     flag_power : int, optional
-        Number of power-iteration steps (default is 0).
+        Number of power-iteration steps. Default is 0 (no iteration).
 
     Returns
     -------
     ndarray
-        Updated test matrix after flag_power iterations.
+        Updated sketch matrix.
     """
     for _ in range(flag_power):
         X = A.T @ (A @ X)
-        X, _R, _p = linalg.qr(X, mode='economic', pivoting=True)
+        X, _, _ = linalg.qr(x, mode="economic", pivoting=True)
     return X
 
 
-def orth_randomized(
-    A: np.ndarray,
-    rtol: float,
-    block_size: int = 42,
-    flag_power: int = 0,
-) -> tuple[int, np.ndarray]:
+def orth_sketch(A, rtol, block_size=42, flag_power=0):
     """
-    Construct an orthonormal basis for the dominant column space of `A`.
+    Build an orthonormal basis for the column space of A.
+
+    The algorithm draws a random matrix, optionally improves it with
+    power iteration, and then performs a QR factorization with column
+    pivoting.  The process repeats with a larger sketch until the
+    smallest diagonal element of R, relative to the column norms,
+    falls below `rtol`.
 
     Parameters
     ----------
-    A : ndarray, shape (m, n)
-        Input matrix.
+    A : ndarray
+        Input matrix of shape (m, n).
     rtol : float
-        Relative tolerance that determines when the basis is sufficient.
+        Relative tolerance that controls the stopping criterion.
     block_size : int, optional
-        Initial number of random test vectors (default 42).
+        Initial number of random vectors. Default is 42.
     flag_power : int, optional
-        Number of power-iteration steps (default 0).
+        Number of power-iteration steps. Default is 0.
 
     Returns
     -------
-    k : int
-        Number of basis vectors returned (may be smaller than `block_size`).
-    Q : ndarray, shape (m, k)
-        Orthonormal basis matrix.
+    int
+        Effective rank (number of basis vectors).
+    ndarray
+        Orthonormal basis matrix Q of shape (m, rank). If the rank
+        equals min(m, n) an empty array with shape (0, 0) is returned.
     """
     m, n = A.shape
 
-    # If the requested block size already spans the whole matrix, quit early.
     if block_size >= min(m, n):
-        return min(m, n), np.empty((m, 0), dtype=A.dtype)
+        return min(m, n), np.empty_like(A, shape=(0, 0))
 
     while True:
-        # Random test matrix with entries in [-1, 1].
-        X = 2.0 * np.random.rand(n, block_size) - 1.0
+        # Random matrix with entries in [-1, 1].
+        X = 2 * np.random.uniform(size=(n, block_size)) - 1
         X = _power_iteration(A, X, flag_power)
+        y = A @ X
 
-        Y = A @ X
-        Q, R, piv = linalg.qr(Y, mode="economic", pivoting=True)
-
-        # Use the last diagonal entry of R as a proxy for the residual.
+        # QR with column pivoting.
+        Q, R, _ = linalg.qr(y, mode="economic", pivoting=True)
         r_diag = R.diagonal()
-        residual = max(abs(r_diag[-1:])) / max(norm(Y, axis=0))
+        # Smallest diagonal entry relative to the largest column norm.
+        residual = max(abs(r_diag[-1:])) / max(norm(y, axis=0))
 
         if residual <= rtol:
             return block_size, Q
 
-        # If residual is too large, increase the block size.
+        # If not good enough, increase the sketch size.
         block_size = min(block_size * 4, min(m, n))
 
         if block_size >= min(m, n):
-            return min(m, n), np.empty((0, 0), dtype=A.dtype)
+            return min(m, n), np.empty_like(A, shape=(0, 0))
 
 
-def rrqr_randomized(
-    A: np.ndarray,
-    rtol: float,
-    block_size: int = 42,
-    flag_power: int = 0,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rrqr_randomized(A, rtol, block_size=42, flag_power=0):
     """
-    Rank-revealing QR factorization using a randomized basis.
+    Rank-revealing QR factorization using a randomized sketch.
 
     Parameters
     ----------
-    A : ndarray, shape (m, n)
-        Input matrix.
+    A : ndarray
+        Input matrix of shape (m, n).
     rtol : float
-        Relative tolerance for truncation.
+        Relative tolerance for determining numerical rank.
     block_size : int, optional
-        Initial size of the random test matrix.
+        Initial sketch size. Default is 42.
     flag_power : int, optional
-        Number of power-iteration steps.
+        Number of power-iteration steps. Default is 0.
 
     Returns
     -------
-    Q : ndarray, shape (m, k)
-        Orthonormal matrix.
-    R : ndarray, shape (k, n)
-        Upper-triangular factor.
-    p : ndarray, shape (n,)
-        Pivot indices such that `A[:, p] = Q @ R`.
+    Q : ndarray
+        Orthonormal matrix of shape (m, k) where k is the estimated rank.
+    R : ndarray
+        Upper-triangular factor of shape (k, n).
+    p : ndarray
+        Pivot indices such that A[:, p] \approx Q @ R.
     """
     m, n = A.shape
-    k, Q_rand = orth_randomized(A, rtol, block_size, flag_power)
+    k, q = orth_sketch(A, rtol, block_size, flag_power)
 
     if k >= min(m, n):
-        # Full QR as a fallback.
         Q, R, p = linalg.qr(A, mode="economic", pivoting=True)
-        keep = np.sum(norm(R, axis=1) >= rtol * norm(A))
-        return Q[:, :keep], R[:keep, :], p
+        k = np.sum(norm(R, axis=1) >= rtol * norm(A))
+        return Q[:, :k], R[:k, :], p
 
-    # Project A onto the subspace spanned by Q_rand.
-    A_proj = Q_rand.T @ A
-    Q_proj, R, p = linalg.qr(A_proj, mode="economic", pivoting=True)
-    Q = Q_rand @ Q_proj
-    keep = np.sum(norm(R, axis=1) >= rtol * norm(A_proj))
-    return Q[:, :keep], R[:keep, :], p
+    # Project A onto the sketch subspace.
+    Aproj = q.T @ A
+    Qproj, R, p = linalg.qr(Aproj, mode="economic", pivoting=True)
+    Q = q @ Qproj
+    k = np.sum(norm(R, axis=1) >= rtol * norm(Aproj))
+    return Q[:, :k], R[:k, :], p
 
 
-def rrsvd_randomized(
-    A: np.ndarray,
-    rtol: float,
-    block_size: int = 42,
-    flag_power: int = 0,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rrsvd_randomized(A, rtol, block_size=42, flag_power=0):
     """
-    Truncated singular-value decomposition using a randomized basis.
+    Truncated singular-value decomposition using a randomized sketch.
 
     Parameters
     ----------
-    A : ndarray, shape (m, n)
-        Input matrix.
+    A : ndarray
+        Input matrix of shape (m, n).
     rtol : float
-        Relative tolerance for truncation.
+        Relative tolerance for determining the retained singular values.
     block_size : int, optional
-        Initial size of the random test matrix.
+        Initial sketch size. Default is 42.
     flag_power : int, optional
-        Number of power-iteration steps.
+        Number of power-iteration steps. Default is 0.
 
     Returns
     -------
-    U : ndarray, shape (m, k)
-        Left singular vectors.
-    s : ndarray, shape (k,)
-        Singular values.
-    Vt : ndarray, shape (k, n)
-        Right singular vectors transposed.
+    U : ndarray
+        Left singular vectors of shape (m, k).
+    s : ndarray
+        Singular values (length k).
+    Vt : ndarray
+        Right singular vectors transposed, shape (k, n).
     """
     m, n = A.shape
-    k, Q_rand = orth_randomized(A, rtol, block_size, flag_power)
+    k, q = orth_sketch(A, rtol, block_size, flag_power)
 
     if k >= min(m, n):
         U, s, Vt = linalg.svd(A, full_matrices=False)
-        keep = np.sum(np.abs(s) >= rtol * norm(A))
-        return U[:, :keep], s[:keep], Vt[:keep, :]
+        k = np.sum(np.abs(s) >= rtol * norm(A))
+        return U[:, :k], s[:k], Vt[:k, :]
 
-    # Project and compute SVD in the reduced space.
-    A_proj = Q_rand.T @ A
-    U_proj, s, Vt = linalg.svd(A_proj, full_matrices=False)
-    U = Q_rand @ U_proj
-    keep = np.sum(np.abs(s) >= rtol * norm(A_proj))
-    return U[:, :keep], s[:keep], Vt[:keep, :]
+    Aproj = q.T @ A
+    Uproj, s, Vt = linalg.svd(Aproj, full_matrices=False)
+    U = q @ Uproj
+    k = np.sum(np.abs(s) >= rtol * norm(Aproj))
+    return U[:, :k], s[:k], Vt[:k, :]
 
 
-def rrid_randomized(
-    A: np.ndarray,
-    rtol: float,
-    block_size: int = 42,
-    flag_power: int = 0,
-) -> tuple[int, np.ndarray, np.ndarray]:
+def rrid_randomized(A, rtol, block_size=42, flag_power=0):
     """
     Interpolative decomposition using a randomized QR factorization.
 
     Parameters
     ----------
-    A : ndarray, shape (m, n)
-        Input matrix.
+    A : ndarray
+        Input matrix of shape (m, n).
     rtol : float
-        Relative tolerance for truncation.
+        Relative tolerance for rank determination.
     block_size : int, optional
-        Initial size of the random test matrix.
+        Initial sketch size. Default is 42.
     flag_power : int, optional
-        Number of power-iteration steps.
+        Number of power-iteration steps. Default is 0.
 
     Returns
     -------
     k : int
-        Numerical rank (size of the truncated factor).
-    piv : ndarray, shape (n,)
-        Pivot indices.
-    T : ndarray, shape (k, n-k)
-        Interpolation matrix such that `A ~ A[:, piv[:k]] @ T`.
+        Estimated rank.
+    p : ndarray
+        Pivot indices such that the first `k` columns of A[:, p] form a
+        basis for the column space.
+    T : ndarray
+        Interpolation matrix satisfying
+        A[:, p[k:]] \approx A[:, p[:k]] @ T.
     """
-    Q, R, piv = rrqr_randomized(A, rtol, block_size, flag_power)
+    Q, R, p = rrqr_randomized(A, rtol, block_size, flag_power)
     k = R.shape[0]
     # Solve R11 * T = R12 for T.
-    T = linalg.solve_triangular(R[:k, :k], R[:k, k:], lower=False)
-    return k, piv, T
+    T = linalg.solve(np.triu(R[:k, :k]), R[:k, k:])
+    return k, p, T
 
 
-def _hilb(n: int, m: int) -> np.ndarray:
+def _hilb(n, m):
     """
-    Return an n-by-m Hilbert matrix.
+    Create an n-by-m Hilbert matrix.
 
     Parameters
     ----------
@@ -299,11 +227,18 @@ def _hilb(n: int, m: int) -> np.ndarray:
     Returns
     -------
     ndarray
-        The Hilbert matrix.
+        Hilbert matrix of shape (n, m).
     """
-    # Build first column and last row for the Hankel representation.
-    c = 1.0 / (np.arange(n) + 1)          # Adjust for 0-based indexing
-    r = 1.0 / (np.arange(m) + n)          # Adjust for 0-based indexing
+    # Build first column and last row for the Hankel matrix.
+    c = np.zeros(n)
+    r = np.zeros(m)
+
+    for i in range(n):
+        c[i] = 1.0 / (i + 1)          # 0-based indexing
+
+    for i in range(m):
+        r[i] = 1.0 / (i + n)          # 0-based indexing
+
     return linalg.hankel(c, r)
 
 
@@ -311,37 +246,37 @@ if __name__ == "__main__":
     # Simple sanity checks for the public API.
     np.random.seed(0)
 
-    # Small test matrix (4000 x 2000 Hilbert matrix).
+    # Small test matrix.
     m, n = 4000, 2000
     A = _hilb(m, n)
 
-    # ------------------------------------------------------------------
-    # Test orth_randomized
-    # ------------------------------------------------------------------
-    k_range, Q_range = orth_randomized(A, rtol=1e-12)
+    # --------------------------------------------------------------
+    # Test orth_sketch
+    # --------------------------------------------------------------
+    k_range, Q_range = orth_sketch(A, rtol=1e-12)
     orth_err = np.linalg.norm(Q_range.T @ Q_range - np.eye(k_range))
-    print(f"orth_randomized: k={k_range}, basis shape={Q_range.shape}")
-    print(f"orth_randomized: orthonormality error={orth_err:e}")
+    print(f"orth_sketch: k={k_range}, basis shape={Q_range.shape}")
+    print(f"orth_sketch: orthonormality error={orth_err:e}")
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Test rrqr_randomized
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     Q_rrqr, R_rrqr, piv = rrqr_randomized(A, rtol=1e-12)
     A_perm = A[:, piv]
     recon_err = np.linalg.norm(Q_rrqr @ R_rrqr - A_perm) / np.linalg.norm(A_perm)
     print(f"rrqr_randomized: reconstruction relative error={recon_err:e}")
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Test rrsvd_randomized
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     U_rrsvd, s_rrsvd, Vt_rrsvd = rrsvd_randomized(A, rtol=1e-12)
     A_svd = U_rrsvd @ np.diag(s_rrsvd) @ Vt_rrsvd
     svd_err = np.linalg.norm(A_svd - A) / np.linalg.norm(A)
     print(f"rrsvd_randomized: reconstruction relative error={svd_err:e}")
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Test rrid_randomized
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     k_id, piv_id, T_id = rrid_randomized(A, rtol=1e-12)
     A_id_approx = A[:, piv_id[:k_id]] @ T_id
     id_err = np.linalg.norm(A[:, piv_id[k_id:]] - A_id_approx) / np.linalg.norm(A)
