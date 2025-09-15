@@ -66,7 +66,7 @@ classdef libid
         % 1. If the initial block already covers the whole space,
 	%    the function returns early.
         % 2. The random matrix X has entries in [-1,1].
-        % 3. Power iteration is performed by the private method _power_iteration.
+        % 3. Power iteration is performed by the private method power_iteration.
         %
         % Example
         % -------
@@ -171,7 +171,7 @@ classdef libid
         % -----
         % 1. The rank k is chosen as the number of rows of R whose 2-norm
         %    exceeds ``rtol * ||A||`` (or ``||A_proj||`` for the projected case).
-        % 2. The private method ``_power_iteration`` is used internally.
+        % 2. The private method ``power_iteration`` is used internally.
         %
         % Example
         % -------
@@ -340,7 +340,7 @@ classdef libid
         %
         % Notes
         % -----
-        % 1. The method uses the private ``_power_iteration`` routine indirectly
+        % 1. The method uses the private ``power_iteration`` routine indirectly
         %    through ``rrqr_randomized``.
         %
         % Example
@@ -435,12 +435,12 @@ classdef libid
     methods (Static, Access = private)
 
         function X = power_iteration(A, X, power)
-        % _POWER_ITERATION Apply power iteration to improve the quality of the sketch.
+        % POWER_ITERATION Apply power iteration to improve the quality of the sketch.
         %
         % Calling sequence (options shown)
         % ---------------------------------
-        %   X = libid._power_iteration(A,X);
-        %   X = libid._power_iteration(A,X,power);
+        %   X = libid.power_iteration(A,X);
+        %   X = libid.power_iteration(A,X,power);
         %
         % Description
         % -----------
@@ -469,7 +469,7 @@ classdef libid
         % Example
         % -------
         %   X = hilb(4000,2000);
-        %   X = libid._power_iteration(A, X, 2);
+        %   X = libid.power_iteration(A, X, 2);
         %   k, size(Q)
         %
         % See also: orth_sketch
