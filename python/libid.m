@@ -32,7 +32,7 @@ classdef libid
 
             while true
                 X = 2*rand(n, block_size) - 1;
-                X = libid._power_iteration(A, X, flag_power);
+                X = libid.power_iteration(A, X, flag_power);
 
                 Y = A * X;
                 [Qtmp,R,~] = qr(Y,0);
@@ -167,7 +167,7 @@ classdef libid
 
     methods (Static, Access = private)
 
-        function X = _power_iteration(A, X, power)
+        function X = power_iteration(A, X, power)
             if nargin < 3, power = 0; end
             for ii = 1:power
                 X = A' * (A * X);

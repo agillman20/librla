@@ -105,7 +105,7 @@ classdef libid
             while true
                 % Random matrix with entries in [-1,1]
                 X = 2*rand(n, block_size) - 1;
-                X = libid._power_iteration(A, X, flag_power);
+                X = libid.power_iteration(A, X, flag_power);
 
                 Y = A * X;
                 [Qtmp,R,~] = qr(Y,0);   % economy QR
@@ -434,7 +434,7 @@ classdef libid
     
     methods (Static, Access = private)
 
-        function X = _power_iteration(A, X, power)
+        function X = power_iteration(A, X, power)
         % _POWER_ITERATION Apply power iteration to improve the quality of the sketch.
         %
         % Calling sequence (options shown)
