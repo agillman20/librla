@@ -34,7 +34,7 @@ import numpy as np
 from scipy.linalg import lapack
 
 # ----------------------------------------------------------------------
-# Helper utilities (unchanged – kept for completeness / tests)
+# Helper utilities (unchanged - kept for completeness / tests)
 # ----------------------------------------------------------------------
 
 
@@ -66,7 +66,7 @@ def reflector(x):
 
 
 # ----------------------------------------------------------------------
-# Core routine – now a thin wrapper around LAPACK
+# Core routine - now a thin wrapper around LAPACK
 # ----------------------------------------------------------------------
 
 
@@ -355,7 +355,7 @@ def rrqr_q(a, tau, q, k):
 
 def rrqr_breflector(H, tau, k):
     """
-    Build a block reflector Q = I - U * (S \\ U.T).
+    Build a block reflector Q = I - U * (S \ U.T).
 
     Parameters
     ----------
@@ -527,7 +527,7 @@ if __name__ == "__main__":
     rank = 3
     U = np.random.randn(m, rank)
     V = np.random.randn(rank, n)
-    A2 = U @ V                     # rank ≤ 3
+    A2 = U @ V                     # rank <= 3
     Q2, R2, p2, k2 = rrqr(A2, rtol=1e-12)
 
     A2_perm = A2[:, p2]
@@ -536,7 +536,7 @@ if __name__ == "__main__":
     orth_err2 = np.linalg.norm(Q2.conj().T @ Q2 - np.eye(k2))
 
     print("\nTest 2: rank-deficient matrix")
-    print(f"  Expected rank ≤ {rank}, detected rank k = {k2}")
+    print(f"  Expected rank <= {rank}, detected rank k = {k2}")
     print(f"  Reconstruction error ||A2[:,p] - Q2*R2|| = {err2:.2e}")
     print(f"  Orthogonality error   ||Q2.T*Q2 - I||   = {orth_err2:.2e}")
 
