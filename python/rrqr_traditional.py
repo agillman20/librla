@@ -1,14 +1,8 @@
 """
-traditional_rrqr.py
+rrqr_traditional.py
 
-Rank-revealing QR factorisation (QR with column pivoting) implemented
+Rank-revealing QR factorization (QR with column pivoting) implemented
 with the classic Householder-reflection algorithm.
-
-References
-----------
-[1] P. A. Businger and G. H. Golub,
-    "Linear least squares solution by Householder transformations,"
-    Numer. Math. 7, 269-276 (1965)
 
 Author: gpt-oss-120b
 """
@@ -19,19 +13,19 @@ import numpy as np
 from typing import Tuple, Optional
 
 
-def traditional_rrqr(
+def rrqr_traditional(
     A: np.ndarray,
     rtol: Optional[float] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     """
-    Perform a QR factorisation with column pivoting using the
+    Perform a QR factorization with column pivoting using the
     Businger-Golub Householder algorithm.
 
     --------------------------------------------------------------------
     Inputs
     --------------------------------------------------------------------
     A : ndarray, shape (m, n)
-        The matrix to be factorised. It may contain real or complex numbers
+        The matrix to be factorized. It may contain real or complex numbers
         and can be rectangular (any m >= 0, n >= 0). The routine works for
         tall matrices (m > n), wide matrices (m < n), and square matrices
         alike.
@@ -45,7 +39,7 @@ def traditional_rrqr(
         where eps is the machine epsilon for the data type of A. A larger
         rtol yields a smaller estimated rank, while a smaller rtol yields a
         larger rank. The tolerance is applied to the absolute values of the
-        diagonal entries of R after the factorisation is complete.
+        diagonal entries of R after the factorization is complete.
 
     --------------------------------------------------------------------
     Returns
@@ -83,11 +77,11 @@ def traditional_rrqr(
     R = A.copy()                   # overwritten in-place
     perm = np.arange(n)            # current column ordering
 
-    # Column 2-norms – used for pivot selection.
+    # Column 2-norms -- used for pivot selection.
     col_norms = np.linalg.norm(R, axis=0)
 
     # -----------------------------------------------------------------
-    # 2. Main loop (k = 0 … min(m,n)-1)
+    # 2. Main loop (k = 0 ... min(m,n)-1)
     # -----------------------------------------------------------------
     for k in range(min(m, n)):
         # -------------------------------------------------------------
@@ -177,7 +171,7 @@ def rrqr_q(H: np.ndarray, tau: np.ndarray, k: int) -> np.ndarray:
     # 2. Apply the compact WY representation:
     #    Q = I - V * diag(tau) * V^H
     #    (tau may be a scalar or a 1-D array; we broadcast it.)
-    tau_mat = np.diag(tau)                   # k×k diagonal matrix
+    tau_mat = np.diag(tau)                   # kxk diagonal matrix
     Q = np.eye(m, k, dtype=H.dtype) - V @ tau_mat @ V.conj().T
 
     return Q
@@ -196,18 +190,18 @@ if __name__ == "__main__":
     import hilb as hilb
     import time
 
-    A = hilb.hilb(400,200)
+    A = hilb.hilb(400, 200)
 
     print("shape(A):", A.shape)
-    
+
     start_time = time.perf_counter()
 
     # Test the basic routine.
-    Q, R, perm, rank_est = traditional_rrqr(A,1e-8)
+    Q, R, perm, rank_est = rrqr_traditional(A, 1e-8)
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
-    print(f"traditional_rrqr, elapsed time: {elapsed_time:.4f} seconds")
+    print(f"rrqr_traditional, elapsed time: {elapsed_time:.4f} seconds")
 
     print("Permutation vector (zero-based):", perm)
     print("Estimated rank:", rank_est)
