@@ -40,7 +40,7 @@ def _power_iteration(A, X, flag_power=0):
         Updated sketch matrix.
     """
     for _ in range(flag_power):
-        X = A.T @ (A @ X)
+        X = A.conj().T @ (A @ X)
         X, _, _ = linalg.qr(x, mode="economic", pivoting=True)
     return X
 
@@ -81,7 +81,7 @@ def orth_sketch(A, rtol, block_size=42, flag_power=0):
 
     while True:
         # Random matrix with entries in [-1, 1].
-        X = 2 * np.random.uniform(size=(n, block_size)) - 1
+        X = (2 * np.random.uniform(size=(n, block_size)) - 1).astype(A.dtype)
         X = _power_iteration(A, X, flag_power)
         y = A @ X
 
@@ -134,7 +134,7 @@ def rrqr_randomized(A, rtol, block_size=42, flag_power=0):
         return Q[:, :k], R[:k, :], p
 
     # Project A onto the sketch subspace.
-    Aproj = q.T @ A
+    Aproj = q.conj().T @ A
     Qproj, R, p = linalg.qr(Aproj, mode="economic", pivoting=True)
     Q = q @ Qproj
     k = np.sum(norm(R, axis=1) >= rtol * norm(Aproj))
@@ -173,7 +173,7 @@ def rrsvd_randomized(A, rtol, block_size=42, flag_power=0):
         k = np.sum(np.abs(s) >= rtol * norm(A))
         return U[:, :k], s[:k], Vt[:k, :]
 
-    Aproj = q.T @ A
+    Aproj = q.conj().T @ A
     Uproj, s, Vt = linalg.svd(Aproj, full_matrices=False)
     U = q @ Uproj
     k = np.sum(np.abs(s) >= rtol * norm(Aproj))
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     # Test orth_sketch
     # --------------------------------------------------------------
     k_range, Q_range = orth_sketch(A, rtol=1e-12)
-    orth_err = np.linalg.norm(Q_range.T @ Q_range - np.eye(k_range))
+    orth_err = np.linalg.norm(Q_range.conj().T @ Q_range - np.eye(k_range))
     print(f"orth_sketch: k={k_range}, basis shape={Q_range.shape}")
     print(f"orth_sketch: orthonormality error={orth_err:e}")
 
