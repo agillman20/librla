@@ -355,7 +355,7 @@ def rrqr_q(a, tau, q, k):
 
 def rrqr_breflector(H, tau, k):
     """
-    Build a block reflector Q = I - U * (S \ U.T).
+    Build a block reflector Q = I - U * (S \\ U.T).
 
     Parameters
     ----------
