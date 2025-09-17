@@ -16,7 +16,7 @@ function H = hilb(m,n,method)
 %       H = hilb(3,6)        % 3-by-6 Hilbert matrix
 %       H = hilb(4,4,'hankel')
 %
-%   See also hankel, toeplitz, gallery.
+%   See also bsxfun, hankel.
     
 %-----------------------------------------------------------------------
 % Argument handling
@@ -53,7 +53,7 @@ if strcmp(method,'hankel')
 end
 
 % -------------------------------------------------------------------------
-% 3) Explicit double-loop construction (slowest)
+% 3) Explicit double-loop construction
 % -------------------------------------------------------------------------
 if strcmp(method,'loops')
     H = zeros(m,n);
