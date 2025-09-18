@@ -119,43 +119,25 @@ def hilb(
         f"Unknown method '{method}'. Choose from 'vectorized', 'hankel', or 'loops'."
     )
 
+def _test():
 
-import argparse
-import sys
+    expected = np.array([[1.0, 1/2, 1/3],
+                         [1/2, 1/3, 1/4],
+                         [1/3, 1/4, 1/5]])
+    assert np.allclose(hilb(3, 3), expected), "3x3 test failed"
+    for method in ('vectorized','loops','hankel'):
+        if method == 'hankel' and hankel is None: continue
+        assert np.allclose(hilb(3, 3, method=method), expected), "3x3 test failed"
 
-# ----------------------------------------------------------------------
-# Command-line interface for quick testing / demonstration
-# ----------------------------------------------------------------------
+
+    exp_rect = np.array([[1.0, 1/2, 1/3, 1/4],
+                         [1/2, 1/3, 1/4, 1/5]])
+    assert np.allclose(hilb(2, 4), exp_rect), "2x4 test failed"
+    for method in ('vectorized','loops','hankel'):
+        if method == 'hankel' and hankel is None: continue
+        assert np.allclose(hilb(2, 4, method=method), exp_rect), "2x4 test failed"
+
+    print("All tests passed!")
+        
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Generate an m-by-n Hilbert matrix."
-    )
-    parser.add_argument(
-        "m",
-        type=int,
-        help="Number of rows of the Hilbert matrix.",
-    )
-    parser.add_argument(
-        "-n",
-        type=int,
-        default=None,
-        help="Number of columns (defaults to a square matrix).",
-    )
-    parser.add_argument(
-        "-mth",
-        "--method",
-        choices=["vectorized", "hankel", "loops"],
-        default="vectorized",
-        help="Construction method (default: vectorized).",
-    )
-    args = parser.parse_args()
-
-    try:
-        H = hilb(args.m, args.n, method=args.method)
-    except Exception as exc:
-        sys.stderr.write(f"Error: {exc}\n")
-        sys.exit(1)
-
-    # Print the matrix with a readable format
-    np.set_printoptions(precision=4, suppress=True, linewidth=120)
-    print(H)
+    _test()
