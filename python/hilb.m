@@ -57,8 +57,8 @@ end
 % -------------------------------------------------------------------------
 if strcmp(method,'loops')
     H = zeros(m,n);
-    for i = 1:m
-        for j = 1:n
+    for j = 1:n
+	for i = 1:m
             H(i,j) = 1/(i + j - 1);
         end
     end

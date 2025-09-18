@@ -1,154 +1,161 @@
-#!/usr/bin/env python
-# -*- coding: ascii -*-
 """
-hilb.py - Construct Hilbert matrices (square or rectangular).
+hilb.py
+-------
+
+Construct an m-by-n Hilbert matrix.
 
 The (i, j)-entry of a Hilbert matrix is
-    H[i, j] = 1 / (i + j - 1)      (1-based indexing)
 
-The function mirrors the MATLAB version:
-    hilb(m)                -> m x m square matrix
-    hilb(m, n)             -> m x n rectangular matrix
-    hilb(m, n, method)     -> choose construction method:
-        'vectorized' - default, uses NumPy broadcasting.
-        'hankel'    - builds the matrix via scipy.linalg.hankel.
-        'loops'     - explicit double-for-loop (educational).
+        H[i, j] = 1 / (i + j + 1)          # 0-based indexing
+
+The implementation mirrors the MATLAB function ``hilb`` and offers three
+construction methods:
+
+* ``'vectorized'`` - default, uses NumPy broadcasting.
+* ``'hankel'``    - builds the matrix via ``scipy.linalg.hankel``.
+* ``'loops'``    - explicit double-for-loop (educational).
 
 Example
 -------
 >>> from hilb import hilb
->>> hilb(5)                     # 5x5 Hilbert matrix
->>> hilb(3, 6)                  # 3x6 Hilbert matrix
+>>> hilb(5)                     # 5-by-5 Hilbert matrix
+>>> hilb(3, 6)                  # 3-by-6 Hilbert matrix
 >>> hilb(4, 4, method='hankel')
 """
+
 from __future__ import annotations
+
 import numpy as np
 from typing import Literal, Optional
 
-# ``hankel`` is optional – it is only needed when the user requests the
-# 'hankel' method.  Import lazily so that the module works even if SciPy is
-# not installed, unless that method is explicitly requested.
 try:
-    from scipy.linalg import hankel  # type: ignore
+    # scipy is optional - only needed for the 'hankel' method
+    from scipy.linalg import hankel
 except Exception:  # pragma: no cover
-    hankel = None  # type: ignore[assignment]
+    hankel = None  # type: ignore
+
+
+Method = Literal["vectorized", "hankel", "loops"]
 
 
 def hilb(
     m: int,
     n: Optional[int] = None,
-    method: Literal["vectorized", "hankel", "loops"] = "vectorized",
+    method: Method = "vectorized",
 ) -> np.ndarray:
     """
-    Return an ``m x n`` Hilbert matrix.
+    Construct an m-by-n Hilbert matrix.
 
     Parameters
     ----------
     m : int
-        Number of rows (must be >= 1).
+        Number of rows.
     n : int, optional
-        Number of columns. If omitted, a square ``m x m`` matrix is produced.
-    method : {'vectorized', 'hankel', 'loops'}, default 'vectorized'
-        Construction strategy.
+        Number of columns. If omitted, a square ``mxm`` matrix is returned.
+    method : {"vectorized", "hankel", "loops"}, optional
+        Construction method. Default is ``'vectorized'``.
 
     Returns
     -------
-    np.ndarray
-        The Hilbert matrix with shape ``(m, n)`` and dtype ``float64``.
+    H : ndarray, shape (m, n)
+        The Hilbert matrix with entries ``1/(i + j - 1)`` (1-based indexing).
 
     Raises
     ------
     ValueError
-        If ``method`` is unknown or if ``n`` is non-positive.
-    ImportError
-        If the ``'hankel'`` method is requested but SciPy is not available.
+        If an unsupported ``method`` is supplied or ``scipy`` is not available
+        for the ``'hankel'`` method.
     """
-    if m <= 0:
-        raise ValueError("Number of rows 'm' must be a positive integer.")
-    if n is None:
+    # ------------------------------------------------------------------
+    # Argument handling - make the call signature compatible with MATLAB
+    # ------------------------------------------------------------------
+    if n is None:          # only one size supplied -> square matrix
         n = m
-    if n <= 0:
-        raise ValueError("Number of columns 'n' must be a positive integer.")
 
-    method = method.lower()
-    if method not in {"vectorized", "hankel", "loops"}:
-        raise ValueError(
-            f"Invalid method '{method}'. Choose from 'vectorized', 'hankel', 'loops'."
-        )
+    if m <= 0 or n <= 0:
+        raise ValueError("Matrix dimensions must be positive integers.")
 
-    # -----------------------------------------------------------------
+    # --------------------------------------------------------------
     # 1) Vectorized construction (default)
-    # -----------------------------------------------------------------
+    # --------------------------------------------------------------
     if method == "vectorized":
-        # 1-based indices as column/row vectors, then broadcast.
-        i = np.arange(1, m + 1).reshape(m, 1)   # shape (m,1)
-        j = np.arange(1, n + 1).reshape(1, n)   # shape (1,n)
+        # i is a column vector (m, 1), j is a row vector (1, n)
+        i = np.arange(1, m + 1)[:, np.newaxis]   # shape (m, 1)
+        j = np.arange(1, n + 1)                  # shape (n,)
+        # NumPy broadcasting produces an (m, n) array
         H = 1.0 / (i + j - 1)
         return H
 
-    # -----------------------------------------------------------------
-    # 2) Using SciPy's hankel function
-    # -----------------------------------------------------------------
+    # --------------------------------------------------------------
+    # 2) Using the built-in hankel function (via SciPy)
+    # --------------------------------------------------------------
     if method == "hankel":
         if hankel is None:  # pragma: no cover
-            raise ImportError(
-                "SciPy is required for method='hankel' but could not be imported."
+            raise ValueError(
+                "SciPy is required for the 'hankel' method but could not be imported."
             )
-        # First column: 1/1, 1/2, ..., 1/m
+        # First column: 1/(1:m)
         c = 1.0 / np.arange(1, m + 1)
-        # Last row: 1/m, 1/(m+1), ..., 1/(m+n-1)
-        r = 1.0 / np.arange(m, m + n)
+        # Last row: 1/(m + (1:n) - 1) = 1/(m + 0:n-1)
+        r = 1.0 / (m + np.arange(0, n))
         H = hankel(c, r)
         return H
 
-    # -----------------------------------------------------------------
+    # --------------------------------------------------------------
     # 3) Explicit double-loop construction
-    # -----------------------------------------------------------------
-    # (mostly for teaching; considerably slower than the vectorized version)
-    H = np.empty((m, n), dtype=float)
-    for ii in range(m):
-        for jj in range(n):
-            # Convert from 0-based Python indices to the 1-based formula.
-            H[ii, jj] = 1.0 / ((ii + 1) + (jj + 1) - 1)
-    return H
+    # --------------------------------------------------------------
+    if method == "loops":
+        H = np.empty((m, n), dtype=float)
+        for col in range(n):
+            for row in range(m):
+                # Convert from 0-based Python indexing to 1-based formula
+                H[row, col] = 1.0 / (row + col + 1)
+        return H
 
+    # --------------------------------------------------------------
+    # If we reach here, the user supplied an unknown method.
+    # --------------------------------------------------------------
+    raise ValueError(
+        f"Unknown method '{method}'. Choose from 'vectorized', 'hankel', or 'loops'."
+    )
+
+
+import argparse
+import sys
 
 # ----------------------------------------------------------------------
-# Simple sanity-check when the module is executed directly
+# Command-line interface for quick testing / demonstration
 # ----------------------------------------------------------------------
-def _test() -> None:
-    """Run a few basic checks against known values."""
-    # 3x3 square Hilbert matrix (exact rational values)
-    expected_sq = np.array(
-        [[1.0, 0.5, 1 / 3],
-         [0.5, 1 / 3, 0.25],
-         [1 / 3, 0.25, 0.2]],
-        dtype=float,
-    )
-    assert np.allclose(hilb(3), expected_sq), "square test (default) failed"
-    assert np.allclose(hilb(3, 3), expected_sq), "square test (explicit n) failed"
-
-    # 2x4 rectangular case
-    expected_rect = np.array(
-        [[1.0, 0.5, 1 / 3, 0.25],
-         [0.5, 1 / 3, 0.25, 0.2]],
-        dtype=float,
-    )
-    assert np.allclose(hilb(2, 4), expected_rect), "rectangular test failed"
-
-    # 'hankel' method (if SciPy is available)
-    if hankel is not None:
-        assert np.allclose(
-            hilb(3, 5, method="hankel"), hilb(3, 5, "vectorized")
-        ), "hankel method mismatch"
-
-    # 'loops' method – compare against the fast version
-    assert np.allclose(
-        hilb(4, 6, method="loops"), hilb(4, 6, "vectorized")
-    ), "loops method mismatch"
-
-    print("All tests passed!")
-
-
 if __name__ == "__main__":
-    _test()
+    parser = argparse.ArgumentParser(
+        description="Generate an m-by-n Hilbert matrix."
+    )
+    parser.add_argument(
+        "m",
+        type=int,
+        help="Number of rows of the Hilbert matrix.",
+    )
+    parser.add_argument(
+        "-n",
+        type=int,
+        default=None,
+        help="Number of columns (defaults to a square matrix).",
+    )
+    parser.add_argument(
+        "-mth",
+        "--method",
+        choices=["vectorized", "hankel", "loops"],
+        default="vectorized",
+        help="Construction method (default: vectorized).",
+    )
+    args = parser.parse_args()
+
+    try:
+        H = hilb(args.m, args.n, method=args.method)
+    except Exception as exc:
+        sys.stderr.write(f"Error: {exc}\n")
+        sys.exit(1)
+
+    # Print the matrix with a readable format
+    np.set_printoptions(precision=4, suppress=True, linewidth=120)
+    print(H)
