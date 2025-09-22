@@ -8,8 +8,8 @@ Low rank matrix compression, aka libid project
 - image projector function
 - refactor random qr, svd and id to include projectors
 - qr, eig, svd, id
-- power method for slow decaying matrices
-- better handling of full-rank matrices
++ power method for slow decaying matrices
++ better handling of full-rank matrices
 - tall and thin matrices
 - range vs image projection accuracy
 - singular value accuracy
@@ -24,6 +24,25 @@ Low rank matrix compression, aka libid project
 - theoretical analysis
 - licensing
 - better naming conventions
+
+- clean-up the codes
+- python, matlab and julia interfaces
+- list of relevant papers
+- prepare/refactor documentation
+- justification for the paper
+- refactor parameters (input/output)
+
+- scripts to run test matrices
+- code size limit, 1000-3000 lines of code
+- test on gpu backend, V100
+
+- orth, rank, null routines
+- utv, ubv, qb, qr, rq, lq, ql, cur factorizations
+- least squares routines, solvers
+
+- left vs right sketch
+- id projector alternative formulation
+
 
 ------------------------------------------------------------------------------
 
