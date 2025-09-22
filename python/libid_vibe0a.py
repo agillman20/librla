@@ -379,49 +379,90 @@ def _safe_max_abs(mat: np.ndarray) -> float:
     return np.max(np.abs(mat)) if mat.size else 0.0
 
 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Refactored test harness for the randomized low‑rank algorithms.
+
+In addition to the four test matrices (real/complex Hilbert &
+real/complex Gaussian) the script now also runs the *SciPy* reference
+implementations:
+
+    • QR (scipy.linalg.qr, with column pivoting)
+    • SVD (scipy.linalg.svd)
+    • Interpolative ID (scipy.linalg.interpolative.interp_decomp)
+
+Both the custom routines and the SciPy baselines are timed and
+validated, making it trivial to spot regressions or numerical
+differences.
+
+Replace the dummy placeholders (orth_sketch, rrqr_randomized, …) with
+your actual implementations and run the file – it will print a tidy,
+colour‑friendly report for every matrix / algorithm combination.
+"""
+
+# ----------------------------------------------------------------------
+# Imports
+# ----------------------------------------------------------------------
+
+import time
+import warnings
+from typing import Tuple
+
+import numpy as np
+from numpy.linalg import norm
+from scipy.linalg import hilbert, qr as scipy_qr, svd as scipy_svd
+from scipy.linalg import interpolative as sli
+
+# ----------------------------------------------------------------------
+# Helper utilities (keep them tiny – replace with the real implementations)
+# ----------------------------------------------------------------------
+def _safe_max_abs(X: np.ndarray) -> float:
+    """Return max|X| safely – 0.0 for an empty array."""
+    return float(np.max(np.abs(X))) if X.size else 0.0
 
 # ----------------------------------------------------------------------
 # Core test runner – one matrix, one label
 # ----------------------------------------------------------------------
-def run_one_test(A: np.ndarray, label: str) -> None:
+def run_one_test(A: np.ndarray, label: str, *, rtol: float = 1e-12) -> None:
     """
-    Execute the full suite of randomized algorithms on ``A`` and
-    print a concise, colour‑coded report.
+    Run the full suite (custom + SciPy reference) on a single matrix.
 
     Parameters
     ----------
     A : np.ndarray
         Input matrix (real or complex).
     label : str
-        Human‑readable identifier shown in the output header.
+        Human‑readable name printed in the header.
+    rtol : float, optional
+        Relative tolerance used for rank decisions.
     """
     print(f"\n=== {label} ===")
     print(f"Matrix shape: {A.shape}\n")
 
     # ------------------------------------------------------------------
-    # 1️⃣  Orthogonal sketch
+    # 1️⃣  Orthogonal sketch (custom)
     # ------------------------------------------------------------------
     print("[orth_sketch] running...")
     t0 = time.perf_counter()
-    k_range, Q_range = orth_sketch(A, rtol=1e-12)
+    k_range, Q_range = orth_sketch(A, rtol=rtol)
     t1 = time.perf_counter()
 
-    if Q_range.size == 0:  # empty sketch matrix
+    if Q_range.size == 0:
         print("[orth_sketch]   ⚠️  Sketch matrix is empty.")
         print(f"[orth_sketch]   k = {k_range}, basis shape = {Q_range.shape}")
     else:
-        # Use conjugate transpose for complex data.
         ortho_err = norm(Q_range.conj().T @ Q_range - np.eye(k_range))
         print(f"[orth_sketch]   k = {k_range}, basis shape = {Q_range.shape}")
         print(f"[orth_sketch]   orthonormality error = {ortho_err:e}")
     print(f"[orth_sketch]   elapsed time = {t1 - t0:.3f} s\n")
 
     # ------------------------------------------------------------------
-    # 2️⃣  Rank‑revealing QR
+    # 2️⃣  Rank‑revealing QR (custom)
     # ------------------------------------------------------------------
     print("[rrqr_randomized] running...")
     t0 = time.perf_counter()
-    Q_rrqr, R_rrqr, piv = rrqr_randomized(A, rtol=1e-12)
+    Q_rrqr, R_rrqr, piv = rrqr_randomized(A, rtol=rtol)
     t1 = time.perf_counter()
     rank_rrqr = R_rrqr.shape[0]
     A_perm = A[:, piv]
@@ -431,11 +472,11 @@ def run_one_test(A: np.ndarray, label: str) -> None:
     print(f"[rrqr_randomized] elapsed time = {t1 - t0:.3f} s\n")
 
     # ------------------------------------------------------------------
-    # 3️⃣  Truncated SVD
+    # 3️⃣  Truncated SVD (custom)
     # ------------------------------------------------------------------
     print("[rrsvd_randomized] running...")
     t0 = time.perf_counter()
-    U_rrsvd, s_rrsvd, Vt_rrsvd = rrsvd_randomized(A, rtol=1e-12)
+    U_rrsvd, s_rrsvd, Vt_rrsvd = rrsvd_randomized(A, rtol=rtol)
     t1 = time.perf_counter()
     rank_svd = s_rrsvd.size
     A_svd = U_rrsvd @ np.diag(s_rrsvd) @ Vt_rrsvd
@@ -445,17 +486,15 @@ def run_one_test(A: np.ndarray, label: str) -> None:
     print(f"[rrsvd_randomized] elapsed time = {t1 - t0:.3f} s\n")
 
     # ------------------------------------------------------------------
-    # 4️⃣  Interpolative decomposition (both variants)
+    # 4️⃣  Interpolative ID (custom – both variants)
     # ------------------------------------------------------------------
     for use_svd, variant in [(False, "triangular‑solve"), (True, "SVD‑based")]:
         print(f"[rrid_randomized – {variant}] running...")
         t0 = time.perf_counter()
-        k_id, piv_id, T_id = rrid_randomized(A, rtol=1e-12, use_svd=use_svd)
+        k_id, piv_id, T_id = rrid_randomized(A, rtol=rtol, use_svd=use_svd)
         t1 = time.perf_counter()
 
-        # Approximation built from the selected columns.
         A_id_approx = A[:, piv_id[:k_id]] @ T_id
-        # Error is measured on the *remaining* columns.
         id_err = norm(A[:, piv_id[k_id:]] - A_id_approx) / norm(A)
 
         print(f"[rrid_randomized – {variant}] rank = {k_id}")
@@ -463,41 +502,97 @@ def run_one_test(A: np.ndarray, label: str) -> None:
         print(f"[rrid_randomized – {variant}] max(|T|) = {_safe_max_abs(T_id):.3e}")
         print(f"[rrid_randomized – {variant}] elapsed time = {t1 - t0:.3f} s\n")
 
+    # ------------------------------------------------------------------
+    # 5️⃣  **SciPy reference implementations**
+    # ------------------------------------------------------------------
+    print("=== SciPy reference algorithms ===")
+
+    # ------------------------------------------------------------------
+    # 5a) QR with column pivoting (SciPy)
+    # ------------------------------------------------------------------
+    print("[scipy.linalg.qr] running...")
+    t0 = time.perf_counter()
+    Q_sci, R_sci, piv_sci = scipy_qr(A, pivoting=True, mode="economic")
+    t1 = time.perf_counter()
+    # Rank by same relative‑tolerance rule as above
+    diag = np.abs(np.diag(R_sci))
+    rank_sci = int(np.sum(diag > rtol * diag[0]))
+    A_perm_sci = A[:, piv_sci]
+    recon_err_sci = norm(Q_sci[:, :rank_sci] @ R_sci[:rank_sci, :] - A_perm_sci) / norm(A_perm_sci)
+    print(f"[scipy.linalg.qr] rank = {rank_sci}")
+    print(f"[scipy.linalg.qr] reconstruction relative error = {recon_err_sci:e}")
+    print(f"[scipy.linalg.qr] elapsed time = {t1 - t0:.3f} s\n")
+
+    # ------------------------------------------------------------------
+    # 5b) SVD (SciPy)
+    # ------------------------------------------------------------------
+    print("[scipy.linalg.svd] running...")
+    t0 = time.perf_counter()
+    U_sci, s_sci, Vt_sci = scipy_svd(A, full_matrices=False, lapack_driver='gesdd')
+    t1 = time.perf_counter()
+    rank_sci_svd = int(np.sum(s_sci > rtol * s_sci[0]))
+    A_sci_svd = (U_sci[:, :rank_sci_svd] *
+                 s_sci[:rank_sci_svd]) @ Vt_sci[:rank_sci_svd, :]
+    svd_err_sci = norm(A_sci_svd - A) / norm(A)
+    print(f"[scipy.linalg.svd] rank = {rank_sci_svd}")
+    print(f"[scipy.linalg.svd] reconstruction relative error = {svd_err_sci:e}")
+    print(f"[scipy.linalg.svd] elapsed time = {t1 - t0:.3f} s\n")
+
+    # ------------------------------------------------------------------
+    # 5c) Interpolative ID (SciPy)
+    # ------------------------------------------------------------------
+    print("[scipy.linalg.interpolative.interp_decomp] running...")
+    t0 = time.perf_counter()
+    # `eps` is an *absolute* tolerance; we turn our relative tolerance into
+    # an absolute one by scaling with the Frobenius norm of A.
+    eps_abs = rtol * norm(A, ord='fro')
+    k, idx_sci, proj_sci = sli.interp_decomp(A, eps_abs)
+    t1 = time.perf_counter()
+    # Re‑construct using the skeleton columns
+    A_id_sci = A[:, idx_sci[:k]] @ proj_sci
+    id_err_sci = norm(A[:,idx_sci[k:]] - A_id_sci) / norm(A)
+    print(f"[scipy.interpolative] rank = {k}")
+    print(f"[scipy.interpolative] interp. relative error = {id_err_sci:e}")
+    print(f"[scipy.interpolative] max(|proj|) = {_safe_max_abs(proj_sci):.3e}")
+    print(f"[scipy.interpolative] elapsed time = {t1 - t0:.3f} s\n")
+
+    print("-" * 70)
+
 
 # ----------------------------------------------------------------------
 # Main driver – builds the four test matrices and dispatches them
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Seed for reproducibility
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     np.random.seed(0)
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Define the *real* test matrices (Hilbert & Gaussian)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     m, n = 4000, 2000
 
     real_cases = [
         {
-            "name": "Real‑Hilbert",
-            "matrix": _hilb(m, n).astype(np.float64),  # deterministic, ill‑cond.
+            "name": "Hilbert",
+            "matrix": _hilb(m, n).astype(np.float64),
         },
         {
-            "name": "Real‑Gaussian",
+            "name": "Gaussian",
             "matrix": np.random.normal(size=(m, n)).astype(np.float64),
         },
     ]
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Run the real‑valued cases
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     for case in real_cases:
         run_one_test(case["matrix"], case["name"])
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Build the *complex* counterparts (H + 1j·H  &  G + 1j·G)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     complex_cases = [
         {
             "name": f"{case['name']} (complex)",
@@ -507,13 +602,13 @@ if __name__ == "__main__":
         for case in real_cases
     ]
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Run the complex‑valued cases
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     for case in complex_cases:
         run_one_test(case["matrix"], case["name"])
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # End of script
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     print("\nAll tests completed.\n")
