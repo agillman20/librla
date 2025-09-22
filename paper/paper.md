@@ -15,33 +15,32 @@ authors:
 affiliations:
  - name: National Institute of Standards and Technology (NIST)
    index: 1
-   ror: 00hx57361
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 2
 date: 22 September 2025
-bibliography: paper.bib
+#bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
 # https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
+#aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
+#aas-journal: Journal of Open Source Software 
+#<- The name of the AAS journal.
 ---
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+Rank revealing factorizations have become a vital tool for a variety of algorithms including fast direct solvers and data science.   'package name' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The technique is based on the standard randomized rank revealing algorithms but was created to exploit Blas 3 calls. Thus it provides efficient and robust software that has been lacking in these high level languages.
+
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
+`package name` is a randomized projection based rank revealing factorization package with Python, Julia and Matlab implementations.  Many developers of fast direct solvers use a Fortran package [@2008_tygert_ID_package].  Specialized wrappers are needed to use the Fortran package when the fast direct solvers are being used or developed in a high level language.  The need of these wrappers slows the use and development of fast direct solvers.  
+
+Probably should add something else about 
+
+The algorithm is the same in all three languages and was designed to exploit Blas 3 along with standard linear algebra packages.  This makes `package name` both efficient and stable.
+
+n Astropy-affiliated Python package for galactic dynamics. Python
 enables wrapping low-level languages (e.g., C) for speed without losing
 flexibility or ease-of-use in the user-interface. The API for `Gala` was
 designed to provide a class-based and user-friendly interface to fast (C or
