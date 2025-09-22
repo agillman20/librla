@@ -1,35 +1,24 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: '???: A library of radomized rank revealing factorization algorithms'
 tags:
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - Julia
+  - Matlab
+  - Rank revealing QR, SVD and Interpolatory decomposition
 authors:
-  - name: Adrian M. Price-Whelan
-    orcid: 0000-0000-0000-0000
+  - name: Zydrunas Gimbutas
     equal-contrib: true
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID
+    affiliation: "1" # (Multiple affiliations must be quoted)
+  - name: Adrianna Gillman
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 2
-  - name: Author with no affiliation
-    corresponding: true # (This is how to denote the corresponding author)
-    affiliation: 3
-  - given-names: Ludwig
-    dropping-particle: van
-    surname: Beethoven
-    affiliation: 3
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University, United States
+ - name: National Institute of Standards and Technology (NIST)
    index: 1
    ror: 00hx57361
- - name: Institution Name, Country
+ - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 2
- - name: Independent Researcher, Country
-   index: 3
-date: 13 August 2017
+date: 22 September 2025
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
