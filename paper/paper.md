@@ -41,24 +41,10 @@ One specific application of interest to the authors is of rank revealing factori
 
 # Mathematics
 
+The algorithm that is implemented is a variant of existing randomized techniques for rank revealing QR factorizations.  The algorithm was heavily influenced by the method presented in [`@2011Halko`].    Add references to other related work.
 
+The idea behind the algorithm is simple.  The range of the matrix $\bf{A}$ can be randomly sampled by applying $\bf{A}$ to a collection of $m$ random vectors arranged as a matrix $\mtx{X}$.   By looking at the diagonal entries of QR factorization of $\bf{A}\bf{X}$, you can determine if $m$ vectors was large enough to capture the full range of $\bf{A}$.  If it is not, the number of random vectors can be increased.  We choose to increase by a factor of 4. This is continued until the range is captured to the desired accuracy.  The result is the approximate rank of $\bf{A}$ denoted $k$ and the columns of $\bf{Q}$ from the QR factorization form a basis for the range of $\bf{A}$.  
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
-
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
-
-# Citations
 
 Citations to entries in paper.bib should be in
 [rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
