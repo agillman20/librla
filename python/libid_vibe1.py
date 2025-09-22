@@ -3,10 +3,10 @@
 Randomized linear-algebra routines.
 
 This module implements
-    * orth_sketch – build an orthonormal basis for the column space of A
-    * rrqr_randomized – rank‑revealing QR
-    * rrsvd_randomized – truncated SVD
-    * rrid_randomized – interpolative decomposition
+    * orth_sketch - build an orthonormal basis for the column space of A
+    * rrqr_randomized - rank-revealing QR
+    * rrsvd_randomized - truncated SVD
+    * rrid_randomized - interpolative decomposition
 along with a helper that constructs a Hilbert matrix.
 
 Author: Your Name
@@ -14,14 +14,16 @@ SPDX-License-Identifier: TBD
 """
 
 import numpy as np
+import time                           # <-- timing helper
 from scipy import linalg
 from numpy.linalg import norm
 
 # ----------------------------------------------------------------------
-#  Helper: Power iteration
+# Helper: Power iteration
 # ----------------------------------------------------------------------
-def _power_iteration(A: np.ndarray, x: np.ndarray, flag_power: int = 0) -> np.ndarray:
-    """Apply (Aᴴ @ A) repeatedly to the random vector x."""
+def _power_iteration(A: np.ndarray, x: np.ndarray,
+                     flag_power: int = 0) -> np.ndarray:
+    """Apply (A^H @ A) repeatedly to the random vector x."""
     for _ in range(flag_power):
         x = A.conj().T @ (A @ x)
         x, _R, _p = linalg.qr(x, mode='economic', pivoting=True)
@@ -29,16 +31,17 @@ def _power_iteration(A: np.ndarray, x: np.ndarray, flag_power: int = 0) -> np.nd
 
 
 # ----------------------------------------------------------------------
-#  1.  Orthogonal sketch
+# 1. Orthogonal sketch
 # ----------------------------------------------------------------------
-def orth_sketch(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: int = 0) -> tuple[int, np.ndarray]:
+def orth_sketch(A: np.ndarray, rtol: float,
+                block_size: int = 42, flag_power: int = 0) -> tuple[int, np.ndarray]:
     """
     Build an orthonormal basis for the column space of A.
 
     Parameters
     ----------
     A : (m x n) array
-    rtol : relative tolerance – when the smallest retained singular value
+    rtol : relative tolerance - when the smallest retained singular value
            divided by the largest column norm is below this, stop.
     block_size : initial number of random columns.
     flag_power : number of power iterations (default 0).
@@ -55,7 +58,7 @@ def orth_sketch(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: in
         return min(m, n), np.empty_like(A, shape=(0, 0))
 
     while True:
-        # Random starting matrix – cast to the dtype of A
+        # Random starting matrix - cast to the dtype of A
         x = (2 * np.random.uniform(size=(n, block_size)) - 1).astype(A.dtype)
         x = _power_iteration(A, x, flag_power)
 
@@ -76,11 +79,14 @@ def orth_sketch(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: in
 
 
 # ----------------------------------------------------------------------
-#  2.  Rank‑revealing QR
+# 2. Rank-revealing QR
 # ----------------------------------------------------------------------
-def rrqr_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rrqr_randomized(A: np.ndarray, rtol: float,
+                    block_size: int = 42, flag_power: int = 0) -> tuple[np.ndarray,
+                                                                     np.ndarray,
+                                                                     np.ndarray]:
     """
-    Rank‑revealing QR factorization using a randomized sketch.
+    Rank-revealing QR factorization using a randomized sketch.
 
     Parameters
     ----------
@@ -92,7 +98,7 @@ def rrqr_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power
     Returns
     -------
     Q : (m x k) orthonormal matrix
-    R : (k x n) upper‑triangular matrix
+    R : (k x n) upper-triangular matrix
     p : pivot vector (indices of the columns in the sketch)
     """
     m, n = A.shape
@@ -111,9 +117,12 @@ def rrqr_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power
 
 
 # ----------------------------------------------------------------------
-#  3.  Truncated SVD
+# 3. Truncated SVD
 # ----------------------------------------------------------------------
-def rrsvd_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rrsvd_randomized(A: np.ndarray, rtol: float,
+                     block_size: int = 42, flag_power: int = 0) -> tuple[np.ndarray,
+                                                                      np.ndarray,
+                                                                      np.ndarray]:
     """
     Truncated SVD using a randomized sketch.
 
@@ -146,9 +155,12 @@ def rrsvd_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_powe
 
 
 # ----------------------------------------------------------------------
-#  4.  Interpolative decomposition
+# 4. Interpolative decomposition
 # ----------------------------------------------------------------------
-def rrid_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power: int = 0) -> tuple[int, np.ndarray, np.ndarray]:
+def rrid_randomized(A: np.ndarray, rtol: float,
+                    block_size: int = 42, flag_power: int = 0) -> tuple[int,
+                                                                       np.ndarray,
+                                                                       np.ndarray]:
     """
     Interpolative decomposition using a randomized QR.
 
@@ -163,16 +175,17 @@ def rrid_randomized(A: np.ndarray, rtol: float, block_size: int = 42, flag_power
     -------
     k : rank
     piv : pivot indices
-    T : coefficient matrix such that A[:,piv] @ T ≈ A
+    T : coefficient matrix such that A[:,piv] @ T ~= A
     """
-    Q, R, p = rrqr_randomized(A, rtol, block_size, flag_power)
+    Q, R, piv = rrqr_randomized(A, rtol, block_size, flag_power)
     k = R.shape[0]
-    T = linalg.solve(np.triu(R[:k, :k]), R[:, k:])
-    return k, p, T
+    # Solve R11 * T = R12   (R is upper triangular)
+    T = linalg.solve(np.triu(R[:k, :k]), R[:k, k:])
+    return k, piv, T
 
 
 # ----------------------------------------------------------------------
-#  5.  Hilbert matrix generator
+# 5. Hilbert matrix generator
 # ----------------------------------------------------------------------
 def _hilb(n: int, m: int) -> np.ndarray:
     """
@@ -199,7 +212,7 @@ def _hilb(n: int, m: int) -> np.ndarray:
 
 
 # ----------------------------------------------------------------------
-#  Test harness
+# Test harness
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     np.random.seed(0)
@@ -207,35 +220,51 @@ if __name__ == "__main__":
     m, n = 4000, 2000
     A = _hilb(m, n)
 
-    # --------------------------------------------------------------
-    # Test orth_sketch
-    # --------------------------------------------------------------
+    # -------------------------------------------------
+    # Test orthogonal sketch (orth_sketch)
+    # -------------------------------------------------
+    print("\nTesting orthogonal sketch (orth_sketch)...")
+    t0 = time.perf_counter()
     k_range, Q_range = orth_sketch(A, rtol=1e-12)
+    t1 = time.perf_counter()
     orth_err = norm(Q_range.T @ Q_range - np.eye(k_range))
-    print(f"orth_sketch: k={k_range}, basis shape={Q_range.shape}")
-    print(f"orth_sketch: k={k_range}, orthonormality error={orth_err:e}")
+    print(f"[orth_sketch]   k = {k_range}, basis shape = {Q_range.shape}")
+    print(f"[orth_sketch]   orthonormality error = {orth_err:e}")
+    print(f"[orth_sketch]   elapsed time = {t1 - t0:.3f} s\n")
 
-    # --------------------------------------------------------------
-    # Test rrqr_randomized
-    # --------------------------------------------------------------
+    # -------------------------------------------------
+    # Test rank-revealing QR (rrqr_randomized)
+    # -------------------------------------------------
+    print("Testing rank-revealing QR (rrqr_randomized)...")
+    t0 = time.perf_counter()
     Q_rrqr, R_rrqr, piv = rrqr_randomized(A, rtol=1e-12)
+    t1 = time.perf_counter()
     A_perm = A[:, piv]
     recon_err = norm(Q_rrqr @ R_rrqr - A_perm) / norm(A_perm)
-    print(f"rrqr_randomized: reconstruction relative error={recon_err:e}")
+    print(f"[rrqr_randomized] reconstruction relative error = {recon_err:e}")
+    print(f"[rrqr_randomized] elapsed time = {t1 - t0:.3f} s\n")
 
-    # --------------------------------------------------------------
-    # Test rrsvd_randomized
-    # --------------------------------------------------------------
+    # -------------------------------------------------
+    # Test truncated SVD (rrsvd_randomized)
+    # -------------------------------------------------
+    print("Testing truncated SVD (rrsvd_randomized)...")
+    t0 = time.perf_counter()
     U_rrsvd, s_rrsvd, Vt_rrsvd = rrsvd_randomized(A, rtol=1e-12)
+    t1 = time.perf_counter()
     A_svd = U_rrsvd @ np.diag(s_rrsvd) @ Vt_rrsvd
     svd_err = norm(A_svd - A) / norm(A)
-    print(f"rrsvd_randomized: reconstruction relative error={svd_err:e}")
+    print(f"[rrsvd_randomized] reconstruction relative error = {svd_err:e}")
+    print(f"[rrsvd_randomized] elapsed time = {t1 - t0:.3f} s\n")
 
-    # --------------------------------------------------------------
-    # Test rrid_randomized
-    # --------------------------------------------------------------
+    # -------------------------------------------------
+    # Test interpolative decomposition (rrid_randomized)
+    # -------------------------------------------------
+    print("Testing interpolative decomposition (rrid_randomized)...")
+    t0 = time.perf_counter()
     k_id, piv_id, T_id = rrid_randomized(A, rtol=1e-12)
+    t1 = time.perf_counter()
     A_id_approx = A[:, piv_id[:k_id]] @ T_id
     id_err = norm(A[:, piv_id[k_id:]] - A_id_approx) / norm(A)
-    print(f"rrid_randomized: interpolation relative error={id_err:e}")
-    print(f"rrsvd_randomized: np.max(abs(T))={np.max(abs(T_id)):e}")
+    print(f"[rrid_randomized] interpolation relative error = {id_err:e}")
+    print(f"[rrid_randomized] max(abs(T)) = {np.max(np.abs(T_id)):e}")
+    print(f"[rrid_randomized] elapsed time = {t1 - t0:.3f} s")
