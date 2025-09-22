@@ -18,7 +18,7 @@ affiliations:
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 2
 date: 22 September 2025
-#bibliography: paper.bib
+bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
 # https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
@@ -34,33 +34,14 @@ Rank revealing factorizations have become a vital tool for a variety of algorith
 
 # Statement of need
 
-`package name` is a randomized projection based rank revealing factorization package with Python, Julia and Matlab implementations.  Many developers of fast direct solvers use a Fortran package [@2008_tygert_ID_package].  Specialized wrappers are needed to use the Fortran package when the fast direct solvers are being used or developed in a high level language.  The need of these wrappers slows the use and development of fast direct solvers.  
+`package name` is a randomized projection based rank revealing factorization package with Python, Julia and Matlab implementations.  Rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@RRQRapp].  
 
-Probably should add something else about 
+One specific application of interest to the authors is of rank revealing factorizations in the development and use of fast direct solvers.  When these solvers are used in a high level language, many would call a Fortran package [@2008_tygert_ID_package] via a specialized wrapper.  The need of the wrapper slows the design and use of these solvers.  `package name` removes this hurdle allowing users to run solver codes natively in the high level language. 
 
-The algorithm is the same in all three languages and was designed to exploit Blas 3 along with standard linear algebra packages.  This makes `package name` both efficient and stable.
-
-n Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
-
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
 
 # Mathematics
+
+
 
 Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
 
