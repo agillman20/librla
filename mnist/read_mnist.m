@@ -44,6 +44,7 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
 %
 %  See also: fopen, fread, reshape, imshow
 %
+
 % ----------------------------------------------------------------------
 % Author: <your name>
 % Date  : <creation date>
