@@ -29,7 +29,7 @@ bibliography: paper.bib
 
 # Summary
 
-Rank revealing factorizations have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].  'Sketcher' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The algorithms ramdomly sampling the range of the matrix or operator a similar manner to '[@Halko:2011]'. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible. 
+Rank revealing factorizations have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].  'Sketcher' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The algorithms ramdomly sampling the range of the matrix or operator a similar manner to '[@Halko:2011]'. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible.  'Sketcher' is designed for small to mid-range sized matrices (i.e. up to roughly 10,000 in size depending on computing resources).  'Sketcher' is not intendend for matrices that are larger or need to read from hard drive.  
 
 'Sketcher' includes the following options all of which can be used for both real and complex matrices: 
 
@@ -37,9 +37,18 @@ Rank revealing factorizations have become a vital tool for a variety of areas in
 - 'svd_sketch': Rank revealing Singular Value Decomposition
 - 'id_sketch': Interpolatory Decomposition via randomized sampling.
 
+The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes.  'Stetcher' requires both the ability to apply both the matrix and its transpose via a subroutine.  If only application of the matrix is available, 
+'Sketcher' will not work.  The following are the options when using a matrix vector multiplication routine:
+
+-
+-
+-
+
 For each method the user has the option to change the block size for the sampling and to turn on the power option.  The default are block sizes that are multiples of 42 and power option off.
 
 Several test codes are included.  They also serve as demo codes.  The codes include:
+
+While the algorithm used in 'Sketcher' is built in a similar manner to the rank revealing factorizations in [@Halko:2011], there is a large collection of related work [Duersch:2020,Mahoney:2009,MEIER:2024,Martinsson:2019,Sorensen:2016,Gu:1996].  
 
 
 
@@ -48,6 +57,8 @@ Several test codes are included.  They also serve as demo codes.  The codes incl
 While the area of rank revealing factorization techniques, there is not an easy to use widely available factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in unnecessarily slow code.  The area of fast direct solvers for integral equations is an example of why 'Sketcher' is useful.  For sometime, developers of fast direct solvers using Matlab have been using a Fortran package [@Tygert:2008] based on [@Liberty:2007] via a specialized wrapper.  The need of this wrapper has slowed the design and use of these solvers.  
 
 # Mathematics
+
+We begin with reviewing w
 
 The algorithm that is implemented is a variant of existing randomized techniques for rank revealing QR factorizations.  The algorithm was heavily influenced by the method presented in [`@Halko:2011`].    Add references to other related work.
 
