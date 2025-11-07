@@ -1,5 +1,5 @@
 ---
-title: '???: A library of radomized rank revealing factorization algorithms'
+title: 'Sketcher: A library of radomized rank revealing factorization algorithms'
 tags:
   - Python
   - Julia
@@ -29,15 +29,19 @@ bibliography: paper.bib
 
 # Summary
 
-Rank revealing factorizations have become a vital tool for a variety of algorithms including fast direct solvers and data science.   'package name' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The technique is based on the standard randomized rank revealing algorithms but was created to exploit Blas 3 calls. Thus it provides efficient and robust software that has been lacking in these high level languages.
+Rank revealing factorizations have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@RRQRapp].  'Sketcher' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The algorithms ramdomly sampling the range of the matrix or operator a similar manner to [`@2011Halko`]. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible. 
 
+'Sketcher' includes the following options all of which can be used for both real and complex matrices: 
+
+- 'qr_sketch': Rank revealing QR factorization.
+- 'svd_sketch': Rank revealing Singular Value Decomposition
+- 'id_sketch': Interpolatory Decomposition via randomized sampling.
+
+For each method the user has the option to change the block size for the sampling and to turn on the power option.  The default are block sizes that are multiples of 42 and power option off.
 
 # Statement of need
 
-`package name` is a randomized projection based rank revealing factorization package with Python, Julia and Matlab implementations.  Rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@RRQRapp].  
-
-One specific application of interest to the authors is of rank revealing factorizations in the development and use of fast direct solvers.  When these solvers are used in a high level language, many would call a Fortran package [@2008_tygert_ID_package] via a specialized wrapper.  The need of the wrapper slows the design and use of these solvers.  `package name` removes this hurdle allowing users to run solver codes natively in the high level language. 
-
+While the area of rank revealing factorization techniques, there is not an easy to use widely available factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in unnecessarily slow code.  The area of fast direct solvers for integral equations is an example of why 'Sketcher' is useful.  For sometime, developers of fast direct solvers using Matlab have been using a Fortran package [@2008_tygert_ID_package] via a specialized wrapper.  The need of this wrapper has slowed the design and use of these solvers.  
 
 # Mathematics
 
