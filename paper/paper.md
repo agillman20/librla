@@ -29,7 +29,7 @@ bibliography: paper.bib
 
 # Summary
 
-Rank revealing factorizations have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@RRQRapp].  'Sketcher' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The algorithms ramdomly sampling the range of the matrix or operator a similar manner to [`@2011Halko`]. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible. 
+Rank revealing factorizations have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, rank revealing factorizations are useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@RRQRapp].  'Sketcher' provides rank revealing QR, rank revealing SVD and interpolatory decomposition written natively in Python, Julia and Matlab.  The algorithms ramdomly sampling the range of the matrix or operator a similar manner to '[@2011Halko]'. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible. 
 
 'Sketcher' includes the following options all of which can be used for both real and complex matrices: 
 
