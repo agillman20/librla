@@ -450,11 +450,13 @@ def main():
 
     avg_maxT_sketch = np.mean([r.maxT_sketch for r in results])
     avg_maxT_rrqr = np.mean([r.maxT_rrqr for r in results])
+    min_maxT_sketch = np.min([r.maxT_sketch for r in results])
+    min_maxT_rrqr = np.min([r.maxT_rrqr for r in results])
+    max_maxT_sketch = np.max([r.maxT_sketch for r in results])
+    max_maxT_rrqr = np.max([r.maxT_rrqr for r in results])
 
-    print(f"{'Method':<15s} {'Avg max|T|':<12s}")
-    print("-"*80)
-    print(f"{'sketch':<15s} {avg_maxT_sketch:>8.2f}")
-    print(f"{'RRQR':<15s} {avg_maxT_rrqr:>8.2f}")
+    print(f"  id_sketch:   mean={avg_maxT_sketch:.3e}, min={min_maxT_sketch:.3e}, max={max_maxT_sketch:.3e}")
+    print(f"  id_rrqr:     mean={avg_maxT_rrqr:.3e}, min={min_maxT_rrqr:.3e}, max={max_maxT_rrqr:.3e}")
 
     print()
     print("="*80)

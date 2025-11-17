@@ -268,8 +268,8 @@ function print_summary(results::Vector{ComparisonResult})
     maxT_rrqr_all = [r.maxT_rrqr for r in results]
 
     println("\nConditioning Statistics (max|T|):")
-    @printf("  id_sketch:   mean=%.3e, max=%.3e\n", mean(maxT_sketch_all), maximum(maxT_sketch_all))
-    @printf("  id_rrqr:     mean=%.3e, max=%.3e\n", mean(maxT_rrqr_all), maximum(maxT_rrqr_all))
+    @printf("  id_sketch:   mean=%.3e, min=%.3e, max=%.3e\n", mean(maxT_sketch_all), minimum(maxT_sketch_all), maximum(maxT_sketch_all))
+    @printf("  id_rrqr:     mean=%.3e, min=%.3e, max=%.3e\n", mean(maxT_rrqr_all), minimum(maxT_rrqr_all), maximum(maxT_rrqr_all))
 
     println("="^70)
 end
