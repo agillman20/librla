@@ -664,13 +664,16 @@ classdef libid
             R12 = R(1:k,k+1:end);
 
             if useSVD
-                [U,s,V] = svd(R11,0);
+                [U,S,V] = svd(R11,0);
+		s = diag(S);
                 keep = s >= rtol*max(s);
+		if( rtol >= 1 )
+		    keep = 1:(min(rtol, size(S,1)));
+		end
                 if ~any(keep)
                     T = zeros(size(R12));
                 else
-                    inv_s = 1./s(keep);
-                    T = V(:,keep)' * (diag(inv_s) * (U(:,keep)'\R12));
+                    T = V(:,keep) * (S(keep,keep) \ (U(:,keep)' * R12));
                 end
             else
                 % Upper-triangular solve R11 * T = R12
