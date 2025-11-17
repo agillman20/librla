@@ -149,7 +149,6 @@ rel_err = norm(A_skel - A_basis * T) / norm(A)
 
 ## See Also
 
-- `LibIDRandQB.id_randqb`: Randomized QB-based ID (adaptive)
 - `LibIDSketch.id_sketch`: Sketch-based ID (best for large-scale)
 """
 function id_rrqr(A::AbstractMatrix{T};

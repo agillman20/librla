@@ -29,8 +29,6 @@ Multiple ID implementations for different use cases:
 
 1. **`libid_sketch`** - Randomized QR sketching (default, fastest)
 2. **`libid_rrqr`** - Deterministic RRQR using LAPACK geqp3
-3. **`libid_geqp3rk`** - Deterministic with early stopping
-4. **`libid_randqb`** - Adaptive randomized QB factorization
 
 ### Utility Functions
 
@@ -44,20 +42,20 @@ Multiple ID implementations for different use cases:
 
 ### Python
 - **Main library:** `libid.py`
-- **ID variants:** `libid_rrqr.py`, `libid_geqp3rk_native.py`, `libid_randqb.py`
+- **ID variants:** `libid_rrqr.py`
 - **LinearOperator:** `make_linop.py`
 - **Comparison:** `compare_id.py`, `compare_svd.py`
 - **Matrix generation:** `make_mat.py`
 
 ### MATLAB/Octave
 - **Main library:** `libid.m` (classdef with static methods)
-- **ID variants:** `libid_rrqr.m`, `libid_geqp3rk.m`, `libid_randqb.m`
+- **ID variants:** `libid_rrqr.m`
 - **LinearOperator:** `make_linop.m`
 - **Comparison:** `compare_id.m`, `compare_svd.m`
 - **Matrix generation:** `make_mat.m`
 
 ### Julia
-- **Modules:** `LibIDGeqp3rk.jl`, `LibIDRandQB.jl`, `LibIDRRQR.jl`, `LibIDSketch.jl`
+- **Modules:** `LibIDRRQR.jl`, `LibIDSketch.jl`
 - **LinearOperator:** `make_linop.jl`
 - **Comparison:** `compare_id.jl`, `compare_svd.jl`
 
@@ -309,8 +307,6 @@ Detailed documentation available for specific topics:
 
 - **`id_sketch`** (default) - Best for large matrices, fastest, good accuracy
 - **`id_rrqr`** - Deterministic, reproducible results, moderate speed
-- **`id_geqp3rk`** - Early stopping for efficiency, LAPACK-based
-- **`id_randqb`** - Adaptive, excellent for quickly-decaying spectra
 
 ### Block Size Selection
 

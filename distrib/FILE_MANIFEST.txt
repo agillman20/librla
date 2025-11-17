@@ -161,12 +161,12 @@ Use **libid_rrqr** when:
 ## Notes
 
 ### Excluded from Distribution
-- Additional variants (libid_geqp3rk, libid_randqb, libid_apps)
+- Additional variants (libid_apps)
 - Development documentation (MATRIX_FREE_*.md, INVESTIGATION_*.md, etc.)
 - Build artifacts (__pycache__/, local/, *.so, .claude/)
 - Debug/profiling scripts
 - Internal test scripts
-- Build scripts (build_geqp3rk.sh, python-local.sh)
+- Build scripts (python-local.sh)
 - Complex subdirectory structures (consolidated into 3 directories)
 
 ### Missing Files

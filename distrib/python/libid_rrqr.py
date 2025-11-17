@@ -45,7 +45,7 @@ def id_rrqr(A, rtol, kmax=None):
 
     Notes
     -----
-    This is equivalent to what geqp3rk would do, simulated using geqp3:
+    Algorithm steps using geqp3:
     1. Compute full pivoted QR: A[:, jpiv] = Q @ R
     2. Determine rank k from diagonal of R
     3. Extract R11 (kxk) and R12 (kx(n-k))
