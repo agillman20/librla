@@ -440,8 +440,8 @@ function print_summary(results)
     maxT_rrqr_all = [results.maxT_rrqr];
 
     fprintf('\nConditioning Statistics (max|T|):\n');
-    fprintf('  id_sketch:   mean=%.3e, max=%.3e\n', mean(maxT_sketch_all), max(maxT_sketch_all));
-    fprintf('  id_rrqr:     mean=%.3e, max=%.3e\n', mean(maxT_rrqr_all), max(maxT_rrqr_all));
+    fprintf('  id_sketch:   mean=%.3e, min=%.3e, max=%.3e\n', mean(maxT_sketch_all), min(maxT_sketch_all), max(maxT_sketch_all));
+    fprintf('  id_rrqr:     mean=%.3e, min=%.3e, max=%.3e\n', mean(maxT_rrqr_all), min(maxT_rrqr_all), max(maxT_rrqr_all));
 
     fprintf('======================================================================\n');
 end
