@@ -566,9 +566,8 @@ classdef libid
         %   useSVD     : logical (default = false) - compute T via SVD of R11.
         %   recomputeT : logical (default = false) - recompute T from original A.
         %                - false (default): Compute T from R matrix (Fortran's approach).
-        %                  Fast (6-9x speedup for matrix-free), but may give error > 1.0 on
-        %                  full-rank matrices. Use when speed is critical and higher error
-        %                  is acceptable.
+        %                  May give error > 1.0 on full-rank matrices. Use when speed is
+        %                  critical and higher error is acceptable.
         %
         %                - true: Recompute T via least squares on original A.
         %                  Ensures error < 1.0 (mathematically guaranteed).

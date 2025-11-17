@@ -570,9 +570,8 @@ where:
 - `use_svd::Bool`: Use SVD for solving R11*T=R12 (default: false)
 - `recompute_T::Bool`: Recompute interpolation matrix T from original A (default: false)
   - **false (default)**: Compute T from R matrix (Fortran's approach).
-    Fast (6-9x speedup for matrix-free), but may give error > 1.0 on
-    full-rank matrices. Use when speed is critical and higher error
-    is acceptable.
+    May give error > 1.0 on full-rank matrices. Use when speed is critical
+    and higher error is acceptable.
 
   - **true**: Recompute T via least squares on original A.
     Ensures error < 1.0 (mathematically guaranteed).
@@ -731,7 +730,6 @@ Direct port of Python libid.py `svd_sketch` (lines 268-305).
 For wide matrices (m < n), transpose to minimize SVD cost:
 - Without: SVD of [kxn] costs O(kn^2)
 - With: SVD of [kxm] costs O(km^2)
-- Speedup: (n/m)^2
 
 # Arguments
 - `A::AbstractMatrix`: Input matrix (m x n), supports any float type
@@ -768,7 +766,7 @@ function svd_sketch(A::AbstractMatrix{T};
 
     # For wide matrices (m < n), transpose to minimize SVD cost
     # The projected matrix becomes kxm instead of kxn, reducing SVD
-    # from O(kn^2) to O(km^2), giving speedup of (n/m)^2
+    # from O(kn^2) to O(km^2)
     if m < n
         if _is_linop(A)
             # Create transposed LinearOperator with swapped matvec/rmatvec
