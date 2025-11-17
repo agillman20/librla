@@ -112,6 +112,33 @@ def compare_on_matrix(A, rtol_or_rank, name):
         err_sketch = 0.0
         maxT_sketch = 0.0
 
+    # CHECK: Error > 1.0 can occur for (nearly) full-rank matrices with fast T computation
+    if err_sketch > 1.0:
+        print(f"\n[NOTE] Detected error > 1.0 ({err_sketch:.6f})")
+        print("  This can occur for (nearly) full-rank matrices with fast T computation.")
+        print("  Recomputing with recompute_T=True for accurate lstsq-based T...")
+
+        # Retry with recompute_T=True for accurate T computation via lstsq
+        t0 = time.perf_counter()
+        k_sketch, piv_sketch, T_sketch = id_sketch(A, rtol=float(rtol_or_rank), recompute_T=True)
+        t_sketch = time.perf_counter() - t0
+
+        # Recompute error with new T
+        A_skel_sketch = A[:, piv_sketch[k_sketch:]]
+        A_basis_sketch = A[:, piv_sketch[:k_sketch]]
+        if T_sketch.size > 0:
+            err_sketch = np.linalg.norm(A_skel_sketch - A_basis_sketch @ T_sketch, 'fro') / normA
+            maxT_sketch = np.max(np.abs(T_sketch))
+        else:
+            err_sketch = 0.0
+            maxT_sketch = 0.0
+
+        print(f"  -> Recomputed: error = {err_sketch:.3e} (recompute_T=True)")
+
+        if err_sketch > 1.0:
+            raise ValueError(f"[ERROR] Error still > 1.0 even with recompute_T=True!\n"
+                           f"   Error = {err_sketch:.6f}, Test: {name}, rtol_or_rank={rtol_or_rank}")
+
     print(f"Rank:       k = {k_sketch}")
     print(f"Error:      ||A_skel - A_basis @ T|| / ||A|| = {err_sketch:.3e}")
     print(f"Condition:  max|T| = {maxT_sketch:.3e}")
