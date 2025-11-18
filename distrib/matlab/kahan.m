@@ -14,19 +14,24 @@ function K = kahan(n, varargin)
 %           Controls the condition number via cos(theta)
 %           Smaller theta -> better conditioned
 %           Larger theta -> worse conditioned
-%   pert  - Perturbation parameter for off-diagonal entries (default: 0.25)
-%           Standard form uses pert = 0.25
-%           Setting pert = 0 gives a purely diagonal matrix
+%   pert  - Perturbation parameter for diagonal entries (default: 25)
+%           Standard form uses pert = 25 for numerical stability
+%           Setting pert = 0 gives no diagonal perturbation
 %
 % Returns:
 %   K - Kahan matrix (n x n)
 %
 % Matrix Structure:
-%   K(i,i) = s^(i-1)              for i = 1,...,n (diagonal)
-%   K(i,j) = -c * s^(i-1) * pert  for i < j       (upper triangle)
-%   K(i,j) = 0                    for i > j       (lower triangle)
+%   K(i,i) = s^(i-1) + pert*eps*(n-i+1)  for i = 1,...,n (diagonal)
+%   K(i,j) = -c * s^(i-1)                for i < j       (upper triangle)
+%   K(i,j) = 0                           for i > j       (lower triangle)
 %
-%   where s = sin(theta) and c = cos(theta).
+%   where s = sin(theta), c = cos(theta), and eps is machine epsilon.
+%
+% The diagonal perturbation (pert*eps*(n-i+1)) ensures QR factorization
+% with column pivoting does not interchange columns in the presence of
+% rounding errors. The default pert=25 ensures no interchanges up to
+% N=90 in IEEE arithmetic.
 %
 % The condition number is approximately 1/cos(theta)^n, so it grows
 % exponentially with n and theta.
@@ -53,6 +58,8 @@ function K = kahan(n, varargin)
 %       Algorithms", 2nd ed., SIAM, 2002, Chapter 28.
 %   [2] W. Kahan, Numerical Linear Algebra, Canadian Math. Bulletin,
 %       9 (1966), pp. 757-801.
+%   [3] NIST Matrix Market: Kahan Matrix,
+%       https://math.nist.gov/MatrixMarket/deli/Kahan/information.html
 %
 % Author: Claude Code
 % Compatible with: MATLAB, Octave
@@ -64,7 +71,7 @@ end
 
 % Default parameters
 theta = 1.2;
-pert = 0.25;
+pert = 25;
 
 % Parse optional arguments
 if nargin >= 2
@@ -83,19 +90,22 @@ end
 s = sin(theta);
 c = cos(theta);
 
-% Create upper triangular matrix
-K = zeros(n, n);
+% Create matrix following Octave gallery('kahan') implementation:
+% K = eye(n) - c * triu(ones(n), 1)
+% K = diag(s.^[0:n-1]) * K + pert*eps*diag([n:-1:1])
 
-% Fill diagonal: K(i,i) = s^(i-1)
-for i = 1:n
-    K(i, i) = s^(i-1);
-end
+% Start with identity
+K = eye(n);
 
-% Fill upper triangle: K(i,j) = -c * s^(i-1) * pert
-for i = 1:n
-    for j = (i+1):n
-        K(i, j) = -c * s^(i-1) * pert;
-    end
-end
+% Subtract c * strict_upper_triangle(ones)
+% This makes all strict upper triangle elements equal to -c
+K = K - c * triu(ones(n), 1);
+
+% Left-multiply by diagonal matrix diag(s^[0:n-1])
+% This scales row i by s^(i-1) (1-indexed)
+K = diag(s.^[0:n-1]) * K;
+
+% Add diagonal perturbation: pert*eps*diag([n, n-1, ..., 1])
+K = K + pert*eps* diag([n:-1:1]);
 
 end
