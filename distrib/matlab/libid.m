@@ -597,14 +597,8 @@ classdef libid
         %   err = norm(A(:,p(k+1:end)) - A(:,p(1:k))*T,'fro')/norm(A,'fro');
         %
         %   % Fast mode for matrix-free operators (expert use)
-        %   [k,p,T] = libid.id_sketch(A_linop,50,42,0,false,false);  % 6-9x faster
+        %   [k,p,T] = libid.id_sketch(A_linop,50,42,0,false,false);
         %
-        % Code flow
-        % ---------
-        %   1. Parse optional flags.
-        %   2. QR sketch on A -> (~,R,piv).
-        %   3. Compute T (recomputeT=true uses lstsq, false uses R matrix).
-        %   4. Return k, piv and T.
         % -----------------------------------------------------------------
             if nargin < 6, recomputeT = false; end
             if nargin < 5, useSVD = false; end
