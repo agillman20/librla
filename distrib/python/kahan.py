@@ -15,7 +15,7 @@ Author: Claude Code
 import numpy as np
 
 
-def kahan(n, theta=1.2, pert=0.25):
+def kahan(n, theta=1.2, pert=25):
     """
     Generate Kahan matrix.
 
@@ -33,9 +33,9 @@ def kahan(n, theta=1.2, pert=0.25):
         Smaller theta -> better conditioned
         Larger theta -> worse conditioned
     pert : float, optional
-        Perturbation parameter for off-diagonal entries (default: 0.25)
-        Standard form uses pert = 0.25
-        Setting pert = 0 gives a purely diagonal matrix
+        Perturbation parameter for diagonal entries (default: 25)
+        Standard form uses pert = 25 for numerical stability
+        Setting pert = 0 gives no diagonal perturbation
 
     Returns
     -------
@@ -45,11 +45,16 @@ def kahan(n, theta=1.2, pert=0.25):
     Notes
     -----
     The matrix has the form:
-        K(i,i) = s^(i-1)              for i = 1,...,n (diagonal)
-        K(i,j) = -c * s^(i-1) * pert  for i < j       (upper triangle)
-        K(i,j) = 0                    for i > j       (lower triangle)
+        K(i,i) = s^(i-1) + pert*eps*(n-i+1)  for i = 1,...,n (diagonal)
+        K(i,j) = -c * s^(i-1)                for i < j       (upper triangle)
+        K(i,j) = 0                           for i > j       (lower triangle)
 
-    where s = sin(theta) and c = cos(theta).
+    where s = sin(theta), c = cos(theta), and eps is machine epsilon.
+
+    The diagonal perturbation (pert*eps*(n-i+1)) ensures QR factorization
+    with column pivoting does not interchange columns in the presence of
+    rounding errors. The default pert=25 ensures no interchanges up to
+    N=90 in IEEE arithmetic.
 
     The condition number is approximately 1/cos(theta)^n, so it grows
     exponentially with n and theta.
@@ -78,24 +83,37 @@ def kahan(n, theta=1.2, pert=0.25):
            Algorithms", 2nd ed., SIAM, 2002, Chapter 28.
     .. [2] W. Kahan, Numerical Linear Algebra, Canadian Math. Bulletin,
            9 (1966), pp. 757-801.
+    .. [3] NIST Matrix Market: Kahan Matrix,
+           https://math.nist.gov/MatrixMarket/deli/Kahan/information.html
     """
     if n < 1:
         raise ValueError(f"n must be positive, got {n}")
 
     s = np.sin(theta)
     c = np.cos(theta)
+    eps = np.finfo(float).eps
 
-    # Create upper triangular matrix
-    K = np.zeros((n, n))
+    # Create matrix following Octave gallery('kahan') implementation:
+    # U = eye(n) - c * triu(ones(n), 1)
+    # U = diag(s.^[0:n-1]) * U + pert*eps*diag([n:-1:1])
 
-    # Fill diagonal: K(i,i) = s^(i-1)
-    for i in range(n):
-        K[i, i] = s ** i
+    # Start with identity
+    K = np.eye(n)
 
-    # Fill upper triangle: K(i,j) = -c * s^(i-1) * pert
+    # Subtract c * strict_upper_triangle(ones)
+    # This makes all strict upper triangle elements equal to -c
     for i in range(n):
         for j in range(i + 1, n):
-            K[i, j] = -c * (s ** i) * pert
+            K[i, j] = -c
+
+    # Left-multiply by diagonal matrix diag(s^[0:n-1])
+    # This scales row i by s^i
+    for i in range(n):
+        K[i, :] *= (s ** i)
+
+    # Add diagonal perturbation: pert*eps*diag([n, n-1, ..., 1])
+    for i in range(n):
+        K[i, i] += pert * eps * (n - i)
 
     return K
 
