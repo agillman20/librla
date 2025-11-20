@@ -665,7 +665,7 @@ classdef libid
 		    keep = 1:(min(rtol, size(S,1)));
 		end
                 if ~any(keep)
-                    T = zeros(size(R12));
+		    T = zeros(size(R12), class(R12));
                 else
                     T = V(:,keep) * (S(keep,keep) \ (U(:,keep)' * R12));
                 end
