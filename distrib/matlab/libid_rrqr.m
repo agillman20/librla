@@ -168,11 +168,9 @@ classdef libid_rrqr
                 rtol_svd = max(size(R11)) * eps(class(R11));
                 keep = s >= rtol_svd * max(s);
                 if ~any(keep)
-                    T = zeros(size(R12), class(R12));
+		    T = zeros(size(R12), class(R12));
                 else
-                    inv_s = 1 ./ s(keep);
-                    % Right-associative: V * (inv_s * (U' * R12))
-                    T = V(:,keep) * (diag(inv_s) * (U(:,keep)' * R12));
+                    T = V(:,keep) * (S(keep,keep) \ (U(:,keep)' * R12));
                 end
             else
                 % Standard triangular solve
