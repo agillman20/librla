@@ -1,9 +1,28 @@
-# Installation Instructions
+# Installation Instructions - librla
 
-This distribution contains two algorithms for interpolative decomposition (ID) in Python, MATLAB/Octave, and Julia:
+This distribution contains a unified randomized linear algebra library (librla) implemented in Python, MATLAB/Octave, and Julia. All three implementations provide the same core functions with consistent APIs.
 
-- **libid** / **LibIDSketch**: Randomized QR sketching (recommended - fast, adaptive)
-- **libid_rrqr** / **LibIDRRQR**: Deterministic RRQR via LAPACK geqp3 (reproducible)
+## Quick Start
+
+### Python
+```python
+import sys
+sys.path.append('/path/to/distrib/python')
+from librla import orth_sketch, qr_sketch, svd_sketch, id_sketch
+```
+
+### MATLAB/Octave
+```matlab
+addpath('/path/to/distrib/matlab');
+[Q, R, p] = librla.qr_sketch(A, 1e-6);
+```
+
+### Julia
+```julia
+include("/path/to/distrib/julia/librla.jl")
+using .librla
+Q, R, p = qr_sketch(A, 1e-6)
+```
 
 ## Python
 
@@ -13,218 +32,396 @@ This distribution contains two algorithms for interpolative decomposition (ID) i
 - SciPy >= 1.7
 
 ### Installation
-No installation needed. Simply copy the files from the `python/` directory to your project or add the directory to your Python path:
 
+**Option 1: Add to Python path (recommended for testing)**
 ```python
 import sys
 sys.path.append('/path/to/distrib/python')
-from libid import id_sketch          # Randomized sketching (recommended)
-from libid_rrqr import id_rrqr       # Deterministic RRQR
-from make_linop import make_linop    # LinearOperator support (optional)
+```
+
+**Option 2: Add to PYTHONPATH environment variable**
+```bash
+export PYTHONPATH="/path/to/distrib/python:$PYTHONPATH"
+```
+
+**Option 3: Copy files to your project**
+```bash
+cp distrib/python/librla.py your_project/
+cp distrib/python/LinearOperator.py your_project/  # Optional
+cp distrib/python/hilb.py your_project/  # Optional utilities
+```
+
+### Usage
+```python
+from librla import (
+    orth_sketch,    # Orthonormal basis via random sketching
+    qr_sketch,      # Truncated QR factorization
+    svd_sketch,     # Truncated SVD
+    id_sketch,      # Interpolative decomposition (randomized)
+    id_qrpiv        # Interpolative decomposition (deterministic)
+)
+
+import numpy as np
+
+# Create a test matrix
+A = np.random.randn(1000, 500)
+
+# Tolerance mode: adaptive rank selection
+k, piv, T = id_sketch(A, rtol=1e-6)
+
+# Rank mode: fixed-rank approximation
+U, s, Vt = svd_sketch(A, rtol=20.0)  # Rank-20 approximation
+```
+
+### Testing Python Installation
+```bash
+cd distrib/python
+python test1_hilbert.py
+python test2_svd_hilbert.py
+python compare_id.py
+```
+
+### Troubleshooting Python
+
+**ImportError: No module named 'librla'**
+- Verify the path in `sys.path.append()` is correct
+- Use absolute paths, not relative paths
+- Check that `librla.py` exists in the specified directory
+
+**ImportError: No module named 'numpy' or 'scipy'**
+```bash
+pip install numpy scipy
+# or with conda:
+conda install numpy scipy
 ```
 
 ## MATLAB/Octave
 
 ### Requirements
-- MATLAB R2018a or later, OR
-- GNU Octave 6.0 or later
+- **MATLAB**: R2018a or later (earlier versions may work but are untested)
+- **Octave**: 6.0 or later
 
 ### Installation
-Add the directory to your MATLAB/Octave path:
 
+**Option 1: Temporary path (session only)**
 ```matlab
 addpath('/path/to/distrib/matlab');
 ```
 
-To make this permanent, add these lines to your `startup.m` file.
+**Option 2: Permanent path**
+
+Add to your `startup.m` file (create if it doesn't exist):
+```matlab
+% File: ~/Documents/MATLAB/startup.m (MATLAB)
+% File: ~/.octaverc (Octave)
+addpath('/path/to/distrib/matlab');
+```
+
+To find startup file location in MATLAB:
+```matlab
+userpath  % Shows MATLAB user path
+```
+
+**Option 3: Copy files to your project**
+```bash
+cp distrib/matlab/librla.m your_project/
+cp distrib/matlab/LinearOperator.m your_project/  # Optional
+cp distrib/matlab/hilb.m your_project/  # Optional utilities
+```
 
 ### Usage
-All functions are static methods of the `libid` class:
+
+All librla functions are static methods of the `librla` class:
 
 ```matlab
-% Randomized sketching (recommended)
-[k, piv, T] = libid.id_sketch(A, rtol);
+% Create a test matrix
+A = randn(1000, 500);
 
-% Deterministic RRQR
-[k, piv, T] = libid_rrqr(A, rtol);
+% Tolerance mode: adaptive rank selection
+[k, piv, T] = librla.id_sketch(A, 1e-6);
+
+% Rank mode: fixed-rank approximation
+[U, s, V] = librla.svd_sketch(A, 20);  % Rank-20 approximation
+
+% With optional parameters
+[Q, R, p] = librla.qr_sketch(A, 1e-6, 'power_iter', 2, 'block_size', 50);
+
+% Interpolative decomposition with method selection
+[k, piv, T] = librla.id_sketch(A, 1e-6, 'method', 'lstsq');
 ```
+
+### Testing MATLAB Installation
+```matlab
+cd distrib/matlab
+test1_hilbert
+test2_svd_hilbert
+compare_id
+```
+
+### Troubleshooting MATLAB/Octave
+
+**Undefined function or variable 'librla'**
+- Run `which librla` to check if it's in the path
+- Verify `addpath()` was called with correct directory
+- Check that `librla.m` exists in the specified directory
+
+**Error using librla (line...)**
+- Ensure you're using MATLAB R2018a or Octave 6.0+
+- Older versions may not support classdef syntax used by librla
+
+**Octave-specific issues**
+- Octave 5.x may not fully support all features
+- Upgrade to Octave 6.0 or later for best compatibility
 
 ## Julia
 
 ### Requirements
 - Julia 1.6 or later
-- LinearAlgebra (standard library)
-- Random (standard library)
+- LinearAlgebra package (standard library)
+- Random package (standard library)
 
 ### Installation
-Include the module files in your project:
 
+**Option 1: Include in your project (recommended)**
 ```julia
-# Randomized sketching (recommended)
-include("/path/to/distrib/julia/LibIDSketch.jl")
-using .LibIDSketch
-
-# Deterministic RRQR
-include("/path/to/distrib/julia/LibIDRRQR.jl")
-using .LibIDRRQR
-
-# LinearOperator support (optional)
-include("/path/to/distrib/julia/make_linop.jl")
+include("/path/to/distrib/julia/librla.jl")
+using .librla
 ```
 
-## Running Tests
+**Option 2: Add to LOAD_PATH**
+```julia
+push!(LOAD_PATH, "/path/to/distrib/julia")
+using librla
+```
 
-### Python
+**Option 3: Copy files to your project**
 ```bash
-cd python
-python test_libid.py
-python test_power_iteration.py
+cp distrib/julia/librla.jl your_project/
+cp distrib/julia/LinearOperator.jl your_project/  # Optional
+cp distrib/julia/hilb.jl your_project/  # Optional utilities
 ```
 
-### MATLAB/Octave
-```matlab
-cd matlab
-test_libid
-test_power_iteration
-```
-
-### Julia
+### Usage
 ```julia
-cd("julia")
-include("test_libid.jl")
-include("test_power_iteration.jl")
+using LinearAlgebra
+include("/path/to/distrib/julia/librla.jl")
+using .librla
+
+# Create a test matrix
+A = randn(1000, 500)
+
+# Tolerance mode: adaptive rank selection
+k, piv, T = id_sketch(A, 1e-6)
+
+# Rank mode: fixed-rank approximation
+U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 approximation
+
+# With optional parameters
+Q, R, p = qr_sketch(A, 1e-6, power_iter=2, block_size=50)
+
+# Interpolative decomposition with method selection
+k, piv, T = id_sketch(A, 1e-6, method="lstsq")
 ```
 
-## Running Examples
-
-Comparison benchmarks are provided in each language directory:
-
-### Python
-```bash
-cd python
-python compare_id.py    # Compare libid vs libid_rrqr
-python compare_svd.py   # Compare SVD methods
-```
-
-### MATLAB/Octave
-```matlab
-cd matlab
-compare_id   # Compare libid vs libid_rrqr
-compare_svd  # Compare SVD methods
-```
-
-### Julia
+### Testing Julia Installation
 ```julia
-cd("julia")
+cd("/path/to/distrib/julia")
+include("test1_hilbert.jl")
+include("test2_svd_hilbert.jl")
 include("compare_id.jl")
-include("compare_svd.jl")
 ```
 
-## Algorithm Selection Guide
+### Troubleshooting Julia
 
-### When to use `libid` (Randomized Sketching)
-**Recommended for most users**
-- Default choice for production use
-- Fastest implementation (typically 2-5x faster than RRQR)
-- Adaptive rank selection via geometric growth
-- Excellent accuracy in practice
-- Supports both tolerance mode and rank mode
-- Matrix-free operation support via LinearOperators
+**UndefVarError: librla not defined**
+- Ensure you called `using .librla` (note the dot `.` prefix)
+- Verify the path to `librla.jl` in the `include()` statement
+- Check that `librla.jl` exists at the specified location
 
-**Trade-off:**  
-- Results are stochastic (vary slightly between runs)
+**MethodError or type errors**
+- Ensure you're using Julia 1.6 or later
+- Run `versioninfo()` to check Julia version
 
-### When to use `libid_rrqr` (Deterministic RRQR)
-**Use when reproducibility is critical**
-- Deterministic results (always identical for same input)
-- Verification and validation
-- When you need bit-exact reproducibility
-- Regression testing
-- Debugging
+**LoadError while including librla.jl**
+- Check that `LinearAlgebra` and `Random` are available:
+  ```julia
+  using LinearAlgebra
+  using Random
+  ```
 
-**Trade-off:**  
-- Slower than randomized sketching
-- No adaptive rank selection
+## LinearOperator Support
+
+All three implementations support **LinearOperator** for matrix-free computations.
+
+### Python - Using scipy.sparse.linalg.LinearOperator
+
+```python
+from scipy.sparse.linalg import LinearOperator as ScipyLinOp
+from librla import orth_sketch
+import numpy as np
+
+# Define matrix-vector products
+def matvec(x):
+    return np.fft.fft(x)
+
+def rmatvec(x):
+    return np.fft.ifft(x)
+
+# Create LinearOperator
+n = 1000
+A_op = ScipyLinOp(shape=(n, n), matvec=matvec, rmatvec=rmatvec)
+
+# Use with librla (rank mode only for matrix-free)
+Q, flag, err = orth_sketch(A_op, 20.0)
+```
+
+### MATLAB - Using LinearOperator class
+
+```matlab
+% Create LinearOperator
+n = 1000;
+matvec_fun = @(x) fft(x);
+rmatvec_fun = @(x) ifft(x);
+A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
+
+% Use with librla (rank mode only for matrix-free)
+[Q, flag, err] = librla.orth_sketch(A_op, 20);
+```
+
+### Julia - Using LinearOperator type
+
+```julia
+include("LinearOperator.jl")
+using .librla
+
+# Create LinearOperator
+n = 1000
+matvec_fun(x) = fft(x)
+rmatvec_fun(x) = ifft(x)
+A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n, dtype=ComplexF64)
+
+# Use with librla (rank mode only for matrix-free)
+Q, flag, err = orth_sketch(A_op, 20.0)
+```
+
+**Note:** Matrix-free LinearOperators only support **rank mode** (rtol ≥ 1). Tolerance mode requires access to the full matrix.
+
+## Running All Tests
+
+### Python
+```bash
+cd distrib/python
+python test1_hilbert.py
+python test1_kahan.py
+python test2_svd_hilbert.py
+python test3_linop_hilbert.py
+python test4_linop_random.py
+python test5_linop_fullrank.py
+python test5_method_comparison.py
+python test6_power.py
+```
+
+### MATLAB/Octave
+```matlab
+cd distrib/matlab
+test1_hilbert
+test1_kahan
+test2_svd_hilbert
+test3_linop_hilbert
+test4_linop_random
+test5_linop_fullrank
+test5_method_comparison
+test6_power
+```
+
+### Julia
+```julia
+cd("/path/to/distrib/julia")
+include("test1_hilbert.jl")
+include("test1_kahan.jl")
+include("test2_svd_hilbert.jl")
+include("test3_linop_hilbert.jl")
+include("test4_linop_random.jl")
+include("test5_linop_fullrank.jl")
+include("test5_method_comparison.jl")
+include("test6_power.jl")
+```
 
 ## Usage Modes
 
-Both algorithms support two modes:
-
 ### Tolerance Mode (rtol < 1)
-Automatically selects rank based on relative error tolerance:
+Automatically determines rank to achieve specified relative accuracy:
+
 ```python
-k, piv, T = id_sketch(A, rtol=1e-8)   # Keep rank where error <= 1e-8
+# Python
+Q, flag, err = orth_sketch(A, 1e-6)  # Adaptive rank to achieve 10^-6 accuracy
 ```
 
-### Rank Mode (rtol >= 1)
-Specify exact target rank:
-```python
-k, piv, T = id_sketch(A, rtol=50.0)   # Force rank = 50
+```matlab
+% MATLAB
+[Q, flag, err] = librla.orth_sketch(A, 1e-6);
 ```
 
-## LinearOperator Framework
+```julia
+# Julia
+Q, flag, err = orth_sketch(A, 1e-6)
+```
 
-LinearOperator support for matrix-free computations is included in each language directory:
+### Rank Mode (rtol ≥ 1)
+Returns fixed-rank approximation:
 
-- **`make_linop`** - Create LinearOperator from functions or matrices
-- **`parse_linop`** - Extract properties from LinearOperator
-- **`lsqr_simple`** - LSQR solver supporting LinearOperators
+```python
+# Python
+U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 SVD
+```
 
-See README.md for detailed LinearOperator documentation.
+```matlab
+% MATLAB
+[U, s, V] = librla.svd_sketch(A, 20);  # Rank-20 SVD
+```
 
-## Documentation
+```julia
+# Julia
+U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 SVD
+```
 
-- **README.md** - Comprehensive overview of algorithms and usage
-- **FILE_MANIFEST.txt** - Complete file listing and descriptions
+## Optional Parameters
 
-## Quick Start Example
+All functions support these optional parameters:
+
+- **`block_size`** (default: 42) - Sketch size for tolerance mode
+- **`power_iter`** (default: 0) - Number of power iterations for accuracy
+- **`extra_samples`** (default: 12) - Oversampling for rank mode
+
+For `id_sketch` only:
+- **`method`** (default: 'fast') - T computation method: 'fast', 'svd', or 'lstsq'
 
 ### Python
 ```python
-from libid import id_sketch
-import numpy as np
-
-# Create a matrix
-A = np.random.randn(1000, 500)
-
-# Compute ID with tolerance mode
-k, piv, T = id_sketch(A, rtol=1e-6)
-
-# Verify: A[:, piv[k:]] ~ A[:, piv[:k]] @ T
-err = np.linalg.norm(A[:, piv[k:]] - A[:, piv[:k]] @ T) / np.linalg.norm(A)
-print(f"Rank: {k}, Error: {err:.3e}")
+k, piv, T = id_sketch(A, 1e-6, power_iter=2, block_size=50, method='svd')
 ```
 
-### MATLAB/Octave
+### MATLAB
 ```matlab
-% Create a matrix
-A = randn(1000, 500);
-
-% Compute ID with tolerance mode
-[k, piv, T] = libid.id_sketch(A, 1e-6);
-
-% Verify: A(:, piv(k+1:end)) ~ A(:, piv(1:k)) * T
-err = norm(A(:, piv(k+1:end)) - A(:, piv(1:k)) * T, 'fro') / norm(A, 'fro');
-fprintf('Rank: %d, Error: %.3e\n', k, err);
+[k, piv, T] = librla.id_sketch(A, 1e-6, 'power_iter', 2, ...
+                                'block_size', 50, 'method', 'svd');
 ```
 
 ### Julia
 ```julia
-using LinearAlgebra
-include("julia/LibIDSketch.jl")
-using .LibIDSketch
-
-# Create a matrix
-A = randn(1000, 500)
-
-# Compute ID with tolerance mode
-k, piv, T = id_sketch(A, rtol=1e-6)
-
-# Verify: A[:, piv[k+1:end]] ~ A[:, piv[1:k]] * T
-err = norm(A[:, piv[k+1:end]] - A[:, piv[1:k]] * T) / norm(A)
-println("Rank: $k, Error: $(err)")
+k, piv, T = id_sketch(A, 1e-6, power_iter=2, block_size=50, method="svd")
 ```
+
+## Documentation
+
+- **README.md** - Comprehensive overview, examples, and API reference
+- **FILE_MANIFEST.txt** - Complete file listing with descriptions
+- **This file (INSTALL.md)** - Installation and testing instructions
 
 ## License
 
-This software is distributed under the BSD 3-Clause License (if LICENSE file is found in distribution).
+See LICENSE file in the parent repository.
+
+## Support
+
+For questions, issues, or bug reports, please contact the repository maintainers or check the parent repository documentation.
