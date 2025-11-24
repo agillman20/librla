@@ -14,6 +14,7 @@ Features
 * qr_sketch          - truncated QR factorization using a random sketch
 * svd_sketch         - truncated SVD via a random sketch
 * id_sketch          - interpolative decomposition (ID) using a random sketch
+* id_qrpiv           - deterministic interpolative decomposition (ID)
 """
 
 import numpy as np
