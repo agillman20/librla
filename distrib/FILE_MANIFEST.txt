@@ -1,173 +1,168 @@
-# libid External Distribution - File Manifest
-# Generated: 2025-11-16 (Simplified Structure)
+librla - Randomized Linear Algebra Distribution
+FILE MANIFEST
+Generated: 2025-11-23
 
-## Overview
-Total files: 43
-Total directories: 3 (one per language)
-Organization: Single directory per language (all functionality consolidated)
-Included algorithms: Randomized sketching (libid) and Deterministic RRQR (libid_rrqr)
+================================================================================
+OVERVIEW
+================================================================================
 
-## Top-level Files (3 files)
-- README.md (7.4 KB) - Comprehensive documentation
-- INSTALL.md (5.4 KB) - Simplified installation instructions
-- FILE_MANIFEST.txt (this file) - File listing
+This distribution provides a unified randomized linear algebra library (librla)
+implemented in Python, MATLAB/Octave, and Julia. The library provides efficient
+sketching-based methods for low-rank matrix approximations.
 
-## python/ (13 files, ~71 KB)
-All Python code in one directory - no subdirectories!
+Total files: 47
+- Documentation: 3 files
+- Python files: 15 files (26K main library)
+- MATLAB files: 15 files (21K main library)
+- Julia files: 14 files (21K main library)
 
-Core libraries:
-- libid.py (35 KB) - Main randomized sketching implementation (recommended)
-- libid_rrqr.py (6 KB) - Deterministic RRQR variant via LAPACK geqp3
+================================================================================
+DOCUMENTATION
+================================================================================
 
-Utilities:
-- make_mat.py (7 KB) - Test matrix generators
-- hilb.py (1 KB) - Hilbert matrix generator
-- kahan.py (4 KB) - Kahan matrix generator
+README.md                (13K)  - Overview, quick start, API reference
+INSTALL.md              (5.2K)  - Installation instructions for all languages
+FILE_MANIFEST.txt       (5.4K)  - This file
 
-LinearOperator support:
-- make_linop.py (8 KB) - Create LinearOperator from functions/matrices
-- parse_linop.py (3 KB) - Extract LinearOperator properties
-- lsqr_simple.py (3 KB) - LSQR solver for LinearOperators
-- lsqr_simple_dr.py (6 KB) - LSQR test driver
+================================================================================
+PYTHON IMPLEMENTATION (python/)
+================================================================================
 
-Tests:
-- test_libid.py (4 KB) - Basic library tests
-- test_power_iteration.py (9 KB) - Power iteration tests
-
-Examples:
-- compare_id.py (10 KB) - Compare libid vs libid_rrqr (24 test cases)
-- compare_svd.py (20 KB) - SVD method comparison
-
-## matlab/ (14 files, ~84 KB)
-All MATLAB/Octave code in one directory - no subdirectories!
-
-Core libraries:
-- libid.m (40 KB) - Main randomized sketching implementation (recommended)
-- libid_rrqr.m (7 KB) - Deterministic RRQR variant via LAPACK geqp3
+Main Library:
+  librla.py             (26K)  - Core randomized linear algebra routines
+                                 Functions: orth_sketch, qr_sketch, svd_sketch,
+                                           id_sketch, id_qrpiv
 
 Utilities:
-- make_mat.m (2 KB) - Test matrix generators
-- hilb.m (< 1 KB) - Hilbert matrix generator
-- kahan.m (3 KB) - Kahan matrix generator
+  LinearOperator.py            - Matrix-free operator abstraction (planned)
+  hilb.py              (1.1K)  - Hilbert matrix generator
+  kahan.py             (4.9K)  - Kahan matrix generator
+  make_mat.py          (7.0K)  - Matrix generation utilities
+  python-local.sh       (79B)  - Local Python path helper script
 
-LinearOperator support:
-- make_linop.m (5 KB) - Create LinearOperator from functions/matrices
-- parse_linop.m (1 KB) - Extract LinearOperator properties
-- lsqr_simple.m (3 KB) - LSQR solver for LinearOperators
-- lsqr_simple_dr.m (6 KB) - LSQR test driver
-- linop_to_afun.m (< 1 KB) - Convert LinearOperator to afun
+Comparison/Examples:
+  compare_id.py         (17K)  - Compare ID algorithms (sketch vs qrpiv)
 
-Tests:
-- test_libid.m (4 KB) - Basic library tests
-- test_power_iteration.m (8 KB) - Power iteration tests
+Test Suite:
+  test1_hilbert.py     (3.3K)  - Basic Hilbert matrix tests
+  test1_kahan.py       (3.1K)  - Kahan matrix tests
+  test2_svd_hilbert.py (3.8K)  - SVD on Hilbert matrix
+  test3_linop_hilbert.py(6.2K) - LinearOperator tests with Hilbert matrix
+  test4_linop_random.py (6.1K)  - LinearOperator tests with random matrices
+  test5_linop_fullrank.py(8.4K) - Full-rank matrix tests
+  test5_method_comparison.py(4.7K) - Compare T computation methods
+  test6_power.py       (8.7K)  - Power iteration tests
 
-Examples:
-- compare_id.m (7 KB) - Compare libid vs libid_rrqr (24 test cases)
-- compare_svd.m (16 KB) - SVD method comparison
+================================================================================
+MATLAB/OCTAVE IMPLEMENTATION (matlab/)
+================================================================================
 
-## julia/ (13 files, ~80 KB)
-All Julia code in one directory - no subdirectories!
-
-Core libraries:
-- LibIDSketch.jl (27 KB) - Main randomized sketching implementation (recommended)
-- LibIDRRQR.jl (7 KB) - Deterministic RRQR variant via LAPACK geqp3
+Main Library:
+  librla.m              (21K)  - Core randomized linear algebra routines (classdef)
+                                 Static methods: orth_sketch, qr_sketch, svd_sketch,
+                                                id_sketch, id_qrpiv
 
 Utilities:
-- make_mat.jl (5 KB) - Test matrix generators
-- kahan.jl (4 KB) - Kahan matrix generator
+  LinearOperator.m     (8.4K)  - Matrix-free operator class
+  hilb.m               (208B)  - Hilbert matrix generator
+  kahan.m              (3.3K)  - Kahan matrix generator
+  make_mat.m           (2.4K)  - Matrix generation utilities
 
-LinearOperator support:
-- make_linop.jl (7 KB) - Create LinearOperator from functions/matrices
-- parse_linop.jl (1 KB) - Extract LinearOperator properties
-- lsqr_simple.jl (3 KB) - LSQR solver for LinearOperators
-- lsqr_simple_dr.jl (6 KB) - LSQR test driver
-- hilb.jl (1 KB) - Hilbert matrix utilities
+Comparison/Examples:
+  compare_id.m          (18K)  - Compare ID algorithms (sketch vs qrpiv)
 
-Tests:
-- test_libid.jl (5 KB) - Basic library tests
-- test_power_iteration.jl (9 KB) - Power iteration tests
+Test Suite:
+  test1_hilbert.m      (3.7K)  - Basic Hilbert matrix tests
+  test1_kahan.m        (3.8K)  - Kahan matrix tests
+  test2_svd_hilbert.m  (4.3K)  - SVD on Hilbert matrix
+  test3_linop_hilbert.m (6.5K)  - LinearOperator tests with Hilbert matrix
+  test4_linop_random.m  (6.7K)  - LinearOperator tests with random matrices
+  test5_linop_fullrank.m(9.3K)  - Full-rank matrix tests
+  test5_method_comparison.m(5.4K) - Compare T computation methods
+  test6_power.m         (8.7K)  - Power iteration tests
 
-Examples:
-- compare_id.jl (6 KB) - Compare libid vs libid_rrqr (24 test cases)
-- compare_svd.jl (16 KB) - SVD method comparison
+================================================================================
+JULIA IMPLEMENTATION (julia/)
+================================================================================
 
-## Algorithm Descriptions
+Main Library:
+  librla.jl             (21K)  - Core randomized linear algebra routines (module)
+                                 Exports: orth_sketch, qr_sketch, svd_sketch,
+                                         id_sketch, id_qrpiv
 
-### libid (Main - Recommended)
-**Randomized QR Sketching**
-- Fast (typically 2-5x faster than deterministic methods)
-- Adaptive rank selection via geometric block growth
-- Optional power iteration for improved accuracy
-- Supports both tolerance mode (rtol < 1) and rank mode (rtol >= 1)
-- Stochastic (results vary slightly between runs)
-- Excellent for large matrices and quick prototyping
+Utilities:
+  LinearOperator.jl    (7.4K)  - Matrix-free operator type
+  hilb.jl              (1.1K)  - Hilbert matrix generator
+  kahan.jl             (4.4K)  - Kahan matrix generator
+  make_mat.jl          (4.5K)  - Matrix generation utilities
 
-### libid_rrqr (Deterministic Alternative)
-**LAPACK geqp3 RRQR**
-- Slower but deterministic (reproducible results)
-- Uses standard LAPACK column-pivoted QR
-- Same interface as libid
-- Good for verification and when reproducibility is critical
+Comparison/Examples:
+  compare_id.jl         (18K)  - Compare ID algorithms (sketch vs qrpiv)
 
-## Simplified Structure Benefits
+Test Suite:
+  test1_hilbert.jl     (3.9K)  - Basic Hilbert matrix tests
+  test1_kahan.jl       (3.6K)  - Kahan matrix tests
+  test2_svd_hilbert.jl (4.2K)  - SVD on Hilbert matrix
+  test3_linop_hilbert.jl(6.8K) - LinearOperator tests with Hilbert matrix
+  test4_linop_random.jl (6.7K)  - LinearOperator tests with random matrices
+  test5_linop_fullrank.jl(9.3K) - Full-rank matrix tests
+  test5_method_comparison.jl(5.3K) - Compare T computation methods
+  test6_power.jl        (8.4K)  - Power iteration tests
 
-### Old Structure (Removed)
-- 17 directories (4 levels deep)
-- Files scattered across: Python/, MATLAB/, Julia/, tests/, examples/, linop/
-- Multiple subdirectories per function
-- Confusing navigation requiring knowledge of multiple paths
+================================================================================
+CORE API FUNCTIONS
+================================================================================
 
-### New Structure (Current)
-- 3 directories (2 levels deep)
-- All code for each language in one place
-- Self-contained: no need to search multiple locations
-- Easy to add to path: single addpath() or sys.path.append()
+All three languages provide the same API:
 
-## Installation
+1. orth_sketch(A, rtol; ...)
+   - Compute orthonormal basis for column space via random sketching
 
-**Python:**
-```python
-sys.path.append('/path/to/distrib/python')
-```
+2. qr_sketch(A, rtol; ...)
+   - Truncated QR factorization with column pivoting
 
-**MATLAB/Octave:**
-```matlab
-addpath('/path/to/distrib/matlab');
-```
+3. svd_sketch(A, rtol; ...)
+   - Truncated SVD via randomized sketching
 
-**Julia:**
-```julia
-include("/path/to/distrib/julia/LibIDSketch.jl")
-```
+4. id_sketch(A, rtol; ...)
+   - Interpolative decomposition using randomized sketching
 
-## Requirements
+5. id_qrpiv(A, rtol; ...)
+   - Interpolative decomposition using deterministic QR pivoting
 
-Python: NumPy >= 1.20, SciPy >= 1.7, Python 3.7+
-MATLAB: R2018a or later, OR Octave 6.0+
-Julia: 1.6 or later (LinearAlgebra, Random standard libraries)
+================================================================================
+USAGE MODES
+================================================================================
 
-## Recommended Usage
+Tolerance Mode (rtol < 1):
+  Adaptively determines rank to achieve specified relative accuracy
+  Example: orth_sketch(A, 1e-6) -> basis accurate to 10^-6
 
-For most users, **libid** (randomized sketching) is recommended:
-- Faster
-- Adaptive rank selection
-- Excellent accuracy in practice
+Rank Mode (rtol >= 1):
+  Returns fixed-rank approximation
+  Example: svd_sketch(A, 20) -> rank-20 SVD approximation
 
-Use **libid_rrqr** when:
-- Reproducibility is critical
-- Deterministic behavior required
-- Verification/validation needed
+================================================================================
+CHANGES FROM PREVIOUS VERSIONS
+================================================================================
 
-## Notes
+This version replaces the previous LibIDSketch/LibIDRRQR implementation:
 
-### Excluded from Distribution
-- Additional variants (libid_apps)
-- Development documentation (MATRIX_FREE_*.md, INVESTIGATION_*.md, etc.)
-- Build artifacts (__pycache__/, local/, *.so, .claude/)
-- Debug/profiling scripts
-- Internal test scripts
-- Build scripts (python-local.sh)
-- Complex subdirectory structures (consolidated into 3 directories)
+Removed:
+  - libid.py, libid.m, LibIDSketch.jl, LibIDRRQR.jl
+  - lsqr_simple.{py,m,jl} (obsolete LSQR utilities)
+  - make_linop.{py,m,jl} (replaced by LinearOperator class)
+  - compare_svd.{py,m,jl} (consolidated into compare_id)
 
-### Missing Files
-- LICENSE file not found in parent repository (should be added if available)
+Added:
+  - librla.{py,m,jl} - Unified library with consistent API
+  - LinearOperator classes for all languages
+  - Enhanced test suite with method comparison tests
+  - Power iteration tests
+
+Renamed:
+  - test6_kahan.jl -> test1_kahan.jl (better organization)
+
+================================================================================
+END OF MANIFEST
+================================================================================
