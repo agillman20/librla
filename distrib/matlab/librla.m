@@ -314,9 +314,7 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
 
   % Handle wide matrices via transpose
   if m < n
-      [V_tmp, s, U_tmp] = librla.svd_sketch(A', rtol, 'block_size', block_size, 'power_iter', power_iter, 'extra_samples', extra_samples);
-      U = U_tmp';
-      V = V_tmp';
+      [V, s, U] = librla.svd_sketch(A', rtol, 'block_size', block_size, 'power_iter', power_iter, 'extra_samples', extra_samples);
       return;
   end
 
