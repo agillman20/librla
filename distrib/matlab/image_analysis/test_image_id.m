@@ -36,7 +36,6 @@ if exist('OCTAVE_VERSION', 'builtin')
 end
 
 A = imread('pexels-flickr-149387.jpg');
-A = imread('x-system_02_download.jpg');
 
 %%A = permute(A, [2 1 3]);
 
@@ -190,53 +189,6 @@ rel_error_qr = norm(A2 - B2_qr, 'fro') / norm(A2, 'fro');
 fprintf('QR relative error: %.6e\n', rel_error_qr);
 
 %% ========================================================================
-% Method 6: Two-sided ID (column ID + row ID)
-%% ========================================================================
-fprintf('\n--- Two-sided ID ---\n');
-tic;
-
-% Step 1: Column ID
-[k_col, piv_col, T_col] = librla.id_sketch(A2, k, 'extra_samples', extra, 'power_iter', piter);
-J_skel = piv_col(1:k_col);           % skeleton column indices
-J_other = piv_col(k_col+1:end);      % other column indices
-
-% Step 2: Row ID on the skeleton columns A2(:, J_skel)'
-% This finds skeleton rows
-A_skel = A2(:, J_skel);  % m x k_col
-[k_row, piv_row, T_row] = librla.id_sketch(A_skel', k, 'extra_samples', extra, 'power_iter', piter);
-I_skel = piv_row(1:k_row);           % skeleton row indices
-I_other = piv_row(k_row+1:end);      % other row indices
-
-toc
-fprintf('Two-sided ID: %d skeleton columns, %d skeleton rows\n', k_col, k_row);
-fprintf('Core submatrix size: %d x %d\n', k_row, k_col);
-
-% Core submatrix (kept exactly)
-C = A2(I_skel, J_skel);  % k_row x k_col
-
-% Reconstruct full matrix using least squares solves
-% A(I_skel, J_skel) = C (exact)
-% A(I_other, J_skel) ≈ T_row' * C (from row ID: other rows = T' * skeleton rows)
-% A(I_skel, J_other) ≈ C * T_col (from col ID: other cols = skeleton cols * T)
-% A(I_other, J_other) ≈ T_row' * C * T_col
-
-B2_2id = zeros(size(A2), class(A2));
-B2_2id(I_skel, J_skel) = C;
-B2_2id(I_other, J_skel) = T_row' * C;
-B2_2id(I_skel, J_other) = C * T_col;
-B2_2id(I_other, J_other) = T_row' * C * T_col;
-
-B_2id = reshape(B2_2id, m, n, nc);
-
-figure(7)
-imagesc(uint8(B_2id))
-axis image
-title(sprintf('Two-sided ID (%dx%d core)', k_row, k_col))
-
-rel_error_2id = norm(A2 - B2_2id, 'fro') / norm(A2, 'fro');
-fprintf('Two-sided ID relative error: %.6e\n', rel_error_2id);
-
-%% ========================================================================
 % Summary
 %% ========================================================================
 fprintf('\n=== Summary ===\n');
@@ -247,4 +199,3 @@ fprintf('ID (randomized)                     %4d    %.6e\n', k_id, rel_error_id)
 fprintf('SVD (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k, rel_error_svd2);
 fprintf('ID  (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k_id2, rel_error_id2);
 fprintf('QR  (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k_qr, rel_error_qr);
-fprintf('Two-sided ID                      %dx%d    %.6e\n', k_row, k_col, rel_error_2id);
