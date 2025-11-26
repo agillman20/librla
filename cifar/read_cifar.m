@@ -1,14 +1,15 @@
-function [trainLabels, trainImages, testLabels, testImages, classNames] = read_cifar()
+function [trainLabels, trainImages, testLabels, testImages, classNames] = read_cifar(dataDir)
 %READ_CIFAR  Load the CIFAR-10 dataset from MATLAB .mat files.
 %
 %  Syntax
 %  ------
 %    [trainL, trainI, testL, testI, classNames] = read_cifar()
+%    [trainL, trainI, testL, testI, classNames] = read_cifar(dataDir)
 %
 %  Description
 %  -----------
 %    The function reads the CIFAR-10 dataset files in MATLAB format from
-%    the cifar-10-batches-mat/ directory. CIFAR-10 consists of 60000
+%    the cifar-10-batches-mat/ subdirectory. CIFAR-10 consists of 60000
 %    32x32 color images in 10 classes, with 6000 images per class.
 %    There are 50000 training images and 10000 test images.
 %
@@ -19,6 +20,11 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
 %        (10000 images each = 50000 total)
 %      * test_batch.mat - 10000 test images
 %      * batches.meta.mat - class names
+%
+%  Input arguments
+%  ---------------
+%    dataDir     - (optional) Parent directory containing cifar-10-batches-mat/.
+%                  Default: '.' (current directory).
 %
 %  Output arguments
 %  ----------------
@@ -33,8 +39,8 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
 %
 %  Notes
 %  -----
-%   * The function expects the cifar-10-batches-mat/ directory to be
-%     present in the current folder.
+%   * The function expects the cifar-10-batches-mat/ subdirectory to be
+%     present in the specified dataDir folder.
 %   * Each image is 32×32 pixels with 3 color channels (RGB), stored as
 %     a flattened 3072-element vector in the .mat files. The first 1024
 %     values are red channel, next 1024 are green, last 1024 are blue.
@@ -43,15 +49,13 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
 %
 %  Example
 %  -------
-%  %{
-%  [trainL, trainI, testL, testI, names] = read_cifar();
-%  % Show first training image
-%  figure(); imshow(trainI(:,:,:,1));
-%  title(['Training label = ' num2str(trainL(1)) ' (' names{trainL(1)+1} ')']);
-%  % Show first test image
-%  figure(); imshow(testI(:,:,:,1));
-%  title(['Test label = ' num2str(testL(1)) ' (' names{testL(1)+1} ')']);
-%  %}
+%    [trainL, trainI, testL, testI, names] = read_cifar();
+%    % Show first training image
+%    figure(); imshow(trainI(:,:,:,1));
+%    title(['Training label = ' num2str(trainL(1)) ' (' names{trainL(1)+1} ')']);
+%    % Show first test image
+%    figure(); imshow(testI(:,:,:,1));
+%    title(['Test label = ' num2str(testL(1)) ' (' names{testL(1)+1} ')']);
 %
 %  See also: load, reshape, imshow
 %
@@ -60,17 +64,22 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
 % Date  : 2025-10-12
 % ----------------------------------------------------------------------
 
-    dataDir = 'cifar-10-batches-mat';
+    % Default dataDir to current directory
+    if nargin < 1 || isempty(dataDir)
+        dataDir = '.';
+    end
+
+    cifarDir = fullfile(dataDir, 'cifar-10-batches-mat');
 
     % Check if directory exists
-    if ~exist(dataDir, 'dir')
-        error('Directory %s not found. Please ensure CIFAR-10 data is downloaded.', dataDir);
+    if ~exist(cifarDir, 'dir')
+        error('Directory %s not found. Please ensure CIFAR-10 data is downloaded.', cifarDir);
     end
 
     %-------------------------------------------------------------
     % 1) Load metadata (class names)
     %-------------------------------------------------------------
-    metaFile = fullfile(dataDir, 'batches.meta.mat');
+    metaFile = fullfile(cifarDir, 'batches.meta.mat');
     if ~exist(metaFile, 'file')
         error('Metadata file %s not found.', metaFile);
     end
@@ -86,7 +95,7 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
     trainData = [];
 
     for iBatch = 1:nTrainBatches
-        batchFile = fullfile(dataDir, sprintf('data_batch_%d.mat', iBatch));
+        batchFile = fullfile(cifarDir, sprintf('data_batch_%d.mat', iBatch));
         if ~exist(batchFile, 'file')
             error('Training batch file %s not found.', batchFile);
         end
@@ -106,7 +115,7 @@ function [trainLabels, trainImages, testLabels, testImages, classNames] = read_c
     %-------------------------------------------------------------
     % 3) Load test batch
     %-------------------------------------------------------------
-    testFile = fullfile(dataDir, 'test_batch.mat');
+    testFile = fullfile(cifarDir, 'test_batch.mat');
     if ~exist(testFile, 'file')
         error('Test batch file %s not found.', testFile);
     end

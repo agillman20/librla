@@ -1,10 +1,11 @@
-function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
+function [trainLabels, trainImages, testLabels, testImages] = read_mnist(dataDir)
 %READ_MNIST  Load the original MNIST data files with a sanity-check on the
 %           IDX magic numbers.
 %
 %  Syntax
 %  ------
 %    [trainL, trainI, testL, testI] = read_mnist()
+%    [trainL, trainI, testL, testI] = read_mnist(dataDir)
 %
 %  Description
 %  -----------
@@ -16,6 +17,11 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
 %      * t10k-labels-idx1-ubyte   - 10000 test labels
 %      * t10k-images-idx3-ubyte   - 10000 test images  (28x28 each)
 %
+%  Input arguments
+%  ---------------
+%    dataDir     - (optional) Directory containing the .ubyte files.
+%                  Default: '.' (current directory).
+%
 %  Output arguments
 %  ----------------
 %    trainLabels - 60000-by-1 uint8 vector (labels 0-9 unchanged).
@@ -25,8 +31,8 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
 %
 %  Notes
 %  -----
-%     _The function expects the four_ .ubyte files to be present in the
-%     current folder.  It does **not** download or unzip them.
+%     The function expects the four .ubyte files to be present in the
+%     specified dataDir folder.  It does **not** download or unzip them.
 %   * All integer fields in IDX files are big-endian; MATLAB reads them
 %     using the 'ieee-be' flag.
 %   * If a file's magic number does not match the expected value
@@ -34,13 +40,11 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
 %
 %  Example
 %  -------
-%  %{
-%  [trainL, trainI, testL, testI] = read_mnist();
-%  figure(); imshow(trainI(:,:,1)', []);           % show first training image
-%  title(['Training label = ' num2str(trainL(1))]);
-%  figure(); imshow(testI(:,:,1)', []);            % first test image
-%  title(['Test label = ' num2str(testL(1))]);
-%  %}
+%    [trainL, trainI, testL, testI] = read_mnist();
+%    figure(); imshow(trainI(:,:,1)', []);           % show first training image
+%    title(['Training label = ' num2str(trainL(1))]);
+%    figure(); imshow(testI(:,:,1)', []);            % first test image
+%    title(['Test label = ' num2str(testL(1))]);
 %
 %  See also: fopen, fread, reshape, imshow
 %
@@ -49,10 +53,16 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
 % Author: <your name>
 % Date  : <creation date>
 % ----------------------------------------------------------------------
+
+    % Default dataDir to current directory
+    if nargin < 1 || isempty(dataDir)
+        dataDir = '.';
+    end
+
     %-------------------------------------------------------------
     % 1) TRAIN LABELS   (no conversion)
     %-------------------------------------------------------------
-    [trainLabels, magicL] = read_idx_data('train-labels-idx1-ubyte', ...
+    [trainLabels, magicL] = read_idx_data(fullfile(dataDir, 'train-labels-idx1-ubyte'), ...
                                           60000, []);   % [] -> label file
     fprintf('train-labels  : magic=%d, count=%d\n', magicL, numel(trainLabels));
     if magicL ~= 2049
@@ -61,7 +71,7 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
     %-------------------------------------------------------------
     % 2) TRAIN IMAGES
     %-------------------------------------------------------------
-    [trainImages, magicI] = read_idx_data('train-images-idx3-ubyte', ...
+    [trainImages, magicI] = read_idx_data(fullfile(dataDir, 'train-images-idx3-ubyte'), ...
                                           60000, [28 28]);
     fprintf('train-images  : magic=%d, count=%d, nrows=%d, ncols=%d\n', ...
             magicI, size(trainImages,3), size(trainImages,1), size(trainImages,2));
@@ -71,7 +81,7 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
     %-------------------------------------------------------------
     % 3) TEST LABELS     (no conversion)
     %-------------------------------------------------------------
-    [testLabels, magicL] = read_idx_data('t10k-labels-idx1-ubyte', ...
+    [testLabels, magicL] = read_idx_data(fullfile(dataDir, 't10k-labels-idx1-ubyte'), ...
                                          10000, []);
     fprintf('test-labels   : magic=%d, count=%d\n', magicL, numel(testLabels));
     if magicL ~= 2049
@@ -80,7 +90,7 @@ function [trainLabels, trainImages, testLabels, testImages] = read_mnist()
     %-------------------------------------------------------------
     % 4) TEST IMAGES
     %-------------------------------------------------------------
-    [testImages, magicI] = read_idx_data('t10k-images-idx3-ubyte', ...
+    [testImages, magicI] = read_idx_data(fullfile(dataDir, 't10k-images-idx3-ubyte'), ...
                                          10000, [28 28]);
     fprintf('test-images   : magic=%d, count=%d, nrows=%d, ncols=%d\n', ...
             magicI, size(testImages,3), size(testImages,1), size(testImages,2));
