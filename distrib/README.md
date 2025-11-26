@@ -6,13 +6,15 @@ A unified, multi-language library implementing randomized algorithms for low-ran
 
 ### Core Algorithms
 
-All algorithms support both **tolerance mode** (rtol < 1) for adaptive rank selection and **rank mode** (rtol ≥ 1) for fixed-rank approximations:
+All algorithms support both **tolerance mode** (rtol < 1) for adaptive rank selection and **rank mode** (rtol >= 1) for fixed-rank approximations:
 
-- **`orth_sketch`** - Orthonormal basis for column space via randomized range finding
-- **`qr_sketch`** - Truncated QR factorization with column pivoting
-- **`svd_sketch`** - Truncated singular value decomposition
-- **`id_sketch`** - Interpolative decomposition via randomized sketching
-- **`id_qrpiv`** - Interpolative decomposition via deterministic QR pivoting
+| Function | Description |
+|----------|-------------|
+| `orth_sketch` | Orthonormal basis for column space via randomized range finding |
+| `qr_sketch` | Truncated QR factorization with column pivoting |
+| `svd_sketch` | Truncated singular value decomposition |
+| `id_sketch` | Interpolative decomposition via randomized sketching |
+| `id_qrpiv` | Interpolative decomposition via deterministic QR pivoting |
 
 ### LinearOperator Support
 
@@ -26,11 +28,13 @@ Matrix-free operators enable sketching of **implicit matrices** (FFT, convolutio
 
 ### Method Options for ID
 
-The `id_sketch` function supports three methods for computing the interpolation matrix T:
+The `id_sketch` and `id_qrpiv` functions support three methods for computing the interpolation matrix T:
 
-- **`'fast'`** - Triangular solve (fastest, default)
-- **`'svd'`** - SVD-based pseudoinverse (stable for ill-conditioned matrices)
-- **`'lstsq'`** - Least-squares from original A (most accurate, slowest)
+| Method | Description |
+|--------|-------------|
+| `'fast'` | Triangular solve (fastest, default) |
+| `'svd'` | SVD-based pseudoinverse (stable for ill-conditioned matrices) |
+| `'lstsq'` | Least-squares from original A (most accurate, slowest) |
 
 ## Quick Start
 
@@ -46,19 +50,18 @@ A = hilb(1000, 500)
 
 # Orthonormal basis with relative tolerance
 Q, flag, err = orth_sketch(A, rtol=1e-6)
-# Q spans approximate column space of A
 
 # Truncated QR factorization
 Q, R, p = qr_sketch(A, rtol=1e-6)
-# A[:, p] ≈ Q @ R
+# A[:, p] approx Q @ R
 
 # Truncated SVD
-U, s, Vt = svd_sketch(A, rtol=1e-6)
-# A ≈ U @ np.diag(s) @ Vt
+U, s, Vh = svd_sketch(A, rtol=1e-6)
+# A approx U @ np.diag(s) @ Vh
 
 # Interpolative decomposition
 k, piv, T = id_sketch(A, rtol=1e-6, method='lstsq')
-# A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+# A[:, piv[k:]] approx A[:, piv[:k]] @ T
 ```
 
 ### MATLAB/Octave
@@ -72,15 +75,15 @@ A = hilb(1000, 500);
 
 % Truncated QR factorization
 [Q, R, p] = librla.qr_sketch(A, 1e-6);
-% A(:, p) ≈ Q * R
+% A(:, p) approx Q * R
 
 % Truncated SVD
 [U, s, V] = librla.svd_sketch(A, 1e-6);
-% A ≈ U * diag(s) * V'
+% A approx U * diag(s) * V'
 
 % Interpolative decomposition
 [k, piv, T] = librla.id_sketch(A, 1e-6, 'method', 'lstsq');
-% A(:, piv(k+1:end)) ≈ A(:, piv(1:k)) * T
+% A(:, piv(k+1:end)) approx A(:, piv(1:k)) * T
 ```
 
 ### Julia
@@ -97,15 +100,15 @@ Q, flag, err = orth_sketch(A, 1e-6)
 
 # Truncated QR factorization
 Q, R, p = qr_sketch(A, 1e-6)
-# A[:, p] ≈ Q * R
+# A[:, p] approx Q * R
 
 # Truncated SVD
 U, s, Vt = svd_sketch(A, 1e-6)
-# A ≈ U * diagm(s) * Vt
+# A approx U * diagm(s) * Vt
 
 # Interpolative decomposition
 k, piv, T = id_sketch(A, 1e-6, method="lstsq")
-# A[:, piv[k+1:end]] ≈ A[:, piv[1:k]] * T
+# A[:, piv[k+1:end]] approx A[:, piv[1:k]] * T
 ```
 
 ## Usage Modes
@@ -124,19 +127,38 @@ Q, flag, err = orth_sketch(A, 1e-6)
 [Q, flag, err] = librla.orth_sketch(A, 1e-6);
 ```
 
-### Rank Mode (rtol ≥ 1)
+### Rank Mode (rtol >= 1)
 
 Returns fixed-rank approximation:
 
 ```python
 # Python: Rank-20 approximation
-U, s, Vt = svd_sketch(A, 20.0)
+U, s, Vh = svd_sketch(A, 20.0)
 ```
 
 ```matlab
 % MATLAB: Rank-20 approximation
 [U, s, V] = librla.svd_sketch(A, 20);
 ```
+
+## API Notes
+
+### svd_sketch Return Values
+
+The `svd_sketch` function returns slightly different formats across languages:
+
+| Language | Returns | Reconstruction |
+|----------|---------|----------------|
+| Python | `U, s, Vh` | `A approx U @ np.diag(s) @ Vh` |
+| MATLAB | `U, s, V` | `A approx U * diag(s) * V'` |
+| Julia | `U, s, Vt` | `A approx U * diagm(s) * Vt` |
+
+Python and Julia return V transposed/adjoint; MATLAB returns V (requiring explicit transpose in reconstruction).
+
+### Indexing
+
+- **Python**: 0-based indexing (piv[:k] for skeleton columns)
+- **MATLAB/Julia**: 1-based indexing (piv(1:k) or piv[1:k] for skeleton columns)
 
 ## Algorithm Details
 
@@ -145,7 +167,7 @@ U, s, Vt = svd_sketch(A, 20.0)
 - Uses random test matrix multiplication for fast column space approximation
 - Geometric block growth for adaptive rank determination in tolerance mode
 - Optional power iterations for improved accuracy (`power_iter` parameter)
-- Typically 2-5× faster than deterministic methods
+- Typically 2-5x faster than deterministic methods
 - Stochastic (results vary slightly between runs)
 
 ### Deterministic QR Pivoting (id_qrpiv)
@@ -162,26 +184,31 @@ Create matrix-free operators for implicit matrices:
 
 ### Python
 
+Python uses `scipy.sparse.linalg.LinearOperator`:
+
 ```python
 import numpy as np
-from scipy.sparse.linalg import LinearOperator as ScipyLinOp
+from scipy.sparse.linalg import LinearOperator
+from librla import orth_sketch
 
 # Define matrix-vector products
 def matvec(x):
     return np.fft.fft(x)
 
 def rmatvec(x):
-    return np.fft.ifft(x)
+    return np.fft.ifft(x).real
 
 # Create LinearOperator
 n = 1000
-A_op = ScipyLinOp(shape=(n, n), matvec=matvec, rmatvec=rmatvec)
+A_op = LinearOperator(shape=(n, n), matvec=matvec, rmatvec=rmatvec, dtype=complex)
 
 # Use with librla (rank mode only for matrix-free operators)
 Q, flag, err = orth_sketch(A_op, 20.0)  # Rank-20 approximation
 ```
 
 ### MATLAB
+
+MATLAB uses the custom `LinearOperator` class:
 
 ```matlab
 % Create LinearOperator
@@ -196,6 +223,8 @@ A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
 
 ### Julia
 
+Julia uses the custom `LinearOperator` type:
+
 ```julia
 include("LinearOperator.jl")
 
@@ -203,23 +232,29 @@ include("LinearOperator.jl")
 n = 1000
 matvec_fun(x) = fft(x)
 rmatvec_fun(x) = ifft(x)
-A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n, dtype=ComplexF64)
+A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n; dtype=ComplexF64)
 
 # Use with librla
 Q, flag, err = orth_sketch(A_op, 20.0)
 ```
 
+**Note:** Matrix-free LinearOperators only support **rank mode** (rtol >= 1).
+
 ## Optional Parameters
 
 All sketching functions support these optional parameters:
 
-- **`block_size`** (default: 42) - Initial sketch size for tolerance mode
-- **`power_iter`** (default: 0) - Number of power iterations for accuracy
-- **`extra_samples`** (default: 12) - Oversampling for rank mode
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `block_size` | 42 | Initial sketch size for tolerance mode |
+| `power_iter` | 0 | Number of power iterations for accuracy |
+| `extra_samples` | 12 | Oversampling for rank mode |
 
-For `id_sketch` only:
+For `id_sketch` and `id_qrpiv` only:
 
-- **`method`** (default: 'fast') - T matrix computation method: 'fast', 'svd', or 'lstsq'
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `method` | 'fast' | T matrix computation: 'fast', 'svd', or 'lstsq' |
 
 Example with optional parameters:
 
@@ -242,38 +277,45 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 
 ```
 distrib/
-├── README.md              - This file
-├── INSTALL.md             - Installation instructions
-├── FILE_MANIFEST.txt      - Complete file listing
+├── README.md              # This file
+├── INSTALL.md             # Installation instructions
+├── FILE_MANIFEST.txt      # Complete file listing
 ├── python/
-│   ├── librla.py          - Main library (26K)
-│   ├── LinearOperator.py  - Matrix-free operators (planned)
-│   ├── compare_id.py      - Comparison example
-│   ├── test*.py           - Test suite (8 files)
-│   └── utilities...
+│   ├── librla.py          # Main library
+│   ├── hilb.py            # Hilbert matrix generator
+│   ├── kahan.py           # Kahan matrix generator
+│   ├── make_mat.py        # Matrix generation utilities
+│   ├── compare_id.py      # Comparison example
+│   └── test*.py           # Test suite (8 files)
 ├── matlab/
-│   ├── librla.m           - Main library (21K)
-│   ├── LinearOperator.m   - Matrix-free operators
-│   ├── compare_id.m       - Comparison example
-│   ├── test*.m            - Test suite (8 files)
-│   └── utilities...
+│   ├── librla.m           # Main library
+│   ├── LinearOperator.m   # Matrix-free operator class
+│   ├── hilb.m             # Hilbert matrix generator
+│   ├── kahan.m            # Kahan matrix generator
+│   ├── make_mat.m         # Matrix generation utilities
+│   ├── compare_id.m       # Comparison example
+│   └── test*.m            # Test suite (8 files)
 └── julia/
-    ├── librla.jl          - Main library (21K)
-    ├── LinearOperator.jl  - Matrix-free operators
-    ├── compare_id.jl      - Comparison example
-    ├── test*.jl           - Test suite (8 files)
-    └── utilities...
+    ├── librla.jl          # Main library
+    ├── LinearOperator.jl  # Matrix-free operator type
+    ├── hilb.jl            # Hilbert matrix generator
+    ├── kahan.jl           # Kahan matrix generator
+    ├── make_mat.jl        # Matrix generation utilities
+    ├── compare_id.jl      # Comparison example
+    └── test*.jl           # Test suite (8 files)
 ```
 
 ## Requirements
 
-- **Python**: NumPy ≥ 1.20, SciPy ≥ 1.7, Python 3.7+
-- **MATLAB**: R2018a or later, OR Octave 6.0+
-- **Julia**: 1.6 or later (LinearAlgebra, Random standard libraries)
+| Language | Requirements |
+|----------|-------------|
+| Python | Python 3.8+, NumPy >= 1.20, SciPy >= 1.7 |
+| MATLAB | R2018a or later, OR Octave 6.0+ |
+| Julia | 1.6 or later (LinearAlgebra, Random standard libraries) |
 
 ## Installation
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions for each language.
+See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
 Quick summary:
 
@@ -281,6 +323,7 @@ Quick summary:
 # Python
 import sys
 sys.path.append('/path/to/distrib/python')
+from librla import id_sketch, svd_sketch
 ```
 
 ```matlab
@@ -291,6 +334,7 @@ addpath('/path/to/distrib/matlab');
 ```julia
 # Julia
 include("/path/to/distrib/julia/librla.jl")
+using .librla
 ```
 
 ## Testing
@@ -310,48 +354,33 @@ test2_svd_hilbert
 
 # Julia
 cd distrib/julia
-include("test1_hilbert.jl")
-include("test2_svd_hilbert.jl")
+julia -e 'include("test1_hilbert.jl")'
+julia -e 'include("test2_svd_hilbert.jl")'
 ```
-
-## Comparison with Previous Versions
-
-This version (librla) replaces the previous libid/LibIDSketch/LibIDRRQR implementation:
-
-### Changes
-
-**Removed:**
-- `libid.py`, `libid.m`, `LibIDSketch.jl`, `LibIDRRQR.jl` - replaced by unified `librla`
-- `lsqr_simple.*` - obsolete LSQR utilities
-- `make_linop.*` - replaced by LinearOperator classes
-- `compare_svd.*` - consolidated into `compare_id`
-
-**Added:**
-- `librla.{py,m,jl}` - Unified library with consistent API across languages
-- LinearOperator classes implemented in all languages
-- Enhanced test suite with method comparison tests
-- Power iteration tests (test6_power)
-
-**API Changes:**
-- All functions now use unified naming: `orth_sketch`, `qr_sketch`, `svd_sketch`, `id_sketch`, `id_qrpiv`
-- Consistent parameter naming across languages
-- LinearOperator interface standardized
 
 ## Examples
 
 See the `compare_id.*` files for comprehensive examples comparing the randomized sketching (`id_sketch`) and deterministic QR pivoting (`id_qrpiv`) methods.
 
 The test suite provides examples for:
-- Hilbert matrices (test1_hilbert, test2_svd_hilbert)
-- Kahan matrices (test1_kahan)
-- LinearOperator usage (test3_linop_hilbert, test4_linop_random)
-- Full-rank matrices (test5_linop_fullrank)
-- Method comparisons (test5_method_comparison)
-- Power iteration effects (test6_power)
+
+| Test | Description |
+|------|-------------|
+| test1_hilbert | Basic Hilbert matrix tests |
+| test1_kahan | Kahan matrix tests |
+| test2_svd_hilbert | SVD on Hilbert matrices |
+| test3_linop_hilbert | LinearOperator with Hilbert matrix |
+| test4_linop_random | LinearOperator with random matrices |
+| test5_linop_fullrank | Full-rank matrix tests |
+| test5_method_comparison | Compare T computation methods |
+| test6_power | Power iteration effects |
 
 ## References
 
-For the mathematical foundations and algorithms, see the parent repository documentation.
+For the mathematical foundations and algorithms, see:
+
+- Halko, Martinsson, Tropp. "Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions." SIAM Review, 2011.
+- Martinsson, Rokhlin, Tygert. "A randomized algorithm for the decomposition of matrices." Applied and Computational Harmonic Analysis, 2011.
 
 ## License
 
