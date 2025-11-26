@@ -9,7 +9,6 @@
 %      3. Randomized SVD with oversampling and power iteration
 %      4. ID with oversampling and power iteration
 %      5. QR with column pivoting (qr_sketch)
-%      6. Two-sided ID (column ID + row ID)
 %
 %    The image is reshaped to a 2D matrix (m x 3n) for processing.
 %
@@ -35,7 +34,9 @@ if exist('OCTAVE_VERSION', 'builtin')
     pkg load image
 end
 
-A = imread('pexels-flickr-149387.jpg');
+%%A = imread('pexels-flickr-149387.jpg');
+%%A = imread('pexels-anniroenkae-4793404.jpg');
+A = imread('x1d-II-sample-02.jpg');
 
 %%A = permute(A, [2 1 3]);
 
