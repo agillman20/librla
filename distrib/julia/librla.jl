@@ -94,11 +94,12 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         x = _uniform_omega(n, block_size, is_complex_op, dtype)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
-        Q, R = qr(y)
+        F = qr(y)
+        R = F.R
 
         # Determine numerical rank
         diagR = abs.(diag(R))
-        col_norms = sqrt.(sum(abs.(y).^2, dims=1))[:]
+        col_norms = vec(sqrt.(sum(abs2, y, dims=1)))
         max_col_norm = maximum(col_norms)
         if isempty(max_col_norm) || max_col_norm == 0
             max_col_norm = 1.0
@@ -116,7 +117,8 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
             end
         end
 
-        Q = Q[:, 1:rank]
+        # Materialize only needed columns of Q
+        Q = Matrix(F.Q)[:, 1:rank]
         flag = 0
         return Q, flag, err
     end
@@ -141,17 +143,19 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         x = _uniform_omega(n, block_size, is_complex_op, dtype)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
-        Q, R = qr(y)
+        F = qr(y)
+        R = F.R
 
         # Check tolerance
         diagR = abs.(diag(R))
-        col_norms = sqrt.(sum(abs.(y).^2, dims=1))[:]
+        col_norms = vec(sqrt.(sum(abs2, y, dims=1)))
         max_col_norm = maximum(col_norms)
 
         d = diagR[end] / max_col_norm
         if d <= rtol
             err = d
             flag = 0
+            Q = Matrix(F.Q)
             return Q, flag, err
         end
 
@@ -567,7 +571,8 @@ Apply (A'*A)^power_iter to x with orthogonalization after each iteration.
 function _power_iteration(A, x, power_iter::Int)
     for i = 1:power_iter
         x = _rmatvec(A, _matvec(A, x))
-        x, _ = qr(x)
+        F = qr(x)
+        x = Matrix(F.Q)
     end
     return x
 end
