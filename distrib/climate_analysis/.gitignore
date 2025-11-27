@@ -1,0 +1,8 @@
+# Downloaded data files
+data/
+
+# Python bytecode
+__pycache__/
+
+# Local virtual environment
+local/
