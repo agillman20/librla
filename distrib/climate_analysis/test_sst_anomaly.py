@@ -218,7 +218,7 @@ def reshape_to_map(vec, mask):
     return field
 
 
-# Compute Niño 3.4 index early for sign determination
+# Compute Niño 3.4 index for ENSO validation (not for sign fixing)
 # Niño 3.4 region: 5°N-5°S, 170°W-120°W (-170° to -120° in -180/180 system)
 nino34_lon_idx = np.where((lon >= -170) & (lon <= -120))[0]
 nino34_lat_idx = np.where((lat >= -5) & (lat <= 5))[0]
@@ -229,37 +229,26 @@ for t in range(n_time):
     nino34_index[t] = np.nanmean(region)
 
 
-def fix_svd_signs(U_modes, V_modes, data, nino_idx):
-    """Fix signs based on projection of actual data onto singular vectors.
+def fix_svd_signs(U_modes, V_modes):
+    """Fix signs based on spatial pattern mean.
 
-    Sign conventions:
-      EOF1 (trend/mean): positive mean projection
-      EOF2 (ENSO): positive correlation with Niño 3.4 (El Niño)
-      EOF3+ (PDO, etc.): positive mean projection
+    Convention: spatial pattern should have positive mean over ocean.
+    This ensures positive PC = positive anomaly contribution.
     """
     U_modes = U_modes.copy()
     V_modes = V_modes.copy()
     for i in range(U_modes.shape[1]):
-        proj = U_modes[:, i] @ data  # temporal projection
-        if i == 1:  # Mode 2 (0-indexed)
-            # ENSO mode: ensure positive correlation with Niño 3.4
-            if pearsonr(proj, nino_idx)[0] < 0:
-                U_modes[:, i] *= -1
-                V_modes[:, i] *= -1
-        else:
-            # Other modes: ensure positive mean projection
-            if np.mean(proj) < 0:
-                U_modes[:, i] *= -1
-                V_modes[:, i] *= -1
+        if np.mean(U_modes[:, i]) < 0:
+            U_modes[:, i] *= -1
+            V_modes[:, i] *= -1
     return U_modes, V_modes
 
 
 # Deterministic SVD
-U_det, V_det = fix_svd_signs(U_full[:, :n_modes], V_full[:, :n_modes],
-                              SST_matrix, nino34_index)
+U_det, V_det = fix_svd_signs(U_full[:, :n_modes], V_full[:, :n_modes])
 
 # Randomized SVD
-U_rand, V_rand = fix_svd_signs(U, V, SST_matrix, nino34_index)
+U_rand, V_rand = fix_svd_signs(U, V)
 
 # Spatial: U (non-dimensional pattern)
 # Temporal: projection of data onto U, normalized by √n_ocean for °C units
@@ -268,6 +257,7 @@ PC_det = [(U_det[:, i] @ SST_matrix) / np.sqrt(n_ocean) for i in range(n_modes)]
 
 EOF_maps_rand = [reshape_to_map(U_rand[:, i], ocean_mask) for i in range(n_modes)]
 PC_rand = [(U_rand[:, i] @ SST_matrix) / np.sqrt(n_ocean) for i in range(n_modes)]
+
 
 # ========================================================================
 # Visualize Deterministic SVD results
@@ -405,4 +395,6 @@ print(f"    Deterministic SVD: {corr_pc2_nino:.3f}")
 print(f"    Randomized SVD:    {abs(corr_pc2_rand):.3f}")
 print("=" * 70)
 
+fig1.savefig("sst_anomaly.png", dpi=150)
+print("\nFigure saved to sst_anomaly.png")
 plt.show(block=False)

@@ -193,7 +193,7 @@ function reshape_to_map(vec, mask, lon, lat)
     return field
 end
 
-# Compute Niño 3.4 index early for sign determination of ENSO mode (EOF5)
+# Compute Niño 3.4 index for ENSO validation (not for sign fixing)
 # Niño 3.4 region: 5°N-5°S, 170°W-120°W (-170° to -120° in -180/180 system)
 nino34_lon_idx = findall(x -> -170 <= x <= -120, lon)
 nino34_lat_idx = findall(x -> -5 <= x <= 5, lat)
@@ -204,27 +204,15 @@ for t in 1:n_time
     nino34_index[t] = mean(filter(!isnan, region))
 end
 
-# Fix signs based on projection of actual data onto singular vectors
-# PC_i(t) = U[:,i]' * A[:,t] / sqrt(n_ocean) gives actual projection in °C
-# Sign conventions:
-#   EOF1-4: positive mean projection (warm tropics, seasonal warming)
-#   EOF5 (ENSO): positive correlation with Niño 3.4 (El Niño)
+# Fix signs based on spatial pattern mean
+# Convention: spatial pattern should have positive mean over ocean
+# This ensures positive PC = positive anomaly contribution
 
-function fix_svd_signs!(U_modes, V_modes, data, nino_idx)
+function fix_svd_signs!(U_modes, V_modes)
     for i in 1:size(U_modes, 2)
-        proj = U_modes[:, i]' * data  # temporal projection
-        if i == 5
-            # ENSO mode: ensure positive correlation with Niño 3.4
-            if cor(vec(proj), nino_idx) < 0
-                U_modes[:, i] .*= -1
-                V_modes[:, i] .*= -1
-            end
-        else
-            # Other modes: ensure positive mean projection
-            if mean(proj) < 0
-                U_modes[:, i] .*= -1
-                V_modes[:, i] .*= -1
-            end
+        if mean(U_modes[:, i]) < 0
+            U_modes[:, i] .*= -1
+            V_modes[:, i] .*= -1
         end
     end
 end
@@ -232,12 +220,12 @@ end
 # Deterministic SVD
 U_det = copy(U_full[:, 1:n_modes])
 V_det = copy(V_full[:, 1:n_modes])
-fix_svd_signs!(U_det, V_det, SST_matrix, nino34_index)
+fix_svd_signs!(U_det, V_det)
 
 # Randomized SVD
 U_rand = copy(U)
 V_rand = copy(V)
-fix_svd_signs!(U_rand, V_rand, SST_matrix, nino34_index)
+fix_svd_signs!(U_rand, V_rand)
 
 # Spatial: U (non-dimensional pattern)
 # Temporal: projection of data onto U, normalized by √n_ocean for °C units
