@@ -202,7 +202,7 @@ fprintf('\n  Modes for 90%%: %d, 95%%: %d\n', n90, n95);
 % Reshape EOFs back to spatial maps
 % ========================================================================
 
-% Compute Nino 3.4 index early for sign determination
+% Compute Nino 3.4 index for ENSO validation (not for sign fixing)
 % Nino 3.4 region: 5N-5S, 170W-120W (-170 to -120 in -180/180 system)
 nino34_lon_idx = find(lon >= -170 & lon <= -120);
 nino34_lat_idx = find(lat >= -5 & lat <= 5);
@@ -213,29 +213,17 @@ for t = 1:n_time
     nino34_index(t) = mean(region(~isnan(region)));
 end
 
-% Fix signs based on projection of actual data onto singular vectors
-% Sign conventions:
-%   EOF1 (trend/mean): positive mean projection
-%   EOF2 (ENSO): positive correlation with Nino 3.4 (El Nino)
-%   EOF3+ (PDO, etc.): positive mean projection
+% Fix signs based on spatial pattern mean
+% Convention: spatial pattern should have positive mean over ocean
+% This ensures positive PC = positive anomaly contribution
 
 % Deterministic SVD
 U_det = U_full(:, 1:n_modes);
 V_det = V_full(:, 1:n_modes);
 for i = 1:n_modes
-    proj = U_det(:, i)' * double(SST_matrix);  % temporal projection
-    if i == 2
-        % ENSO mode: ensure positive correlation with Nino 3.4
-        if corr(proj', nino34_index) < 0
-            U_det(:, i) = -U_det(:, i);
-            V_det(:, i) = -V_det(:, i);
-        end
-    else
-        % Other modes: ensure positive mean projection
-        if mean(proj) < 0
-            U_det(:, i) = -U_det(:, i);
-            V_det(:, i) = -V_det(:, i);
-        end
+    if mean(U_det(:, i)) < 0
+        U_det(:, i) = -U_det(:, i);
+        V_det(:, i) = -V_det(:, i);
     end
 end
 
@@ -243,17 +231,9 @@ end
 U_rand = U;
 V_rand = V;
 for i = 1:n_modes
-    proj = U_rand(:, i)' * double(SST_matrix);
-    if i == 2
-        if corr(proj', nino34_index) < 0
-            U_rand(:, i) = -U_rand(:, i);
-            V_rand(:, i) = -V_rand(:, i);
-        end
-    else
-        if mean(proj) < 0
-            U_rand(:, i) = -U_rand(:, i);
-            V_rand(:, i) = -V_rand(:, i);
-        end
+    if mean(U_rand(:, i)) < 0
+        U_rand(:, i) = -U_rand(:, i);
+        V_rand(:, i) = -V_rand(:, i);
     end
 end
 
