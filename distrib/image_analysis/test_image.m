@@ -31,7 +31,6 @@ end
 
 A = imread('pexels-flickr-149387.jpg');
 %%A = imread('pexels-anniroenkae-4793404.jpg');
-%%A = imread('x1d-II-sample-02.jpg');
 
 %%A = permute(A,[2 1 3]);
 

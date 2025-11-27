@@ -35,8 +35,7 @@ if exist('OCTAVE_VERSION', 'builtin')
 end
 
 %%A = imread('pexels-flickr-149387.jpg');
-%%A = imread('pexels-anniroenkae-4793404.jpg');
-A = imread('x1d-II-sample-02.jpg');
+A = imread('pexels-anniroenkae-4793404.jpg');
 
 %%A = permute(A, [2 1 3]);
 
@@ -48,8 +47,8 @@ imagesc(A)
 axis image
 title('Original (RGB)')
 
-k = 60;
-use_single = false;  % set to true for single precision
+k = 60*2;
+use_single = true;  % set to true for single precision
 
 if use_single
     conv = @single;
