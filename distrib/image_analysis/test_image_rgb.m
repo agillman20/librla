@@ -32,7 +32,6 @@ end
 
 %%A = imread('pexels-flickr-149387.jpg');
 A = imread('pexels-anniroenkae-4793404.jpg');
-%%A = imread('x1d-II-sample-02.jpg');
 A = imread('b_29667.jpg');
 
 %%A = permute(A,[2 1 3]);
@@ -46,7 +45,7 @@ axis image
 title('Original (RGB)')
 
 k = 120
-use_single = false;  % set to true for single precision
+use_single = true;  % set to true for single precision
 
 if use_single
     conv = @single;

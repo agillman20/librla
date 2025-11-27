@@ -22,7 +22,7 @@ Requirements
 ------------
 * librla.jl in the path
 * Image file (see below)
-* Packages: Images, FileIO, PyPlot
+* Packages: Images, FileIO, GLMakie
 
 See also: librla.id_sketch, librla.svd_sketch, librla.qr_sketch
 =#
@@ -30,7 +30,8 @@ See also: librla.id_sketch, librla.svd_sketch, librla.qr_sketch
 using LinearAlgebra
 using Images
 using FileIO
-using PyPlot
+using GLMakie
+using GLFW
 using Printf
 
 # Include librla from parent directory
@@ -39,8 +40,7 @@ using .librla
 
 # Load image
 # A = load("pexels-flickr-149387.jpg")
-# A = load("pexels-anniroenkae-4793404.jpg")
-A = load("x1d-II-sample-02.jpg")
+A = load("pexels-anniroenkae-4793404.jpg")
 
 # A = permutedims(A, (2, 1))
 
@@ -50,15 +50,14 @@ nc = 3  # RGB channels
 
 println("Image size: $m x $n x $nc")
 
-# Convert to array for display
-A_arr = permutedims(channelview(A), (2, 3, 1))
+fig1 = Figure()
+ax1 = GLMakie.Axis(fig1[1,1], title="Original (RGB)", aspect=DataAspect(), yreversed=true)
+image!(ax1, permutedims(A, (2,1)))
+scr1 = display(GLMakie.Screen(title="Figure 1"), fig1)
+GLFW.SetWindowPos(scr1.glscreen, 50, 50)
 
-figure(1)
-imshow(A_arr)
-title("Original (RGB)")
-
-k = 60
-use_single = false  # set to true for single precision
+k = 60*2
+use_single = true  # set to true for single precision
 
 if use_single
     conv = Float32
@@ -86,11 +85,13 @@ B2_svd = U * diagm(s) * Vt
 R_rec = clamp.(B2_svd[:, 1:n], 0, 255) / 255
 G_rec = clamp.(B2_svd[:, n+1:2n], 0, 255) / 255
 B_rec = clamp.(B2_svd[:, 2n+1:3n], 0, 255) / 255
-img_arr = cat(R_rec, G_rec, B_rec, dims=3)
+img_rec = RGB.(R_rec, G_rec, B_rec)
 
-figure(2)
-imshow(img_arr)
-title("Rank-$k randomized SVD")
+fig2 = Figure()
+ax2 = GLMakie.Axis(fig2[1,1], title="Rank-$k randomized SVD", aspect=DataAspect(), yreversed=true)
+image!(ax2, permutedims(img_rec, (2,1)))
+scr2 = display(GLMakie.Screen(title="Figure 2"), fig2)
+GLFW.SetWindowPos(scr2.glscreen, 100, 100)
 
 rel_error_svd = norm(A2 - B2_svd) / norm(A2)
 @printf("SVD relative error: %.6e\n", rel_error_svd)
@@ -100,7 +101,7 @@ rel_error_svd = norm(A2 - B2_svd) / norm(A2)
 # ========================================================================
 println("\n--- Interpolative Decomposition (id_sketch) ---")
 t0 = time()
-k_id, piv, T = librla.id_sketch(A2, k)
+k_id, piv, T = librla.id_sketch(A2, k, method="lstsq")
 @printf("Elapsed time: %.3fs\n", time() - t0)
 
 println("ID rank: $k_id")
@@ -122,11 +123,13 @@ B2_id[:, piv[k_id+1:end]] = interpolated
 R_rec = clamp.(B2_id[:, 1:n], 0, 255) / 255
 G_rec = clamp.(B2_id[:, n+1:2n], 0, 255) / 255
 B_rec = clamp.(B2_id[:, 2n+1:3n], 0, 255) / 255
-img_arr = cat(R_rec, G_rec, B_rec, dims=3)
+img_rec = RGB.(R_rec, G_rec, B_rec)
 
-figure(3)
-imshow(img_arr)
-title("Rank-$k_id interpolative decomposition")
+fig3 = Figure()
+ax3 = GLMakie.Axis(fig3[1,1], title="Rank-$k_id interpolative decomposition", aspect=DataAspect(), yreversed=true)
+image!(ax3, permutedims(img_rec, (2,1)))
+scr3 = display(GLMakie.Screen(title="Figure 3"), fig3)
+GLFW.SetWindowPos(scr3.glscreen, 150, 150)
 
 rel_error_id = norm(A2 - B2_id) / norm(A2)
 @printf("ID relative error: %.6e\n", rel_error_id)
@@ -135,7 +138,7 @@ rel_error_id = norm(A2 - B2_id) / norm(A2)
 # Method 3: Randomized SVD with oversampling and power iteration
 # ========================================================================
 extra = div(k, 2)  # 50% oversampling
-piter = 2          # power iterations
+piter = 4          # power iterations
 println("\n--- Randomized SVD (extra_samples=$extra, power_iter=$piter) ---")
 t0 = time()
 U3, s3, Vt3 = librla.svd_sketch(A2, k, extra_samples=extra, power_iter=piter)
@@ -146,11 +149,13 @@ B2_svd2 = U3 * diagm(s3) * Vt3
 R_rec = clamp.(B2_svd2[:, 1:n], 0, 255) / 255
 G_rec = clamp.(B2_svd2[:, n+1:2n], 0, 255) / 255
 B_rec = clamp.(B2_svd2[:, 2n+1:3n], 0, 255) / 255
-img_arr = cat(R_rec, G_rec, B_rec, dims=3)
+img_rec = RGB.(R_rec, G_rec, B_rec)
 
-figure(4)
-imshow(img_arr)
-title("Rank-$k SVD (extra=$extra, piter=$piter)")
+fig4 = Figure()
+ax4 = GLMakie.Axis(fig4[1,1], title="Rank-$k SVD (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+image!(ax4, permutedims(img_rec, (2,1)))
+scr4 = display(GLMakie.Screen(title="Figure 4"), fig4)
+GLFW.SetWindowPos(scr4.glscreen, 200, 200)
 
 rel_error_svd2 = norm(A2 - B2_svd2) / norm(A2)
 @printf("SVD (oversampled+piter) relative error: %.6e\n", rel_error_svd2)
@@ -160,7 +165,7 @@ rel_error_svd2 = norm(A2 - B2_svd2) / norm(A2)
 # ========================================================================
 println("\n--- ID (extra_samples=$extra, power_iter=$piter) ---")
 t0 = time()
-k_id2, piv2, T2 = librla.id_sketch(A2, k, extra_samples=extra, power_iter=piter)
+k_id2, piv2, T2 = librla.id_sketch(A2, k, extra_samples=extra, power_iter=piter, method="lstsq")
 @printf("Elapsed time: %.3fs\n", time() - t0)
 
 println("ID rank: $k_id2")
@@ -177,11 +182,13 @@ B2_id2[:, piv2[k_id2+1:end]] = interpolated2
 R_rec = clamp.(B2_id2[:, 1:n], 0, 255) / 255
 G_rec = clamp.(B2_id2[:, n+1:2n], 0, 255) / 255
 B_rec = clamp.(B2_id2[:, 2n+1:3n], 0, 255) / 255
-img_arr = cat(R_rec, G_rec, B_rec, dims=3)
+img_rec = RGB.(R_rec, G_rec, B_rec)
 
-figure(5)
-imshow(img_arr)
-title("Rank-$k_id2 ID (extra=$extra, piter=$piter)")
+fig5 = Figure()
+ax5 = GLMakie.Axis(fig5[1,1], title="Rank-$k_id2 ID (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+image!(ax5, permutedims(img_rec, (2,1)))
+scr5 = display(GLMakie.Screen(title="Figure 5"), fig5)
+GLFW.SetWindowPos(scr5.glscreen, 250, 250)
 
 rel_error_id2 = norm(A2 - B2_id2) / norm(A2)
 @printf("ID (oversampled+piter) relative error: %.6e\n", rel_error_id2)
@@ -206,11 +213,13 @@ B2_qr[:, p_qr] = B2_qr_perm
 R_rec = clamp.(B2_qr[:, 1:n], 0, 255) / 255
 G_rec = clamp.(B2_qr[:, n+1:2n], 0, 255) / 255
 B_rec = clamp.(B2_qr[:, 2n+1:3n], 0, 255) / 255
-img_arr = cat(R_rec, G_rec, B_rec, dims=3)
+img_rec = RGB.(R_rec, G_rec, B_rec)
 
-figure(6)
-imshow(img_arr)
-title("Rank-$k_qr QR (extra=$extra, piter=$piter)")
+fig6 = Figure()
+ax6 = GLMakie.Axis(fig6[1,1], title="Rank-$k_qr QR (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+image!(ax6, permutedims(img_rec, (2,1)))
+scr6 = display(GLMakie.Screen(title="Figure 6"), fig6)
+GLFW.SetWindowPos(scr6.glscreen, 300, 300)
 
 rel_error_qr = norm(A2 - B2_qr) / norm(A2)
 @printf("QR relative error: %.6e\n", rel_error_qr)

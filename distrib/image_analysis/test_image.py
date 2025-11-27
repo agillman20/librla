@@ -40,7 +40,6 @@ import librla
 # Load image
 A = np.array(Image.open('pexels-flickr-149387.jpg'))
 # A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
-# A = np.array(Image.open('x1d-II-sample-02.jpg'))
 
 # A = np.transpose(A, (1, 0, 2))
 
@@ -58,8 +57,8 @@ plt.title('Original (grayscale)')
 plt.draw()
 plt.pause(0.1)
 
-k = 60 * 2
-use_single = False  # set to True for single precision (may cause numerical issues)
+k = 60*2
+use_single = True  # set to True for single precision (may cause numerical issues)
 
 if use_single:
     conv = np.float32
