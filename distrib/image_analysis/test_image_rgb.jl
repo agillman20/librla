@@ -38,8 +38,9 @@ using .librla
 
 # Load image
 # A = load("pexels-flickr-149387.jpg")
-A = load("pexels-anniroenkae-4793404.jpg")
-A = load("b_29667.jpg")
+# A = load("pexels-anniroenkae-4793404.jpg")
+# A = load("b_29667.jpg")
+A = load("pexels-andre-ulysses-de-salis-2100065-7824822.jpg")
 
 # A = permutedims(A, (2, 1))
 
@@ -55,7 +56,7 @@ image!(ax1, permutedims(A, (2,1)))
 scr1 = display(GLMakie.Screen(title="Figure 1"), fig1)
 GLFW.SetWindowPos(scr1.glscreen, 50, 50)
 
-k = 120
+k = 120*2
 use_single = true  # set to true for single precision
 
 if use_single

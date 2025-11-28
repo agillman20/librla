@@ -40,8 +40,9 @@ import librla
 
 # Load image
 # A = np.array(Image.open('pexels-flickr-149387.jpg'))
-A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
-A = np.array(Image.open('b_29667.jpg'))
+# A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
+# A = np.array(Image.open('b_29667.jpg'))
+A = np.array(Image.open('pexels-andre-ulysses-de-salis-2100065-7824822.jpg'))
 
 # A = np.transpose(A, (1, 0, 2))
 
@@ -54,7 +55,7 @@ plt.title('Original (RGB)')
 plt.draw()
 plt.pause(0.1)
 
-k = 120
+k = 120*2
 use_single = True  # set to True for single precision
 
 if use_single:

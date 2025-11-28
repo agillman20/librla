@@ -31,9 +31,10 @@ if exist('OCTAVE_VERSION', 'builtin')
 end
 
 %%A = imread('pexels-flickr-149387.jpg');
-A = imread('pexels-anniroenkae-4793404.jpg');
-A = imread('b_29667.jpg');
-
+%%A = imread('pexels-anniroenkae-4793404.jpg');
+%%A = imread('b_29667.jpg');
+A = imread('pexels-andre-ulysses-de-salis-2100065-7824822.jpg');
+					    
 %%A = permute(A,[2 1 3]);
 
 [m, n, nc] = size(A);
@@ -44,7 +45,7 @@ imagesc(A)
 axis image
 title('Original (RGB)')
 
-k = 120
+k = 120*2 
 use_single = true;  % set to true for single precision
 
 if use_single
