@@ -38,8 +38,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 import librla
 
 # Load image
-A = np.array(Image.open('pexels-flickr-149387.jpg'))
-# A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
+image_file = 'pexels-flickr-149387.jpg'
+# image_file = 'pexels-anniroenkae-4793404.jpg'
+A = np.array(Image.open(image_file))
 
 # A = np.transpose(A, (1, 0, 2))
 
@@ -48,7 +49,7 @@ if A.ndim == 3 and A.shape[2] == 3:
     # Simple grayscale conversion: 0.299*R + 0.587*G + 0.114*B
     A = (0.299 * A[:,:,0] + 0.587 * A[:,:,1] + 0.114 * A[:,:,2]).astype(np.uint8)
 
-print(f'Image size: {A.shape}')
+print(f'Image: {image_file}, size: {A.shape}')
 
 plt.figure(1)
 plt.imshow(A, cmap='gray', aspect='equal')
@@ -68,32 +69,39 @@ else:
 t0 = time.time()
 U, s, Vh = librla.svd_sketch(conv(A), k)
 B = U @ np.diag(s) @ Vh
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed1 = time.time() - t0
 
 plt.figure(2)
 B = np.clip(B, 0, 255)  # clip to valid range
 plt.imshow(B, cmap='gray', aspect='equal')
 plt.colorbar()
-plt.title(f'Rank-{k} SVD approximation')
+plt.title(f'Rank-{k} svd_sketch')
 plt.draw()
 
-rel_error = norm(conv(A) - conv(B), 'fro') / norm(conv(A), 'fro')
-print(f'Relative error: {rel_error:.6e}')
+rel_error1 = norm(conv(A) - conv(B), 'fro') / norm(conv(A), 'fro')
+print(f'svd_sketch(k={k}): {elapsed1:.3f}s, error {rel_error1:.6e}')
 
 
+extra = k // 4
+piter = 1
 t0 = time.time()
-U, s, Vh = librla.svd_sketch(conv(A), k, power_iter=1, extra_samples=k // 4)
+U, s, Vh = librla.svd_sketch(conv(A), k, power_iter=piter, extra_samples=extra)
 B = U @ np.diag(s) @ Vh
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed2 = time.time() - t0
 
 plt.figure(3)
 B = np.clip(B, 0, 255)  # clip to valid range
 plt.imshow(B, cmap='gray', aspect='equal')
 plt.colorbar()
-plt.title(f'Rank-{k} SVD (power iterations, extra sampling)')
+plt.title(f'Rank-{k} svd_sketch (extra_samples={extra}, power_iter={piter})')
 plt.draw()
 
-rel_error = norm(conv(A) - conv(B), 'fro') / norm(conv(A), 'fro')
-print(f'Relative error: {rel_error:.6e}')
+rel_error2 = norm(conv(A) - conv(B), 'fro') / norm(conv(A), 'fro')
+print(f'svd_sketch(k={k}, extra_samples={extra}, power_iter={piter}): {elapsed2:.3f}s, error {rel_error2:.6e}')
+
+print(f'\n{"Method":<40} {"Rank":>4}    {"Error"}')
+print('-' * 55)
+print(f'{"svd_sketch(k=" + str(k) + ")":<40} {k:4d}    {rel_error1:.6e}')
+print(f'{"svd_sketch(k=" + str(k) + ", extra, power)":<40} {k:4d}    {rel_error2:.6e}')
 
 plt.show(block=False)

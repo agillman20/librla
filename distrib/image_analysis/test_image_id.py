@@ -40,13 +40,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 import librla
 
 # Load image
-# A = np.array(Image.open('pexels-flickr-149387.jpg'))
-A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
+# image_file = 'pexels-flickr-149387.jpg'
+image_file = 'pexels-anniroenkae-4793404.jpg'
+A = np.array(Image.open(image_file))
 
 # A = np.transpose(A, (1, 0, 2))
 
 m, n, nc = A.shape
-print(f'Image size: {m} x {n} x {nc}')
+print(f'Image: {image_file}, size: {m} x {n} x {nc}')
 
 plt.figure(1)
 plt.imshow(A)
@@ -68,31 +69,27 @@ A2 = conv(A).reshape(m, n * nc)
 # ========================================================================
 # Method 1: Randomized SVD for comparison
 # ========================================================================
-print('\n--- Randomized SVD ---')
 t0 = time.time()
 U, s, Vh = librla.svd_sketch(A2, k)
 B2_svd = U @ np.diag(s) @ Vh
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed_svd = time.time() - t0
 
 B_svd = B2_svd.reshape(m, n, nc)
 
 plt.figure(2)
 plt.imshow(np.clip(B_svd, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k} randomized SVD')
+plt.title(f'Rank-{k} svd_sketch')
 plt.draw()
 
 rel_error_svd = norm(A2 - B2_svd, 'fro') / norm(A2, 'fro')
-print(f'SVD relative error: {rel_error_svd:.6e}')
+print(f'svd_sketch(k={k}): {elapsed_svd:.3f}s, error {rel_error_svd:.6e}')
 
 # ========================================================================
 # Method 2: Interpolative Decomposition (randomized)
 # ========================================================================
-print('\n--- Interpolative Decomposition (id_sketch) ---')
 t0 = time.time()
 k_id, piv, T = librla.id_sketch(A2, k)
-print(f'Elapsed time: {time.time() - t0:.3f}s')
-
-print(f'ID rank: {k_id}')
+elapsed_id = time.time() - t0
 
 # Reconstruct: skeleton columns + interpolated columns
 # A[:, piv[:k]] are skeleton columns (kept exactly)
@@ -111,42 +108,38 @@ B_id = B2_id.reshape(m, n, nc)
 
 plt.figure(3)
 plt.imshow(np.clip(B_id, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k_id} interpolative decomposition')
+plt.title(f'Rank-{k_id} id_sketch')
 plt.draw()
 
 rel_error_id = norm(A2 - B2_id, 'fro') / norm(A2, 'fro')
-print(f'ID relative error: {rel_error_id:.6e}')
+print(f'id_sketch(k={k_id}): {elapsed_id:.3f}s, error {rel_error_id:.6e}')
 
 # ========================================================================
 # Method 3: Randomized SVD with oversampling and power iteration
 # ========================================================================
 extra = k // 2  # 50% oversampling
 piter = 2       # power iterations
-print(f'\n--- Randomized SVD (extra_samples={extra}, power_iter={piter}) ---')
 t0 = time.time()
 U3, s3, Vh3 = librla.svd_sketch(A2, k, extra_samples=extra, power_iter=piter)
 B2_svd2 = U3 @ np.diag(s3) @ Vh3
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed_svd2 = time.time() - t0
 
 B_svd2 = B2_svd2.reshape(m, n, nc)
 
 plt.figure(4)
 plt.imshow(np.clip(B_svd2, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k} SVD (extra={extra}, piter={piter})')
+plt.title(f'Rank-{k} svd_sketch (extra_samples={extra}, power_iter={piter})')
 plt.draw()
 
 rel_error_svd2 = norm(A2 - B2_svd2, 'fro') / norm(A2, 'fro')
-print(f'SVD (oversampled+piter) relative error: {rel_error_svd2:.6e}')
+print(f'svd_sketch(k={k}, extra_samples={extra}, power_iter={piter}): {elapsed_svd2:.3f}s, error {rel_error_svd2:.6e}')
 
 # ========================================================================
 # Method 4: Interpolative Decomposition with oversampling and power iteration
 # ========================================================================
-print(f'\n--- ID (extra_samples={extra}, power_iter={piter}) ---')
 t0 = time.time()
 k_id2, piv2, T2 = librla.id_sketch(A2, k, extra_samples=extra, power_iter=piter)
-print(f'Elapsed time: {time.time() - t0:.3f}s')
-
-print(f'ID rank: {k_id2}')
+elapsed_id2 = time.time() - t0
 
 # Reconstruct
 skeleton2 = A2[:, piv2[:k_id2]]
@@ -160,22 +153,20 @@ B_id2 = B2_id2.reshape(m, n, nc)
 
 plt.figure(5)
 plt.imshow(np.clip(B_id2, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k_id2} ID (extra={extra}, piter={piter})')
+plt.title(f'Rank-{k_id2} id_sketch (extra_samples={extra}, power_iter={piter})')
 plt.draw()
 
 rel_error_id2 = norm(A2 - B2_id2, 'fro') / norm(A2, 'fro')
-print(f'ID (oversampled+piter) relative error: {rel_error_id2:.6e}')
+print(f'id_sketch(k={k_id2}, extra_samples={extra}, power_iter={piter}): {elapsed_id2:.3f}s, error {rel_error_id2:.6e}')
 
 # ========================================================================
 # Method 5: QR with column pivoting (via qr_sketch)
 # ========================================================================
-print(f'\n--- QR (extra_samples={extra}, power_iter={piter}) ---')
 t0 = time.time()
 Q_qr, R_qr, p_qr = librla.qr_sketch(A2, k, extra_samples=extra, power_iter=piter)
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed_qr = time.time() - t0
 
 k_qr = Q_qr.shape[1]
-print(f'QR rank: {k_qr}')
 
 # Reconstruct: A[:, p] = Q @ R, so unpermute columns
 B2_qr_perm = Q_qr @ R_qr  # columns in permuted order
@@ -186,22 +177,21 @@ B_qr = B2_qr.reshape(m, n, nc)
 
 plt.figure(6)
 plt.imshow(np.clip(B_qr, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k_qr} QR (extra={extra}, piter={piter})')
+plt.title(f'Rank-{k_qr} qr_sketch (extra_samples={extra}, power_iter={piter})')
 plt.draw()
 
 rel_error_qr = norm(A2 - B2_qr, 'fro') / norm(A2, 'fro')
-print(f'QR relative error: {rel_error_qr:.6e}')
+print(f'qr_sketch(k={k_qr}, extra_samples={extra}, power_iter={piter}): {elapsed_qr:.3f}s, error {rel_error_qr:.6e}')
 
 # ========================================================================
 # Summary
 # ========================================================================
-print('\n=== Summary ===')
-print('Method                              Rank    Relative Error')
-print('-----------------------------------------------------------')
-print(f'Randomized SVD                      {k:4d}    {rel_error_svd:.6e}')
-print(f'ID (randomized)                     {k_id:4d}    {rel_error_id:.6e}')
-print(f'SVD (extra={extra}, piter={piter})            {k:4d}    {rel_error_svd2:.6e}')
-print(f'ID  (extra={extra}, piter={piter})            {k_id2:4d}    {rel_error_id2:.6e}')
-print(f'QR  (extra={extra}, piter={piter})            {k_qr:4d}    {rel_error_qr:.6e}')
+print(f'\n{"Method":<40} {"Rank":>4}    {"Error"}')
+print('-' * 55)
+print(f'{"svd_sketch(k=" + str(k) + ")":<40} {k:4d}    {rel_error_svd:.6e}')
+print(f'{"id_sketch(k=" + str(k_id) + ")":<40} {k_id:4d}    {rel_error_id:.6e}')
+print(f'{"svd_sketch(k=" + str(k) + ", extra, power)":<40} {k:4d}    {rel_error_svd2:.6e}')
+print(f'{"id_sketch(k=" + str(k_id2) + ", extra, power)":<40} {k_id2:4d}    {rel_error_id2:.6e}')
+print(f'{"qr_sketch(k=" + str(k_qr) + ", extra, power)":<40} {k_qr:4d}    {rel_error_qr:.6e}')
 
 plt.show(block=False)
