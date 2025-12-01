@@ -302,7 +302,7 @@ fig1.subplots_adjust(top=0.95, bottom=0.05, hspace=0.35, wspace=0.25)
 var_explained_rand = s**2 / total_var
 
 fig2, axes2 = plt.subplots(5, 2, figsize=(12, 14))
-fig2.suptitle("Randomized SVD (svd_sketch)", fontsize=14, fontweight='bold')
+fig2.suptitle("Randomized SVD (Anomalies)", fontsize=14, fontweight='bold')
 
 for i in range(5):
     # Left: Spatial EOF pattern
@@ -397,4 +397,6 @@ print("=" * 70)
 
 fig1.savefig("sst_anomaly.png", dpi=150)
 print("\nFigure saved to sst_anomaly.png")
+fig2.savefig("sst_anomaly_sketch.png", dpi=150)
+print("\nFigure saved to sst_anomaly_sketch.png")
 plt.show(block=False)
