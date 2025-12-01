@@ -30,15 +30,16 @@ if exist('OCTAVE_VERSION', 'builtin')
     pkg load image
 end
 
-%%A = imread('pexels-flickr-149387.jpg');
-%%A = imread('pexels-anniroenkae-4793404.jpg');
-%%A = imread('b_29667.jpg');
-A = imread('pexels-andre-ulysses-de-salis-2100065-7824822.jpg');
-					    
+%%image_file = 'pexels-flickr-149387.jpg';
+%%image_file = 'pexels-anniroenkae-4793404.jpg';
+%%image_file = 'b_29667.jpg';
+image_file = 'pexels-andre-ulysses-de-salis-2100065-7824822.jpg';
+A = imread(image_file);
+
 %%A = permute(A,[2 1 3]);
 
 [m, n, nc] = size(A);
-fprintf('Image size: %d x %d x %d\n', m, n, nc);
+fprintf('Image: %s, size: %d x %d x %d\n', image_file, m, n, nc);
 
 figure(1)
 imagesc(A)
@@ -60,7 +61,7 @@ A2 = reshape(conv(A), m, n*nc);
 tic;
 [U,s,V] = librla.svd_sketch(A2, k);
 B2 = U(:,1:k)*diag(s(1:k))*V(:,1:k)';
-toc
+elapsed1 = toc;
 
 % Reshape back to RGB
 B = reshape(B2, m, n, nc);
@@ -68,16 +69,18 @@ B = reshape(B2, m, n, nc);
 figure(2)
 imagesc(uint8(B))
 axis image
-title(sprintf('Rank-%d randomized SVD', k))
+title(sprintf('Rank-%d svd_sketch', k))
 
-rel_error = norm(A2-B2,'fro')/norm(A2,'fro');
-fprintf('Basic SVD relative error: %.6e\n', rel_error);
+rel_error1 = norm(A2-B2,'fro')/norm(A2,'fro');
+fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed1, rel_error1);
 
 
+extra = floor(.25*k);
+piter = 1;
 tic
-[U,s,V] = librla.svd_sketch(A2, k, 'power_iter', 1, 'extra_samples', floor(.25*k));
+[U,s,V] = librla.svd_sketch(A2, k, 'power_iter', piter, 'extra_samples', extra);
 B2 = U(:,1:k)*diag(s(1:k))*V(:,1:k)';
-toc
+elapsed2 = toc;
 
 % Reshape back to RGB
 B = reshape(B2, m, n, nc);
@@ -85,7 +88,12 @@ B = reshape(B2, m, n, nc);
 figure(3)
 imagesc(uint8(B))
 axis image
-title(sprintf('Rank-%d randomized SVD (power iterations, extra sampling)', k))
+title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
 
-rel_error = norm(A2-B2,'fro')/norm(A2,'fro');
-fprintf('Power iter SVD relative error: %.6e\n', rel_error);
+rel_error2 = norm(A2-B2,'fro')/norm(A2,'fro');
+fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed2, rel_error2);
+
+fprintf('\n%-40s %4s    %s\n', 'Method', 'Rank', 'Error');
+fprintf('%s\n', repmat('-', 1, 55));
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d)', k), k, rel_error1);
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d, extra, power)', k), k, rel_error2);

@@ -34,13 +34,14 @@ if exist('OCTAVE_VERSION', 'builtin')
     pkg load image
 end
 
-%%A = imread('pexels-flickr-149387.jpg');
-A = imread('pexels-anniroenkae-4793404.jpg');
+%%image_file = 'pexels-flickr-149387.jpg';
+image_file = 'pexels-anniroenkae-4793404.jpg';
+A = imread(image_file);
 
 %%A = permute(A, [2 1 3]);
 
 [m, n, nc] = size(A);
-fprintf('Image size: %d x %d x %d\n', m, n, nc);
+fprintf('Image: %s, size: %d x %d x %d\n', image_file, m, n, nc);
 
 figure(1)
 imagesc(A)
@@ -62,31 +63,27 @@ A2 = reshape(conv(A), m, n*nc);
 %% ========================================================================
 % Method 1: Randomized SVD for comparison
 %% ========================================================================
-fprintf('\n--- Randomized SVD ---\n');
 tic;
 [U, s, V] = librla.svd_sketch(A2, k);
 B2_svd = U(:,1:k) * diag(s(1:k)) * V(:,1:k)';
-toc
+elapsed_svd = toc;
 
 B_svd = reshape(B2_svd, m, n, nc);
 
 figure(2)
 imagesc(uint8(B_svd))
 axis image
-title(sprintf('Rank-%d randomized SVD', k))
+title(sprintf('Rank-%d svd_sketch', k))
 
 rel_error_svd = norm(A2 - B2_svd, 'fro') / norm(A2, 'fro');
-fprintf('SVD relative error: %.6e\n', rel_error_svd);
+fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed_svd, rel_error_svd);
 
 %% ========================================================================
 % Method 2: Interpolative Decomposition (randomized)
 %% ========================================================================
-fprintf('\n--- Interpolative Decomposition (id_sketch) ---\n');
 tic;
 [k_id, piv, T] = librla.id_sketch(A2, k);
-toc
-
-fprintf('ID rank: %d\n', k_id);
+elapsed_id = toc;
 
 % Reconstruct: skeleton columns + interpolated columns
 % A(:, piv(1:k)) are skeleton columns (kept exactly)
@@ -108,41 +105,37 @@ B_id = reshape(B2_id, m, n, nc);
 figure(3)
 imagesc(uint8(B_id))
 axis image
-title(sprintf('Rank-%d interpolative decomposition', k_id))
+title(sprintf('Rank-%d id_sketch', k_id))
 
 rel_error_id = norm(A2 - B2_id, 'fro') / norm(A2, 'fro');
-fprintf('ID relative error: %.6e\n', rel_error_id);
+fprintf('id_sketch(k=%d): %.3fs, error %.6e\n', k_id, elapsed_id, rel_error_id);
 
 %% ========================================================================
 % Method 3: Randomized SVD with oversampling and power iteration
 %% ========================================================================
 extra = floor(0.5 * k);  % 50% oversampling
 piter = 2;               % power iterations
-fprintf('\n--- Randomized SVD (extra_samples=%d, power_iter=%d) ---\n', extra, piter);
 tic;
 [U3, s3, V3] = librla.svd_sketch(A2, k, 'extra_samples', extra, 'power_iter', piter);
 B2_svd2 = U3(:,1:k) * diag(s3(1:k)) * V3(:,1:k)';
-toc
+elapsed_svd2 = toc;
 
 B_svd2 = reshape(B2_svd2, m, n, nc);
 
 figure(4)
 imagesc(uint8(B_svd2))
 axis image
-title(sprintf('Rank-%d SVD (extra=%d, piter=%d)', k, extra, piter))
+title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
 
 rel_error_svd2 = norm(A2 - B2_svd2, 'fro') / norm(A2, 'fro');
-fprintf('SVD (oversampled+piter) relative error: %.6e\n', rel_error_svd2);
+fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed_svd2, rel_error_svd2);
 
 %% ========================================================================
 % Method 4: Interpolative Decomposition with oversampling and power iteration
 %% ========================================================================
-fprintf('\n--- ID (extra_samples=%d, power_iter=%d) ---\n', extra, piter);
 tic;
 [k_id2, piv2, T2] = librla.id_sketch(A2, k, 'extra_samples', extra, 'power_iter', piter);
-toc
-
-fprintf('ID rank: %d\n', k_id2);
+elapsed_id2 = toc;
 
 % Reconstruct
 skeleton2 = A2(:, piv2(1:k_id2));
@@ -157,21 +150,19 @@ B_id2 = reshape(B2_id2, m, n, nc);
 figure(5)
 imagesc(uint8(B_id2))
 axis image
-title(sprintf('Rank-%d ID (extra=%d, piter=%d)', k_id2, extra, piter))
+title(sprintf('Rank-%d id_sketch (extra_samples=%d, power_iter=%d)', k_id2, extra, piter))
 
 rel_error_id2 = norm(A2 - B2_id2, 'fro') / norm(A2, 'fro');
-fprintf('ID (oversampled+piter) relative error: %.6e\n', rel_error_id2);
+fprintf('id_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k_id2, extra, piter, elapsed_id2, rel_error_id2);
 
 %% ========================================================================
 % Method 5: QR with column pivoting (via qr_sketch)
 %% ========================================================================
-fprintf('\n--- QR (extra_samples=%d, power_iter=%d) ---\n', extra, piter);
 tic;
 [Q_qr, R_qr, p_qr] = librla.qr_sketch(A2, k, 'extra_samples', extra, 'power_iter', piter);
-toc
+elapsed_qr = toc;
 
 k_qr = size(Q_qr, 2);
-fprintf('QR rank: %d\n', k_qr);
 
 % Reconstruct: A(:, p) ≈ Q * R, so unpermute columns
 B2_qr_perm = Q_qr * R_qr;  % columns in permuted order
@@ -183,19 +174,18 @@ B_qr = reshape(B2_qr, m, n, nc);
 figure(6)
 imagesc(uint8(B_qr))
 axis image
-title(sprintf('Rank-%d QR (extra=%d, piter=%d)', k_qr, extra, piter))
+title(sprintf('Rank-%d qr_sketch (extra_samples=%d, power_iter=%d)', k_qr, extra, piter))
 
 rel_error_qr = norm(A2 - B2_qr, 'fro') / norm(A2, 'fro');
-fprintf('QR relative error: %.6e\n', rel_error_qr);
+fprintf('qr_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k_qr, extra, piter, elapsed_qr, rel_error_qr);
 
 %% ========================================================================
 % Summary
 %% ========================================================================
-fprintf('\n=== Summary ===\n');
-fprintf('Method                              Rank    Relative Error\n');
-fprintf('-----------------------------------------------------------\n');
-fprintf('Randomized SVD                      %4d    %.6e\n', k, rel_error_svd);
-fprintf('ID (randomized)                     %4d    %.6e\n', k_id, rel_error_id);
-fprintf('SVD (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k, rel_error_svd2);
-fprintf('ID  (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k_id2, rel_error_id2);
-fprintf('QR  (extra=%d, piter=%d)            %4d    %.6e\n', extra, piter, k_qr, rel_error_qr);
+fprintf('\n%-40s %4s    %s\n', 'Method', 'Rank', 'Error');
+fprintf('%s\n', repmat('-', 1, 55));
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d)', k), k, rel_error_svd);
+fprintf('%-40s %4d    %.6e\n', sprintf('id_sketch(k=%d)', k_id), k_id, rel_error_id);
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d, extra, power)', k), k, rel_error_svd2);
+fprintf('%-40s %4d    %.6e\n', sprintf('id_sketch(k=%d, extra, power)', k_id2), k_id2, rel_error_id2);
+fprintf('%-40s %4d    %.6e\n', sprintf('qr_sketch(k=%d, extra, power)', k_qr), k_qr, rel_error_qr);

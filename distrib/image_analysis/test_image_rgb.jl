@@ -37,10 +37,11 @@ include(joinpath(@__DIR__, "..", "julia", "librla.jl"))
 using .librla
 
 # Load image
-# A = load("pexels-flickr-149387.jpg")
-# A = load("pexels-anniroenkae-4793404.jpg")
-# A = load("b_29667.jpg")
-A = load("pexels-andre-ulysses-de-salis-2100065-7824822.jpg")
+# image_file = "pexels-flickr-149387.jpg"
+# image_file = "pexels-anniroenkae-4793404.jpg"
+# image_file = "b_29667.jpg"
+image_file = "pexels-andre-ulysses-de-salis-2100065-7824822.jpg"
+A = load(image_file)
 
 # A = permutedims(A, (2, 1))
 
@@ -48,7 +49,7 @@ A = load("pexels-andre-ulysses-de-salis-2100065-7824822.jpg")
 m, n = size(A)
 nc = 3  # RGB channels
 
-println("Image size: $m x $n x $nc")
+println("Image: $image_file, size: $m x $n x $nc")
 
 fig1 = Figure()
 ax1 = GLMakie.Axis(fig1[1,1], title="Original (RGB)", aspect=DataAspect(), yreversed=true)
@@ -75,7 +76,7 @@ A2 = hcat(R, G, B_ch)
 t0 = time()
 U, s, Vt = librla.svd_sketch(A2, k)
 B2 = U * diagm(s) * Vt
-println("Elapsed time: $(round(time() - t0, digits=3))s")
+elapsed1 = time() - t0
 
 # Reshape back to RGB
 R_rec = clamp.(B2[:, 1:n], 0, 255) / 255
@@ -84,19 +85,21 @@ B_rec = clamp.(B2[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig2 = Figure()
-ax2 = GLMakie.Axis(fig2[1,1], title="Rank-$k randomized SVD", aspect=DataAspect(), yreversed=true)
+ax2 = GLMakie.Axis(fig2[1,1], title="Rank-$k svd_sketch", aspect=DataAspect(), yreversed=true)
 image!(ax2, permutedims(img_rec, (2,1)))
 scr2 = display(GLMakie.Screen(title="Figure 2"), fig2)
 GLFW.SetWindowPos(scr2.glscreen, 100, 100)
 
-rel_error = norm(A2 - B2) / norm(A2)
-println("Basic SVD relative error: $(round(rel_error, sigdigits=6))")
+rel_error1 = norm(A2 - B2) / norm(A2)
+@printf("svd_sketch(k=%d): %.3fs, error %.6e\n", k, elapsed1, rel_error1)
 
 
+extra = div(k, 4)
+piter = 1
 t0 = time()
-U, s, Vt = librla.svd_sketch(A2, k, power_iter=1, extra_samples=div(k, 4))
+U, s, Vt = librla.svd_sketch(A2, k, power_iter=piter, extra_samples=extra)
 B2 = U * diagm(s) * Vt
-println("Elapsed time: $(round(time() - t0, digits=3))s")
+elapsed2 = time() - t0
 
 # Reshape back to RGB
 R_rec = clamp.(B2[:, 1:n], 0, 255) / 255
@@ -105,11 +108,17 @@ B_rec = clamp.(B2[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig3 = Figure()
-ax3 = GLMakie.Axis(fig3[1,1], title="Rank-$k randomized SVD (power iterations, extra sampling)", aspect=DataAspect(), yreversed=true)
+ax3 = GLMakie.Axis(fig3[1,1], title="Rank-$k svd_sketch (extra_samples=$extra, power_iter=$piter)", aspect=DataAspect(), yreversed=true)
 image!(ax3, permutedims(img_rec, (2,1)))
 scr3 = display(GLMakie.Screen(title="Figure 3"), fig3)
 GLFW.SetWindowPos(scr3.glscreen, 150, 150)
 
-rel_error = norm(A2 - B2) / norm(A2)
-println("Power iter SVD relative error: $(round(rel_error, sigdigits=6))")
+rel_error2 = norm(A2 - B2) / norm(A2)
+@printf("svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n", k, extra, piter, elapsed2, rel_error2)
+
+println()
+@printf("%-40s %4s    %s\n", "Method", "Rank", "Error")
+println("-" ^ 55)
+@printf("%-40s %4d    %.6e\n", "svd_sketch(k=$k)", k, rel_error1)
+@printf("%-40s %4d    %.6e\n", "svd_sketch(k=$k, extra, power)", k, rel_error2)
 

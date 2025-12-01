@@ -39,8 +39,9 @@ include(joinpath(@__DIR__, "..", "julia", "librla.jl"))
 using .librla
 
 # Load image
-# A = load("pexels-flickr-149387.jpg")
-A = load("pexels-anniroenkae-4793404.jpg")
+# image_file = "pexels-flickr-149387.jpg"
+image_file = "pexels-anniroenkae-4793404.jpg"
+A = load(image_file)
 
 # A = permutedims(A, (2, 1))
 
@@ -48,7 +49,7 @@ A = load("pexels-anniroenkae-4793404.jpg")
 m, n = size(A)
 nc = 3  # RGB channels
 
-println("Image size: $m x $n x $nc")
+println("Image: $image_file, size: $m x $n x $nc")
 
 fig1 = Figure()
 ax1 = GLMakie.Axis(fig1[1,1], title="Original (RGB)", aspect=DataAspect(), yreversed=true)
@@ -75,11 +76,10 @@ A2 = hcat(R, G, B_ch)
 # ========================================================================
 # Method 1: Randomized SVD for comparison
 # ========================================================================
-println("\n--- Randomized SVD ---")
 t0 = time()
 U, s, Vt = librla.svd_sketch(A2, k)
 B2_svd = U * diagm(s) * Vt
-@printf("Elapsed time: %.3fs\n", time() - t0)
+elapsed_svd = time() - t0
 
 # Reshape back to RGB
 R_rec = clamp.(B2_svd[:, 1:n], 0, 255) / 255
@@ -88,23 +88,20 @@ B_rec = clamp.(B2_svd[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig2 = Figure()
-ax2 = GLMakie.Axis(fig2[1,1], title="Rank-$k randomized SVD", aspect=DataAspect(), yreversed=true)
+ax2 = GLMakie.Axis(fig2[1,1], title="Rank-$k svd_sketch", aspect=DataAspect(), yreversed=true)
 image!(ax2, permutedims(img_rec, (2,1)))
 scr2 = display(GLMakie.Screen(title="Figure 2"), fig2)
 GLFW.SetWindowPos(scr2.glscreen, 100, 100)
 
 rel_error_svd = norm(A2 - B2_svd) / norm(A2)
-@printf("SVD relative error: %.6e\n", rel_error_svd)
+@printf("svd_sketch(k=%d): %.3fs, error %.6e\n", k, elapsed_svd, rel_error_svd)
 
 # ========================================================================
 # Method 2: Interpolative Decomposition (randomized)
 # ========================================================================
-println("\n--- Interpolative Decomposition (id_sketch) ---")
 t0 = time()
 k_id, piv, T = librla.id_sketch(A2, k, method="lstsq")
-@printf("Elapsed time: %.3fs\n", time() - t0)
-
-println("ID rank: $k_id")
+elapsed_id = time() - t0
 
 # Reconstruct: skeleton columns + interpolated columns
 # A[:, piv[1:k]] are skeleton columns (kept exactly)
@@ -126,24 +123,23 @@ B_rec = clamp.(B2_id[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig3 = Figure()
-ax3 = GLMakie.Axis(fig3[1,1], title="Rank-$k_id interpolative decomposition", aspect=DataAspect(), yreversed=true)
+ax3 = GLMakie.Axis(fig3[1,1], title="Rank-$k_id id_sketch", aspect=DataAspect(), yreversed=true)
 image!(ax3, permutedims(img_rec, (2,1)))
 scr3 = display(GLMakie.Screen(title="Figure 3"), fig3)
 GLFW.SetWindowPos(scr3.glscreen, 150, 150)
 
 rel_error_id = norm(A2 - B2_id) / norm(A2)
-@printf("ID relative error: %.6e\n", rel_error_id)
+@printf("id_sketch(k=%d): %.3fs, error %.6e\n", k_id, elapsed_id, rel_error_id)
 
 # ========================================================================
 # Method 3: Randomized SVD with oversampling and power iteration
 # ========================================================================
 extra = div(k, 2)  # 50% oversampling
 piter = 4          # power iterations
-println("\n--- Randomized SVD (extra_samples=$extra, power_iter=$piter) ---")
 t0 = time()
 U3, s3, Vt3 = librla.svd_sketch(A2, k, extra_samples=extra, power_iter=piter)
 B2_svd2 = U3 * diagm(s3) * Vt3
-@printf("Elapsed time: %.3fs\n", time() - t0)
+elapsed_svd2 = time() - t0
 
 # Reshape back to RGB
 R_rec = clamp.(B2_svd2[:, 1:n], 0, 255) / 255
@@ -152,23 +148,20 @@ B_rec = clamp.(B2_svd2[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig4 = Figure()
-ax4 = GLMakie.Axis(fig4[1,1], title="Rank-$k SVD (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+ax4 = GLMakie.Axis(fig4[1,1], title="Rank-$k svd_sketch (extra_samples=$extra, power_iter=$piter)", aspect=DataAspect(), yreversed=true)
 image!(ax4, permutedims(img_rec, (2,1)))
 scr4 = display(GLMakie.Screen(title="Figure 4"), fig4)
 GLFW.SetWindowPos(scr4.glscreen, 200, 200)
 
 rel_error_svd2 = norm(A2 - B2_svd2) / norm(A2)
-@printf("SVD (oversampled+piter) relative error: %.6e\n", rel_error_svd2)
+@printf("svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n", k, extra, piter, elapsed_svd2, rel_error_svd2)
 
 # ========================================================================
 # Method 4: Interpolative Decomposition with oversampling and power iteration
 # ========================================================================
-println("\n--- ID (extra_samples=$extra, power_iter=$piter) ---")
 t0 = time()
 k_id2, piv2, T2 = librla.id_sketch(A2, k, extra_samples=extra, power_iter=piter, method="lstsq")
-@printf("Elapsed time: %.3fs\n", time() - t0)
-
-println("ID rank: $k_id2")
+elapsed_id2 = time() - t0
 
 # Reconstruct
 skeleton2 = A2[:, piv2[1:k_id2]]
@@ -185,24 +178,22 @@ B_rec = clamp.(B2_id2[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig5 = Figure()
-ax5 = GLMakie.Axis(fig5[1,1], title="Rank-$k_id2 ID (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+ax5 = GLMakie.Axis(fig5[1,1], title="Rank-$k_id2 id_sketch (extra_samples=$extra, power_iter=$piter)", aspect=DataAspect(), yreversed=true)
 image!(ax5, permutedims(img_rec, (2,1)))
 scr5 = display(GLMakie.Screen(title="Figure 5"), fig5)
 GLFW.SetWindowPos(scr5.glscreen, 250, 250)
 
 rel_error_id2 = norm(A2 - B2_id2) / norm(A2)
-@printf("ID (oversampled+piter) relative error: %.6e\n", rel_error_id2)
+@printf("id_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n", k_id2, extra, piter, elapsed_id2, rel_error_id2)
 
 # ========================================================================
 # Method 5: QR with column pivoting (via qr_sketch)
 # ========================================================================
-println("\n--- QR (extra_samples=$extra, power_iter=$piter) ---")
 t0 = time()
 Q_qr, R_qr, p_qr = librla.qr_sketch(A2, k, extra_samples=extra, power_iter=piter)
-@printf("Elapsed time: %.3fs\n", time() - t0)
+elapsed_qr = time() - t0
 
 k_qr = size(Q_qr, 2)
-println("QR rank: $k_qr")
 
 # Reconstruct: A[:, p] = Q * R, so unpermute columns
 B2_qr_perm = Q_qr * R_qr  # columns in permuted order
@@ -216,23 +207,23 @@ B_rec = clamp.(B2_qr[:, 2n+1:3n], 0, 255) / 255
 img_rec = RGB.(R_rec, G_rec, B_rec)
 
 fig6 = Figure()
-ax6 = GLMakie.Axis(fig6[1,1], title="Rank-$k_qr QR (extra=$extra, piter=$piter)", aspect=DataAspect(), yreversed=true)
+ax6 = GLMakie.Axis(fig6[1,1], title="Rank-$k_qr qr_sketch (extra_samples=$extra, power_iter=$piter)", aspect=DataAspect(), yreversed=true)
 image!(ax6, permutedims(img_rec, (2,1)))
 scr6 = display(GLMakie.Screen(title="Figure 6"), fig6)
 GLFW.SetWindowPos(scr6.glscreen, 300, 300)
 
 rel_error_qr = norm(A2 - B2_qr) / norm(A2)
-@printf("QR relative error: %.6e\n", rel_error_qr)
+@printf("qr_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n", k_qr, extra, piter, elapsed_qr, rel_error_qr)
 
 # ========================================================================
 # Summary
 # ========================================================================
-println("\n=== Summary ===")
-println("Method                              Rank    Relative Error")
-println("-----------------------------------------------------------")
-@printf("Randomized SVD                      %4d    %.6e\n", k, rel_error_svd)
-@printf("ID (randomized)                     %4d    %.6e\n", k_id, rel_error_id)
-@printf("SVD (extra=%d, piter=%d)            %4d    %.6e\n", extra, piter, k, rel_error_svd2)
-@printf("ID  (extra=%d, piter=%d)            %4d    %.6e\n", extra, piter, k_id2, rel_error_id2)
-@printf("QR  (extra=%d, piter=%d)            %4d    %.6e\n", extra, piter, k_qr, rel_error_qr)
+println()
+@printf("%-40s %4s    %s\n", "Method", "Rank", "Error")
+println("-" ^ 55)
+@printf("%-40s %4d    %.6e\n", "svd_sketch(k=$k)", k, rel_error_svd)
+@printf("%-40s %4d    %.6e\n", "id_sketch(k=$k_id)", k_id, rel_error_id)
+@printf("%-40s %4d    %.6e\n", "svd_sketch(k=$k, extra, power)", k, rel_error_svd2)
+@printf("%-40s %4d    %.6e\n", "id_sketch(k=$k_id2, extra, power)", k_id2, rel_error_id2)
+@printf("%-40s %4d    %.6e\n", "qr_sketch(k=$k_qr, extra, power)", k_qr, rel_error_qr)
 

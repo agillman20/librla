@@ -29,15 +29,16 @@ if exist('OCTAVE_VERSION', 'builtin')
     pkg load image
 end
 
-A = imread('pexels-flickr-149387.jpg');
-%%A = imread('pexels-anniroenkae-4793404.jpg');
+image_file = 'pexels-flickr-149387.jpg';
+%%image_file = 'pexels-anniroenkae-4793404.jpg';
+A = imread(image_file);
 
 %%A = permute(A,[2 1 3]);
 
 if ndims(A) == 3 && size(A, 3) == 3
     A = rgb2gray(A);
 end
-size(A)
+fprintf('Image: %s, size: %d x %d\n', image_file, size(A, 1), size(A, 2));
 
 figure(1)
 imagesc(A)
@@ -58,7 +59,7 @@ end
 tic;
 [U,s,V] = librla.svd_sketch(conv(A),k);
 B = U(:,1:k)*diag(s(1:k))*V(:,1:k)';
-toc
+elapsed1 = toc;
 
 figure(2)
 B = max(0, min(255, B));  % clip to valid range
@@ -66,15 +67,18 @@ imagesc(B)
 colormap('gray')
 colorbar
 axis image
-title(sprintf('Rank-%d SVD approximation', k))
+title(sprintf('Rank-%d svd_sketch', k))
 
-rel_error = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro')
+rel_error1 = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro');
+fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed1, rel_error1);
 
 
+extra = floor(.25*k);
+piter = 1;
 tic
-[U,s,V] = librla.svd_sketch(conv(A),k,'power_iter',1,'extra_samples',floor(.25*k));
+[U,s,V] = librla.svd_sketch(conv(A),k,'power_iter',piter,'extra_samples',extra);
 B = U(:,1:k)*diag(s(1:k))*V(:,1:k)';
-toc
+elapsed2 = toc;
 
 figure(3)
 B = max(0, min(255, B));  % clip to valid range
@@ -82,6 +86,12 @@ imagesc(B)
 colormap('gray')
 colorbar
 axis image
-title(sprintf('Rank-%d SVD (power iterations, extra sampling)', k))
+title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
 
-rel_error = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro')
+rel_error2 = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro');
+fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed2, rel_error2);
+
+fprintf('\n%-40s %4s    %s\n', 'Method', 'Rank', 'Error');
+fprintf('%s\n', repmat('-', 1, 55));
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d)', k), k, rel_error1);
+fprintf('%-40s %4d    %.6e\n', sprintf('svd_sketch(k=%d, extra, power)', k), k, rel_error2);

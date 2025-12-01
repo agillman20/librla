@@ -39,15 +39,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 import librla
 
 # Load image
-# A = np.array(Image.open('pexels-flickr-149387.jpg'))
-# A = np.array(Image.open('pexels-anniroenkae-4793404.jpg'))
-# A = np.array(Image.open('b_29667.jpg'))
-A = np.array(Image.open('pexels-andre-ulysses-de-salis-2100065-7824822.jpg'))
+# image_file = 'pexels-flickr-149387.jpg'
+# image_file = 'pexels-anniroenkae-4793404.jpg'
+# image_file = 'b_29667.jpg'
+image_file = 'pexels-andre-ulysses-de-salis-2100065-7824822.jpg'
+A = np.array(Image.open(image_file))
 
 # A = np.transpose(A, (1, 0, 2))
 
 m, n, nc = A.shape
-print(f'Image size: {m} x {n} x {nc}')
+print(f'Image: {image_file}, size: {m} x {n} x {nc}')
 
 plt.figure(1)
 plt.imshow(A)
@@ -69,34 +70,41 @@ A2 = conv(A).reshape(m, n * nc)
 t0 = time.time()
 U, s, Vh = librla.svd_sketch(A2, k)
 B2 = U @ np.diag(s) @ Vh
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed1 = time.time() - t0
 
 # Reshape back to RGB
 B = B2.reshape(m, n, nc)
 
 plt.figure(2)
 plt.imshow(np.clip(B, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k} randomized SVD')
+plt.title(f'Rank-{k} svd_sketch')
 plt.draw()
 
-rel_error = norm(A2 - B2, 'fro') / norm(A2, 'fro')
-print(f'Basic SVD relative error: {rel_error:.6e}')
+rel_error1 = norm(A2 - B2, 'fro') / norm(A2, 'fro')
+print(f'svd_sketch(k={k}): {elapsed1:.3f}s, error {rel_error1:.6e}')
 
 
+extra = k // 4
+piter = 1
 t0 = time.time()
-U, s, Vh = librla.svd_sketch(A2, k, power_iter=1, extra_samples=k // 4)
+U, s, Vh = librla.svd_sketch(A2, k, power_iter=piter, extra_samples=extra)
 B2 = U @ np.diag(s) @ Vh
-print(f'Elapsed time: {time.time() - t0:.3f}s')
+elapsed2 = time.time() - t0
 
 # Reshape back to RGB
 B = B2.reshape(m, n, nc)
 
 plt.figure(3)
 plt.imshow(np.clip(B, 0, 255).astype(np.uint8))
-plt.title(f'Rank-{k} randomized SVD (power iterations, extra sampling)')
+plt.title(f'Rank-{k} svd_sketch (extra_samples={extra}, power_iter={piter})')
 plt.draw()
 
-rel_error = norm(A2 - B2, 'fro') / norm(A2, 'fro')
-print(f'Power iter SVD relative error: {rel_error:.6e}')
+rel_error2 = norm(A2 - B2, 'fro') / norm(A2, 'fro')
+print(f'svd_sketch(k={k}, extra_samples={extra}, power_iter={piter}): {elapsed2:.3f}s, error {rel_error2:.6e}')
+
+print(f'\n{"Method":<40} {"Rank":>4}    {"Error"}')
+print('-' * 55)
+print(f'{"svd_sketch(k=" + str(k) + ")":<40} {k:4d}    {rel_error1:.6e}')
+print(f'{"svd_sketch(k=" + str(k) + ", extra, power)":<40} {k:4d}    {rel_error2:.6e}')
 
 plt.show(block=False)
