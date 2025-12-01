@@ -8,7 +8,7 @@ dominant climate modes:
 
   1. EOF1: Trend/mean residual pattern
   2. EOF2: ENSO (El Niño-Southern Oscillation) - tropical Pacific
-  3. EOF3: Pacific Decadal Oscillation (PDO) or other modes
+  3. EOF3: Other modes
 
 This is the classic application of randomized SVD to climate data,
 as studied by Tropp and others.
@@ -275,7 +275,7 @@ println("=" ^ 70)
 years = [Dates.year(d) + (Dates.month(d) - 1)/12 for d in dates]
 
 # Mode labels
-mode_names = ["EOF1 - Trend", "EOF2 - ENSO", "EOF3 - PDO", "EOF4", "EOF5"]
+mode_names = ["EOF1 - Trend", "EOF2 - ENSO", "EOF3", "EOF4", "EOF5"]
 
 fig1 = Figure(size=(1400, 1000))
 Label(fig1[0, :], "Deterministic SVD (Anomalies)", fontsize=20, font=:bold)
@@ -309,7 +309,7 @@ GLFW.SetWindowPos(scr1.glscreen, 50, 50)
 var_explained_rand = σ.^2 / total_var
 
 fig2 = Figure(size=(1400, 1000))
-Label(fig2[0, :], "Randomized SVD (svd_sketch)", fontsize=20, font=:bold)
+Label(fig2[0, :], "Randomized SVD (Anomalies)", fontsize=20, font=:bold)
 
 for i in 1:5
     # Left: Spatial EOF pattern

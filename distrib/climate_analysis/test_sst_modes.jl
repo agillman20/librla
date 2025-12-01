@@ -283,7 +283,7 @@ GLFW.SetWindowPos(scr1.glscreen, 50, 50)
 var_explained_rand = σ.^2 / total_var
 
 fig2 = Figure(size=(1400, 1000))
-Label(fig2[0, :], "Randomized SVD (svd_sketch)", fontsize=20, font=:bold)
+Label(fig2[0, :], "Randomized SVD", fontsize=20, font=:bold)
 
 for i in 1:5
     # Left: Spatial EOF pattern
