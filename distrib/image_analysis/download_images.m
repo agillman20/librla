@@ -69,7 +69,8 @@ end
 
 function url = get_pexels_url(photo_id)
     % Construct Pexels download URL for a photo ID.
-    url = sprintf('https://images.pexels.com/photos/%d/pexels-photo-%d.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', photo_id, photo_id);
+%%%    url = sprintf('https://images.pexels.com/photos/%d/pexels-photo-%d.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', photo_id, photo_id);
+    url = sprintf('https://images.pexels.com/photos/%d/pexels-photo-%d.jpeg', photo_id, photo_id);
 end
 
 function result = download_image(photo_id, photographer, filename, DATA_DIR)

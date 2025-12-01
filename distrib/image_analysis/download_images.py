@@ -37,7 +37,7 @@ DATA_DIR = Path(__file__).parent
 def get_pexels_url(photo_id):
     """Construct Pexels download URL for a photo ID."""
     # Pexels provides direct image URLs in this format
-    return f"https://images.pexels.com/photos/{photo_id}/pexels-photo-{photo_id}.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    return f"https://images.pexels.com/photos/{photo_id}/pexels-photo-{photo_id}.jpeg"
 
 
 def download_image(photo_id, photographer, filename):

@@ -73,7 +73,7 @@ B_svd = reshape(B2_svd, m, n, nc);
 figure(2)
 imagesc(uint8(B_svd))
 axis image
-title(sprintf('Rank-%d svd_sketch', k))
+title(strrep(sprintf('Rank-%d svd_sketch', k),'_','\_'))
 
 rel_error_svd = norm(A2 - B2_svd, 'fro') / norm(A2, 'fro');
 fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed_svd, rel_error_svd);
@@ -105,7 +105,7 @@ B_id = reshape(B2_id, m, n, nc);
 figure(3)
 imagesc(uint8(B_id))
 axis image
-title(sprintf('Rank-%d id_sketch', k_id))
+title(strrep(sprintf('Rank-%d id_sketch', k_id),'_','\_'))
 
 rel_error_id = norm(A2 - B2_id, 'fro') / norm(A2, 'fro');
 fprintf('id_sketch(k=%d): %.3fs, error %.6e\n', k_id, elapsed_id, rel_error_id);
@@ -125,7 +125,7 @@ B_svd2 = reshape(B2_svd2, m, n, nc);
 figure(4)
 imagesc(uint8(B_svd2))
 axis image
-title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
+title(strrep(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter),'_','\_'))
 
 rel_error_svd2 = norm(A2 - B2_svd2, 'fro') / norm(A2, 'fro');
 fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed_svd2, rel_error_svd2);
@@ -150,7 +150,7 @@ B_id2 = reshape(B2_id2, m, n, nc);
 figure(5)
 imagesc(uint8(B_id2))
 axis image
-title(sprintf('Rank-%d id_sketch (extra_samples=%d, power_iter=%d)', k_id2, extra, piter))
+title(strrep(sprintf('Rank-%d id_sketch (extra_samples=%d, power_iter=%d)', k_id2, extra, piter),'_','\_'))
 
 rel_error_id2 = norm(A2 - B2_id2, 'fro') / norm(A2, 'fro');
 fprintf('id_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k_id2, extra, piter, elapsed_id2, rel_error_id2);
@@ -174,7 +174,7 @@ B_qr = reshape(B2_qr, m, n, nc);
 figure(6)
 imagesc(uint8(B_qr))
 axis image
-title(sprintf('Rank-%d qr_sketch (extra_samples=%d, power_iter=%d)', k_qr, extra, piter))
+title(strrep(sprintf('Rank-%d qr_sketch (extra_samples=%d, power_iter=%d)', k_qr, extra, piter),'_','\_'))
 
 rel_error_qr = norm(A2 - B2_qr, 'fro') / norm(A2, 'fro');
 fprintf('qr_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k_qr, extra, piter, elapsed_qr, rel_error_qr);

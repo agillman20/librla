@@ -38,7 +38,7 @@ const DATA_DIR = @__DIR__
 Construct Pexels download URL for a photo ID.
 """
 function get_pexels_url(photo_id::Int)
-    return "https://images.pexels.com/photos/$photo_id/pexels-photo-$photo_id.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    return "https://images.pexels.com/photos/$photo_id/pexels-photo-$photo_id.jpeg"
 end
 
 """

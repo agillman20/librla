@@ -67,7 +67,7 @@ imagesc(B)
 colormap('gray')
 colorbar
 axis image
-title(sprintf('Rank-%d svd_sketch', k))
+title(strrep(sprintf('Rank-%d svd_sketch', k),'_','\_'))
 
 rel_error1 = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro');
 fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed1, rel_error1);
@@ -86,7 +86,7 @@ imagesc(B)
 colormap('gray')
 colorbar
 axis image
-title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
+title(strrep(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter),'_','\_'))
 
 rel_error2 = norm(conv(A)-conv(B),'fro')/norm(conv(A),'fro');
 fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed2, rel_error2);
