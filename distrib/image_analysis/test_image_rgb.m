@@ -69,7 +69,7 @@ B = reshape(B2, m, n, nc);
 figure(2)
 imagesc(uint8(B))
 axis image
-title(sprintf('Rank-%d svd_sketch', k))
+title(strrep(sprintf('Rank-%d svd_sketch', k),'_','\_'))
 
 rel_error1 = norm(A2-B2,'fro')/norm(A2,'fro');
 fprintf('svd_sketch(k=%d): %.3fs, error %.6e\n', k, elapsed1, rel_error1);
@@ -88,7 +88,7 @@ B = reshape(B2, m, n, nc);
 figure(3)
 imagesc(uint8(B))
 axis image
-title(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter))
+title(strrep(sprintf('Rank-%d svd_sketch (extra_samples=%d, power_iter=%d)', k, extra, piter),'_','\_'))
 
 rel_error2 = norm(A2-B2,'fro')/norm(A2,'fro');
 fprintf('svd_sketch(k=%d, extra_samples=%d, power_iter=%d): %.3fs, error %.6e\n', k, extra, piter, elapsed2, rel_error2);
