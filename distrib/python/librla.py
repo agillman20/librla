@@ -279,8 +279,9 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         Orthonormal matrix spanning approximate range of A
     flag : int
         Exit status: 0=success, 1=early termination
-    err : float
-        Estimate of approximation quality (ratio of smallest to largest column norm)
+    diagR : ndarray
+        Diagonal elements from pivoted QR factorization, representing
+        column norms of the sketched matrix (sorted in decreasing order)
     """
     m, n = A.shape
     dtype = _get_dtype(A)
@@ -293,26 +294,18 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
         # Determine numerical rank by filtering small diagonal elements
-        diagR = np.abs(np.diag(R))
-        max_col_norm = np.max(norm(y, axis=0)) if y.size > 0 else 1.0
+        diagR = np.diag(R)
         rtol_eps = max(m, n) * np.finfo(dtype).eps
+        rank = _rank_from_diag(diagR, rtol_eps)
 
-        rank = 0
-        err = 0.0
-        if diagR.size > 0 and max_col_norm > 0:
-            d_ratios = diagR / max_col_norm
-            rank = int(np.sum(d_ratios > rtol_eps))
-            if rank > 0:
-                err = d_ratios[rank - 1]
-
-        return Q[:, :rank], 0, err
+        return Q[:, :rank], 0, diagR
 
     # Tolerance mode (rtol < 1): geometric growth with tolerance checking
     if rtol < np.finfo(dtype).eps:
-        return np.empty((m, 0), dtype=dtype), 1, 0.0
+        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
 
     if block_size >= min(m, n):
-        return np.empty((m, 0), dtype=dtype), 1, 0.0
+        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
 
     while True:
         x = _uniform_omega(A, n, block_size, rng=rng)
@@ -320,14 +313,14 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         y = _matvec(A, x)
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
-        d = abs(R.diagonal()[-1:]) / max(norm(y, axis=0))
+        diagR = np.abs(R.diagonal())
+        d = diagR[-1] / diagR[0] if diagR.size > 0 and diagR[0] > 0 else 0.0
         if d <= rtol:
-            err = d[0] if d.size > 0 else 0.0
-            return Q, 0, err
+            return Q, 0, diagR
 
         block_size = min(block_size * 4, min(m, n))
         if block_size >= min(m, n):
-            return np.empty((m, 0), dtype=dtype), 1, 0.0
+            return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
 
 
 # --------------------------------------------------------------
