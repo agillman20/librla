@@ -40,6 +40,7 @@ using .librla
 image_file = "pexels-flickr-149387.jpg"
 # image_file = "pexels-anniroenkae-4793404.jpg"
 # image_file = "hello_world.png"
+image_file = "lorem_ipsum.png"
 
 A = load(image_file)
 
