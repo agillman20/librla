@@ -14,9 +14,8 @@ using Printf
 using Random
 
 include("librla.jl")
-include("LinearOperator.jl")
 
-using .librla: id_sketch
+using .librla: id_sketch, LinearOperator, from_matrix
 
 
 function test_linop_fullrank()
@@ -172,7 +171,7 @@ function test_linop_fullrank()
     println("-"^70)
 
     @printf("  Operator: %d x %d\n", A_linop_mf.m, A_linop_mf.n)
-    @printf("  Is explicit: %s\n", A_linop_mf.is_explicit)
+    @printf("  Is explicit: %s\n", !isnothing(A_linop_mf.matrix))
     println("  Mode: Rank mode (rtol >= 1), method=\"fast\"")
     println("  Note: Uses R matrix from sketch (Fortran approach, no extra matvecs)")
 

@@ -12,9 +12,8 @@ using Printf
 using Random
 
 include("librla.jl")
-include("LinearOperator.jl")
 
-using .librla: id_sketch
+using .librla: id_sketch, LinearOperator, from_matrix
 
 
 function test_linop_random()
