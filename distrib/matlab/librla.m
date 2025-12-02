@@ -77,7 +77,7 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Rank mode (rtol >= 1): single sketch with rank filtering
   if rtol >= 1
-      x = librla.uniform_omega(n, block_size, is_complex_op);
+      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str);
       x = librla.power_iteration(A, x, power_iter);
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
@@ -109,7 +109,7 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Main loop with geometric growth
   while true
-      x = librla.uniform_omega(n, block_size, is_complex_op);
+      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str);
       x = librla.power_iteration(A, x, power_iter);
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
@@ -562,21 +562,21 @@ function x = power_iteration(A, x, power_iter)
   end
 end
 
-function omega = uniform_omega(n, block_size, is_complex)
+function omega = uniform_omega(n, block_size, is_complex, dtype_str)
 % UNIFORM_OMEGA - Generate uniform[-1,1] test matrix
   if is_complex
-      omega = 2 * rand(n, block_size) - 1 + 1i * (2 * rand(n, block_size) - 1);
+      omega = 2 * rand(n, block_size, dtype_str) - 1 + 1i * (2 * rand(n, block_size, dtype_str) - 1);
   else
-      omega = 2 * rand(n, block_size) - 1;
+      omega = 2 * rand(n, block_size, dtype_str) - 1;
   end
 end
 
-function omega = gaussian_omega(n, block_size, is_complex)
+function omega = gaussian_omega(n, block_size, is_complex, dtype_str)
 % GAUSSIAN_OMEGA - Generate Gaussian test matrix
   if is_complex
-      omega = randn(n, block_size) + 1i * randn(n, block_size);
+      omega = randn(n, block_size, dtype_str) + 1i * randn(n, block_size, dtype_str);
   else
-      omega = randn(n, block_size);
+      omega = randn(n, block_size, dtype_str);
   end
 end
 
