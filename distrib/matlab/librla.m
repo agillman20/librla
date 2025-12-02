@@ -94,16 +94,16 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Tolerance mode (rtol < 1): geometric growth with tolerance checking
   if rtol < eps(dtype_str)
-      Q = zeros(m, 0);
+      Q = zeros(m, 0, dtype_str);
       flag = 1;
-      diagR = zeros(0, 1);
+      diagR = zeros(0, 1, dtype_str);
       return;
   end
 
   if block_size >= min(m, n)
-      Q = zeros(m, 0);
+      Q = zeros(m, 0, dtype_str);
       flag = 1;
-      diagR = zeros(0, 1);
+      diagR = zeros(0, 1, dtype_str);
       return;
   end
 
@@ -129,9 +129,9 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
       % Grow block size
       block_size = min(block_size * 4, min(m, n));
       if block_size >= min(m, n)
-          Q = zeros(m, 0);
+          Q = zeros(m, 0, dtype_str);
           flag = 1;
-          diagR = zeros(0, 1);
+          diagR = zeros(0, 1, dtype_str);
           return;
       end
   end
@@ -529,12 +529,12 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   % Handle edge cases
   if k == 0
-      T = zeros(0, n);
+      T = zeros(0, n, class(R));
       return;
   end
 
   if k == n
-      T = zeros(k, 0);
+      T = zeros(k, 0, class(R));
       return;
   end
 
@@ -663,7 +663,7 @@ function T = compute_T_lstsq(A, R, piv, k)
   [m, n] = size(A);
 
   if k == 0 || k >= n
-      T = zeros(k, n - k);
+      T = zeros(k, n - k, class(R));
       return;
   end
 
@@ -672,16 +672,16 @@ function T = compute_T_lstsq(A, R, piv, k)
 
   if is_matrix_free
       % Extract skeleton columns via unit vectors
-      skeleton_cols = zeros(m, k);
+      skeleton_cols = zeros(m, k, class(R));
       for j = 1:k
-          e_j = zeros(n, 1);
+          e_j = zeros(n, 1, class(R));
           e_j(piv(j)) = 1.0;
           skeleton_cols(:, j) = librla.matvec(A, e_j);
       end
 
-      remaining_cols = zeros(m, n - k);
+      remaining_cols = zeros(m, n - k, class(R));
       for j = 1:(n - k)
-          e_j = zeros(n, 1);
+          e_j = zeros(n, 1, class(R));
           e_j(piv(k + j)) = 1.0;
           remaining_cols(:, j) = librla.matvec(A, e_j);
       end
@@ -707,7 +707,7 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   [~, n] = size(R);
 
   if k == 0
-      T = zeros(k, n - k);
+      T = zeros(k, n - k, class(R));
       return;
   end
 
@@ -720,7 +720,7 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   % Filter small singular values
   keep = s >= rtol_for_svd * max(s);
   if ~any(keep)
-      T = zeros(size(R12));
+      T = zeros(size(R12), class(R));
   else
       inv_s = 1.0 ./ s(keep);
       T = Vh(:, keep) * diag(inv_s) * (U(:, keep)' * R12);
@@ -732,7 +732,7 @@ function T = compute_T_fast(R, k)
   [~, n] = size(R);
 
   if k == 0
-      T = zeros(k, n - k);
+      T = zeros(k, n - k, class(R));
       return;
   end
 
