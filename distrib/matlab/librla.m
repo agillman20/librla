@@ -116,7 +116,11 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
       % Check tolerance
       diagR = abs(diag(R));
-      d = diagR(end) / diagR(1);
+      if isempty(diagR) || diagR(1) == 0
+          d = 0.0;
+      else
+          d = diagR(end) / diagR(1);
+      end
       if d <= rtol
           flag = 0;
           return;
