@@ -82,7 +82,8 @@ The algorithm has two modes:
 # Returns
 - `Q`: Orthonormal matrix (m×k) spanning approximate range of A
 - `flag`: Exit status (0=success, 1=early termination)
-- `err`: Estimate of approximation quality (ratio of smallest to largest column norm)
+- `diagR`: Diagonal elements from pivoted QR factorization, representing
+  column norms of the sketched matrix (sorted in decreasing order)
 """
 function orth_sketch(A, rtol; block_size=42, power_iter=0)
     m, n = size(A)
@@ -98,44 +99,29 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         R = F.R
 
         # Determine numerical rank
-        diagR = abs.(diag(R))
-        col_norms = vec(sqrt.(sum(abs2, y, dims=1)))
-        max_col_norm = maximum(col_norms)
-        if isempty(max_col_norm) || max_col_norm == 0
-            max_col_norm = 1.0
-        end
-
+        diagR = diag(R)
         rtol_eps = max(m, n) * _get_eps(dtype)
-
-        rank = 0
-        err = 0.0
-        if !isempty(diagR) && max_col_norm > 0
-            d_ratios = diagR / max_col_norm
-            rank = sum(d_ratios .> rtol_eps)
-            if rank > 0
-                err = d_ratios[rank]
-            end
-        end
+        rank = _rank_from_diag(diagR, rtol_eps)
 
         # Materialize only needed columns of Q
         Q = Matrix(F.Q)[:, 1:rank]
         flag = 0
-        return Q, flag, err
+        return Q, flag, diagR
     end
 
     # Tolerance mode (rtol < 1): geometric growth with tolerance checking
     if rtol < _get_eps(dtype)
         Q = zeros(dtype, m, 0)
         flag = 1
-        err = 0.0
-        return Q, flag, err
+        diagR = zeros(dtype, 0)
+        return Q, flag, diagR
     end
 
     if block_size >= min(m, n)
         Q = zeros(dtype, m, 0)
         flag = 1
-        err = 0.0
-        return Q, flag, err
+        diagR = zeros(dtype, 0)
+        return Q, flag, diagR
     end
 
     # Main loop with geometric growth
@@ -148,15 +134,11 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
 
         # Check tolerance
         diagR = abs.(diag(R))
-        col_norms = vec(sqrt.(sum(abs2, y, dims=1)))
-        max_col_norm = maximum(col_norms)
-
-        d = diagR[end] / max_col_norm
+        d = diagR[end] / diagR[1]
         if d <= rtol
-            err = d
             flag = 0
             Q = Matrix(F.Q)
-            return Q, flag, err
+            return Q, flag, diagR
         end
 
         # Grow block size
@@ -164,8 +146,8 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         if block_size >= min(m, n)
             Q = zeros(dtype, m, 0)
             flag = 1
-            err = 0.0
-            return Q, flag, err
+            diagR = zeros(dtype, 0)
+            return Q, flag, diagR
         end
     end
 end

@@ -27,13 +27,13 @@ classdef librla
 
 methods (Static)
 
-function [Q, flag, err] = orth_sketch(A, rtol, varargin)
+function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 % ORTH_SKETCH - Compute orthonormal basis for column space using randomized range finding
 %
 % Syntax:
 %   Q = librla.orth_sketch(A, rtol)
 %   [Q, flag] = librla.orth_sketch(A, rtol)
-%   [Q, flag, err] = librla.orth_sketch(A, rtol)
+%   [Q, flag, diagR] = librla.orth_sketch(A, rtol)
 %   [___] = librla.orth_sketch(A, rtol, Name, Value)
 %
 % Description:
@@ -57,9 +57,10 @@ function [Q, flag, err] = orth_sketch(A, rtol, varargin)
 %                matrices with slowly decaying singular values
 %
 % Output Arguments:
-%   Q    - Orthonormal matrix (m x k) spanning approximate range of A
-%   flag - Exit status: 0=success, 1=early termination
-%   err  - Estimate of approximation quality (ratio of smallest to largest column norm)
+%   Q     - Orthonormal matrix (m x k) spanning approximate range of A
+%   flag  - Exit status: 0=success, 1=early termination
+%   diagR - Diagonal elements from pivoted QR factorization, representing
+%           column norms of the sketched matrix (sorted in decreasing order)
 
 % Parse optional parameters
   p = inputParser;
@@ -82,24 +83,9 @@ function [Q, flag, err] = orth_sketch(A, rtol, varargin)
       [Q, R, ~] = qr(y, 0);
 
       % Determine numerical rank
-      diagR = abs(diag(R));
-      col_norms = sqrt(sum(abs(y).^2, 1));
-      max_col_norm = max(col_norms);
-      if isempty(max_col_norm) || max_col_norm == 0
-          max_col_norm = 1.0;
-      end
-
+      diagR = diag(R);
       rtol_eps = max(m, n) * eps(dtype_str);
-
-      rank = 0;
-      err = 0.0;
-      if ~isempty(diagR) && max_col_norm > 0
-          d_ratios = diagR / max_col_norm;
-          rank = sum(d_ratios > rtol_eps);
-          if rank > 0
-              err = d_ratios(rank);
-          end
-      end
+      rank = librla.rank_from_diag(diagR, rtol_eps);
 
       Q = Q(:, 1:rank);
       flag = 0;
@@ -110,14 +96,14 @@ function [Q, flag, err] = orth_sketch(A, rtol, varargin)
   if rtol < eps(dtype_str)
       Q = zeros(m, 0);
       flag = 1;
-      err = 0.0;
+      diagR = zeros(0, 1);
       return;
   end
 
   if block_size >= min(m, n)
       Q = zeros(m, 0);
       flag = 1;
-      err = 0.0;
+      diagR = zeros(0, 1);
       return;
   end
 
@@ -130,12 +116,8 @@ function [Q, flag, err] = orth_sketch(A, rtol, varargin)
 
       % Check tolerance
       diagR = abs(diag(R));
-      col_norms = sqrt(sum(abs(y).^2, 1));
-      max_col_norm = max(col_norms);
-
-      d = diagR(end) / max_col_norm;
+      d = diagR(end) / diagR(1);
       if d <= rtol
-          err = d;
           flag = 0;
           return;
       end
@@ -145,7 +127,7 @@ function [Q, flag, err] = orth_sketch(A, rtol, varargin)
       if block_size >= min(m, n)
           Q = zeros(m, 0);
           flag = 1;
-          err = 0.0;
+          diagR = zeros(0, 1);
           return;
       end
   end
