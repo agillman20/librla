@@ -40,6 +40,8 @@ import librla
 # Load image
 image_file = 'pexels-flickr-149387.jpg'
 # image_file = 'pexels-anniroenkae-4793404.jpg'
+# image_file = 'hello_world.png'
+
 A = np.array(Image.open(image_file))
 
 # A = np.transpose(A, (1, 0, 2))
