@@ -381,8 +381,9 @@ print(f"    Deterministic SVD: {corr_pc5_nino_raw:.3f} (detrended: {corr_pc5_nin
 print(f"    Randomized SVD:    {corr_pc5_rand_raw:.3f} (detrended: {corr_pc5_rand:.3f})")
 print("=" * 70)
 
-fig1.savefig("sst_modes.png", dpi=150)
-print("\nFigure saved to sst_modes.png")
-fig2.savefig("sst_modes_sketch.png", dpi=150)
-print("\nFigure saved to sst_modes_sketch.png")
+#fig1.savefig("sst_modes.png", dpi=150)
+#print("\nFigure saved to sst_modes.png")
+#fig2.savefig("sst_modes_sketch.png", dpi=150)
+#print("\nFigure saved to sst_modes_sketch.png")
+
 plt.show(block=False)
