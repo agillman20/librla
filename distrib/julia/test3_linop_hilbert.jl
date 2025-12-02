@@ -11,9 +11,8 @@ using LinearAlgebra
 using Printf
 
 include("librla.jl")
-include("LinearOperator.jl")
 
-using .librla: id_sketch
+using .librla: id_sketch, LinearOperator, from_matrix
 
 
 """

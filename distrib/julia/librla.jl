@@ -42,9 +42,10 @@ using LinearAlgebra
 using Random
 
 include("LinearOperator.jl")
-import .LinearOperator, .matvec, .rmatvec
+import .LinearOperator, .matvec, .rmatvec, .from_matrix
 
 export orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv
+export LinearOperator, from_matrix, matvec, rmatvec
 
 # LinearOperator support:
 # - m::Int, n::Int (dimensions)
