@@ -11,5 +11,3 @@ Image: pexels-andre-ulysses-de-salis-2100065-7824822.jpg
 Image source: https://www.pexels.com/photo/majestic-waterfalls-from-a-rocky-mountain-7824822/
 License: https://www.pexels.com/license/
 
-https://www.hasselblad.com/learn/sample-images/x-system/
-https://cdn.hasselblad.com/f/77891/11656x8742/00714e9fb0/b_29667.jpg
