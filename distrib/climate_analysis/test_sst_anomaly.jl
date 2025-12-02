@@ -8,7 +8,7 @@ dominant climate modes:
 
   1. EOF1: Trend/mean residual pattern
   2. EOF2: ENSO (El Niño-Southern Oscillation) - tropical Pacific
-  3. EOF3: Other modes
+  3. EOF3-*: Other modes
 
 This is the classic application of randomized SVD to climate data,
 as studied by Tropp and others.

@@ -128,6 +128,7 @@ for t = 1:n_time
     SST_matrix(:, t) = sst_t(ocean_idx);
 end
 %%%SST_matrix = detrend(SST_matrix,0);
+
 fprintf('  Data matrix: %d x %d\n', n_ocean, n_time);
 
 % ========================================================================

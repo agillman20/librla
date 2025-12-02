@@ -8,7 +8,7 @@ dominant climate modes:
 
   1. EOF1: Trend/mean residual pattern
   2. EOF2: ENSO (El Niño-Southern Oscillation) - tropical Pacific
-  3. EOF3: Other modes
+  3. EOF3-*: Other modes
 
 This is the classic application of randomized SVD to climate data,
 as studied by Tropp and others.
@@ -395,8 +395,9 @@ print(f"    Deterministic SVD: {corr_pc2_nino:.3f}")
 print(f"    Randomized SVD:    {abs(corr_pc2_rand):.3f}")
 print("=" * 70)
 
-fig1.savefig("sst_anomaly.png", dpi=150)
-print("\nFigure saved to sst_anomaly.png")
-fig2.savefig("sst_anomaly_sketch.png", dpi=150)
-print("\nFigure saved to sst_anomaly_sketch.png")
+#fig1.savefig("sst_anomaly.png", dpi=150)
+#print("\nFigure saved to sst_anomaly.png")
+#fig2.savefig("sst_anomaly_sketch.png", dpi=150)
+#print("\nFigure saved to sst_anomaly_sketch.png")
+
 plt.show(block=False)
