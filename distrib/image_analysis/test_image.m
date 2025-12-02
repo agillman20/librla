@@ -31,6 +31,8 @@ end
 
 image_file = 'pexels-flickr-149387.jpg';
 %%image_file = 'pexels-anniroenkae-4793404.jpg';
+%%image_file = 'hello_world.png';
+
 A = imread(image_file);
 
 %%A = permute(A,[2 1 3]);
