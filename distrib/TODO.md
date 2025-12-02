@@ -120,6 +120,37 @@ Cross-language API difference to document clearly:
 
 ---
 
+## MATLAB: Consider Migrating to 'like' Syntax for zeros()
+
+### Current Issue
+MATLAB code uses `zeros(m, n, class(R))` or `zeros(m, n, dtype_str)` for typed zeros allocation. This approach loses complex type information since `class()` only returns the base class ('double', 'single') without the complex/real distinction.
+
+### Better Approach
+Use MATLAB's `'like'` syntax: `zeros(m, n, 'like', R)` which preserves:
+- Complex/real nature
+- Precision (single/double)
+- GPU/sparse properties
+- Future type safety
+
+### Details
+See extensive documentation comment in `matlab/librla.m` (lines ~28-65) explaining:
+- Why 'like' is better than class()
+- Cross-language comparison (Python dtype, Julia eltype)
+- Examples and benefits
+
+### Locations to Update
+All 16 zeros() calls in `matlab/librla.m`:
+- orth_sketch: lines 137, 139, 144, 146, 171, 173 (6 calls)
+- id_qrpiv: lines 532, 537 (2 calls)
+- compute_T_lstsq: lines 722, 729, 731, 736, 738 (5 calls)
+- compute_T_svd: lines 768, 780 (2 calls)
+- compute_T_fast: line 793 (1 call)
+
+### Priority
+Low - current code works correctly for real matrices. Mainly improves correctness for complex matrix inputs and future-proofs the implementation.
+
+---
+
 ## Cleanup
 
 - Remove `distrib/python/local/` directory (virtual environment)
