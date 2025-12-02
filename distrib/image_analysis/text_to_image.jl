@@ -53,9 +53,10 @@ function fit_text(txt::String, target_width::Int=40)
     max_len = maximum(length.(wrapped_lines); init=1)
 
     # Calculate font size to fit
-    font_by_width = 600 * 15 / max(max_len, 1)
-    font_by_height = 600 / max(num_lines, 1)
-    fontsize = min(font_by_width, font_by_height, 600)
+    # Julia Plots font sizes may render differently than Python matplotlib
+    font_by_width = 400 * 15 / max(max_len, 1)
+    font_by_height = 400 / max(num_lines, 1)
+    fontsize = min(font_by_width, font_by_height, 400)
 
     return wrapped, round(Int, fontsize)
 end

@@ -80,7 +80,8 @@ function [wrapped, fontsize] = fit_text(txt, target_width)
     max_len = max(cellfun(@length, wrapped_lines));
 
     % Calculate font size to fit (tuned for 4000x1500 image)
-    font_by_width = 550 * 15 / max(max_len, 1);
-    font_by_height = 550 / max(num_lines, 1);
-    fontsize = min([font_by_width, font_by_height, 500]);
+    % MATLAB font sizes render larger than Python matplotlib, so scale down
+    font_by_width = 400 * 15 / max(max_len, 1);
+    font_by_height = 400 / max(num_lines, 1);
+    fontsize = min([font_by_width, font_by_height, 400]);
 end
