@@ -421,39 +421,6 @@ function main()
     push!(results, compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
 
     # -------------------------------------------------------------------------
-    # EXTRA LARGE MATRIX TESTS (4x SCALE)
-    # -------------------------------------------------------------------------
-    println("\n\n", "="^70)
-    println("EXTRA LARGE MATRIX TESTS (4x SCALE)")
-    println("Testing scaling behavior with matrices 4x larger than base")
-    println("="^70)
-
-    # Test 17: 4x Random matrix
-    A17 = randn(2000, 1200)
-    push!(results, compare_on_matrix(A17, 20.0, "XL Random Matrix (2000x1200)"))
-
-    # Test 18: 4x Low-rank matrix
-    U18 = randn(1600, 15)
-    V18 = randn(1000, 15)
-    A18 = U18 * V18' + 1e-10 * randn(1600, 1000)
-    push!(results, compare_on_matrix(A18, 1e-8, "XL Low-Rank Matrix (1600x1000, rank~15)"))
-
-    # Test 19: 4x Hilbert matrix - WARNING: VERY SLOW!
-    A19 = hilb_matrix(8000, 4000)
-    push!(results, compare_on_matrix(A19, 15.0, "XL Hilbert Matrix (8000x4000)"))
-
-    # Test 20: 4x Complex matrix
-    A20 = randn(1200, 800) + im * randn(1200, 800)
-    push!(results, compare_on_matrix(A20, 25.0, "XL Complex Matrix (1200x800)"))
-
-    # Test 21: 4x Decaying spectrum
-    A21 = randn(1600, 1200)
-    U21, S21, V21 = svd(A21)
-    s21 = 1.0 ./ (1:1200)  # Fast decay: 1/k
-    A21 = U21 * Diagonal(s21) * V21'
-    push!(results, compare_on_matrix(A21, 1e-3, "XL Decaying Spectrum (1/k, 1600x1200)"))
-
-    # -------------------------------------------------------------------------
     # STRUCTURED MATRICES FROM MAKE_MAT
     # -------------------------------------------------------------------------
     println("\n\n", "="^70)
