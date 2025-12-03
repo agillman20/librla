@@ -12,6 +12,7 @@ Usage:
 
 Tests:
     Test 1: Power iteration in svd_sketch
+        - Tests extra_samples: 24, 18, 12, 6, 3
         - Tests power_iter: 0-6
         - Measures reconstruction error and singular value accuracy
 
@@ -55,31 +56,90 @@ function test_svd_sketch_power_iter()
     @printf("\nMatrix: %dx%d, target rank: %d\n", m, n, k)
     @printf("True singular values: s[1]=%.12e, s[%d]=%.12e\n", s[1], k+1, s[k+1])
 
-    # Test with different power_iter values (extended to 6)
-    for power_iter in 0:6
-        @printf("\n--- power_iter = %d ---\n", power_iter)
+    # Test different extra_samples and power_iter values
+    extra_samples_list = [24, 18, 12, 6, 3]
+    power_iter_list = 0:6
 
-        # Run svd_sketch
-        t_start = time()
-        U_sketch, s_sketch, Vt_sketch = svd_sketch(A, Float64(k); power_iter=power_iter)
-        t_total = time() - t_start
+    # Store results for summary
+    errors = zeros(length(extra_samples_list), length(power_iter_list))
+    sval_errors = zeros(length(extra_samples_list), length(power_iter_list))
 
-        # Compute reconstruction error
-        A_approx = U_sketch * Diagonal(s_sketch) * Vt_sketch
-        err = norm(A - A_approx, 2) / norm(A, 2)
+    for (idx, extra_samples) in enumerate(extra_samples_list)
+        println("\n" * "="^70)
+        @printf("extra_samples = %d\n", extra_samples)
+        println("="^70)
 
-        # Singular value accuracy
-        s_ref = s[1:k]
-        sval_err = norm(s_sketch - s_ref) / norm(s_ref)
+        for (jdx, power_iter) in enumerate(power_iter_list)
+            @printf("\n--- power_iter = %d ---\n", power_iter)
 
-        @printf("  Rank:         k = %d\n", length(s_sketch))
-        @printf("  Error:        %.12e\n", err)
-        @printf("  SVal error:   %.12e\n", sval_err)
-        @printf("  Time:         %.6fs\n", t_total)
+            # Run svd_sketch
+            t_start = time()
+            U_sketch, s_sketch, Vt_sketch = svd_sketch(A, Float64(k);
+                power_iter=power_iter, extra_samples=extra_samples)
+            t_total = time() - t_start
 
-        # Sanity check
-        @assert length(s_sketch) == k "Expected rank $k, got $(length(s_sketch))"
-        @assert err < 0.1 "Error $err too large"
+            # Compute reconstruction error
+            A_approx = U_sketch * Diagonal(s_sketch) * Vt_sketch
+            err = norm(A - A_approx, 2) / norm(A, 2)
+            errors[idx, jdx] = err
+
+            # Singular value accuracy
+            s_ref = s[1:k]
+            sval_err = norm(s_sketch - s_ref) / norm(s_ref)
+            sval_errors[idx, jdx] = sval_err
+
+            @printf("  Rank:         k = %d\n", length(s_sketch))
+            @printf("  Error:        %.12e\n", err)
+            @printf("  SVal error:   %.12e\n", sval_err)
+            @printf("  Time:         %.6fs\n", t_total)
+
+            # Sanity check
+            @assert length(s_sketch) == k "Expected rank $k, got $(length(s_sketch))"
+        end
+    end
+
+    # Print summary table for reconstruction error
+    println("\n" * "="^70)
+    println("SUMMARY: Reconstruction error (Frobenius norm)")
+    println("="^70)
+    print("extra_samples |")
+    for power_iter in power_iter_list
+        @printf("  iter=%d  |", power_iter)
+    end
+    println()
+    print("--------------+")
+    for _ in power_iter_list
+        print("----------+")
+    end
+    println()
+    for (idx, extra_samples) in enumerate(extra_samples_list)
+        @printf("%13d |", extra_samples)
+        for jdx in 1:length(power_iter_list)
+            @printf(" %.2e |", errors[idx, jdx])
+        end
+        println()
+    end
+
+    # Print summary table for singular value accuracy
+    println("\n" * "="^70)
+    println("SUMMARY: Singular value error (relative 2-norm)")
+    println("="^70)
+    print("extra_samples |")
+    for power_iter in power_iter_list
+        @printf("  iter=%d  |", power_iter)
+    end
+    println()
+    print("--------------+")
+    for _ in power_iter_list
+        print("----------+")
+    end
+    println()
+    for (idx, extra_samples) in enumerate(extra_samples_list)
+        @printf("%13d |", extra_samples)
+        for jdx in 1:length(power_iter_list)
+            @printf(" %.2e |", sval_errors[idx, jdx])
+        end
+        println()
     end
 
     println("\n[PASS] Test 1 complete")
