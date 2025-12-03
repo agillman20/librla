@@ -8,19 +8,27 @@
 %   This version uses librla instead of libid.
 %
 %   Usage:
-%       test7_power
+%       test7_power           % structured matrix only
+%       test7_power('random') % both structured and random
 %
 %   Tests:
 %       Test 1: Power iteration in svd_sketch
 %           - Tests extra_samples: 24, 18, 12, 6, 3
 %           - Tests power_iter: 0-6
 %           - Measures reconstruction error and singular value accuracy
+%           - Can use structured or random matrix
 %
 %   Author : Power iteration tests (librla version)
 %   SPDX-License-Identifier : TBD
 %==========================================================================
 
-function test7_power()
+function test7_power(varargin)
+    % Parse input
+    test_random = false;
+    if nargin > 0 && strcmpi(varargin{1}, 'random')
+        test_random = true;
+    end
+
     fprintf('======================================================================\n');
     fprintf('POWER ITERATION IN SVD_SKETCH TESTS (librla)\n');
     fprintf('======================================================================\n');
@@ -28,7 +36,15 @@ function test7_power()
     rng(42); % For reproducibility
 
     % Test 1: Power iteration in svd_sketch
-    test_svd_sketch_power_iter();
+    if test_random
+        % Run with structured matrix first
+        test_svd_sketch_power_iter(false);
+        % Then run with random matrix
+        test_svd_sketch_power_iter(true);
+    else
+        % Default: structured matrix only
+        test_svd_sketch_power_iter(false);
+    end
 
     fprintf('\n======================================================================\n');
     fprintf('ALL TESTS PASSED [PASS]\n');
@@ -36,27 +52,53 @@ function test7_power()
 end
 
 
-function test_svd_sketch_power_iter()
+function test_svd_sketch_power_iter(use_random_matrix)
     % Test 1: Power iteration in svd_sketch
     fprintf('\n======================================================================\n');
     fprintf('TEST 1: Power iteration in svd_sketch\n');
     fprintf('======================================================================\n');
 
-    % Test matrix with prescribed singular values
-    m = 350;
-    n = 200;
-    k = 40;
+    % Test matrix configuration (same as test6_power)
+    m = 500;
+    n = 300;
+    k = 50;
 
-    U_full = orth(randn(m, m));
-    V_full = orth(randn(n, n));
-    s = logspace(0, -6, n)';
-    % Use first n columns of U to match dimensions
-    U = U_full(:, 1:n);
-    V = V_full;
-    A = U * diag(s) * V';
+    if use_random_matrix
+        fprintf('\nMatrix type: RANDOM (no prescribed singular values)\n');
+        % Simple random matrix
+        A = randn(m, n);
 
-    fprintf('\nMatrix: %dx%d, target rank: %d\n', m, n, k);
-    fprintf('True singular values: s[1]=%.12e, s[%d]=%.12e\n', s(1), k+1, s(k+1));
+        % Compute SVD to get true singular values
+        [~, s_vec, ~] = svd(A, 'econ');
+        s = diag(s_vec);
+    else
+        fprintf('\nMatrix type: STRUCTURED (prescribed singular values)\n');
+        % Create matrix with decaying spectrum
+        U_full = orth(randn(m, m));
+        V_full = orth(randn(n, n));
+        s = [logspace(0, -2, k), logspace(-2, -10, n-k)]';
+        % Use first n columns of U to match dimensions
+        U = U_full(:, 1:n);
+        V = V_full;
+        A = U * diag(s) * V';
+    end
+
+    % Compute detailed matrix properties
+    cond_number = s(1) / s(end);
+    spectral_gap_k = s(k) / s(k+1);
+    decay_rate_k = s(1) / s(k);
+
+    fprintf('\nMatrix Properties:\n');
+    fprintf('  Dimensions:       %dx%d\n', m, n);
+    fprintf('  Target rank:      %d (first %d singular values)\n', k, k);
+    fprintf('  Condition number: %.2e\n', cond_number);
+    fprintf('  Spectral gap at k=%d: %.2fx (s[%d]/s[%d])\n', k, spectral_gap_k, k, k+1);
+    fprintf('  Decay rate (s[1]/s[%d]): %.2fx\n', k, decay_rate_k);
+    fprintf('\nSingular value distribution:\n');
+    fprintf('  s[1]    = %.6e (largest)\n', s(1));
+    fprintf('  s[%3d]  = %.6e (target cutoff)\n', k, s(k));
+    fprintf('  s[%3d]  = %.6e (first neglected)\n', k+1, s(k+1));
+    fprintf('  s[%3d]  = %.6e (smallest)\n', n, s(n));
 
     % Test different extra_samples and power_iter values
     extra_samples_list = [24, 18, 12, 6, 3];
@@ -102,6 +144,18 @@ function test_svd_sketch_power_iter()
             assert(length(s_sketch) == k, sprintf('Expected rank %d, got %d', k, length(s_sketch)));
         end
     end
+
+    % Print matrix info before summary
+    fprintf('\n======================================================================\n');
+    if use_random_matrix
+        fprintf('Matrix type: RANDOM\n');
+        fprintf('Singular values: from SVD of randn(m,n)\n');
+    else
+        fprintf('Matrix type: STRUCTURED\n');
+        fprintf('Singular values: logspace(0,-2,k) + logspace(-2,-10,n-k)\n');
+    end
+    fprintf('Matrix: %dx%d, target rank: %d\n', m, n, k);
+    fprintf('Condition number: %.2e, Spectral gap: %.2fx\n', cond_number, spectral_gap_k);
 
     % Print summary table for reconstruction error
     fprintf('\n======================================================================\n');
