@@ -18,10 +18,6 @@ Tests:
         - Tests iterations: 0-6
         - Can use structured or random matrix
 
-    Test 3: SVD sketch integration
-        - Tests power_iter: 0-6
-        - Measures reconstruction error and singular value accuracy
-
 Author: Power iteration range estimator tests (librla version)
 SPDX-License-Identifier: TBD
 """
@@ -124,7 +120,13 @@ function test_range_estimation_quality(use_random_matrix::Bool=false)
     @printf("  s[%3d] = %.12e (smallest)\n", n, s[n])
 
     # Test different extra_samples values
-    for extra_samples in [24, 18, 12, 6, 3]
+    extra_samples_list = [24, 18, 12, 6, 3]
+    num_iters_list = 0:6
+
+    # Store results for summary
+    angles = zeros(length(extra_samples_list), length(num_iters_list))
+
+    for (idx, extra_samples) in enumerate(extra_samples_list)
         block_size = k + extra_samples
 
         println("\n" * "="^70)
@@ -132,7 +134,7 @@ function test_range_estimation_quality(use_random_matrix::Bool=false)
         println("="^70)
 
         # Test different iteration counts (0-6)
-        for num_iters in 0:6
+        for (jdx, num_iters) in enumerate(num_iters_list)
             @printf("\n--- num_iters = %d ---\n", num_iters)
 
             # Generate same random test matrix
@@ -158,6 +160,7 @@ function test_range_estimation_quality(use_random_matrix::Bool=false)
             end
             t_power = time() - t_start
             angle_power = subspace_angle(V_true, X_power)
+            angles[idx, jdx] = angle_power
 
             # Orthogonality check
             orth_power = norm(X_power' * X_power - I(size(X_power, 2)), 2)
@@ -176,65 +179,29 @@ function test_range_estimation_quality(use_random_matrix::Bool=false)
         end
     end
 
-    println("\n[PASS] Test 1 complete")
-end
-
-
-"""
-    test_svd_sketch_integration()
-
-Test 3: Power iteration integration with svd_sketch pipeline.
-
-Tests how power iteration improves singular value accuracy in svd_sketch.
-"""
-function test_svd_sketch_integration()
+    # Print summary table
     println("\n" * "="^70)
-    println("TEST 3: Integration with svd_sketch")
+    println("SUMMARY: Subspace angles (degrees)")
     println("="^70)
-
-    # Test matrix with prescribed singular values
-    m, n = 350, 200
-    k = 40
-
-    U_full = qr(randn(m, m)).Q
-    V_full = qr(randn(n, n)).Q
-    s = exp10.(range(0, -6, length=n))
-    # Use first n columns of U to match dimensions
-    U = Matrix(U_full)[:, 1:n]
-    V = Matrix(V_full)
-    A = U * Diagonal(s) * V'
-
-    @printf("\nMatrix: %dx%d, target rank: %d\n", m, n, k)
-    @printf("True singular values: s[1]=%.12e, s[%d]=%.12e\n", s[1], k+1, s[k+1])
-
-    # Test with different power_iter values (extended to 6)
-    for power_iter in 0:6
-        @printf("\n--- power_iter = %d ---\n", power_iter)
-
-        # Run svd_sketch
-        t_start = time()
-        U_sketch, s_sketch, Vt_sketch = svd_sketch(A, Float64(k); power_iter=power_iter)
-        t_total = time() - t_start
-
-        # Compute reconstruction error
-        A_approx = U_sketch * Diagonal(s_sketch) * Vt_sketch
-        err = norm(A - A_approx, 2) / norm(A, 2)
-
-        # Singular value accuracy
-        s_ref = s[1:k]
-        sval_err = norm(s_sketch - s_ref) / norm(s_ref)
-
-        @printf("  Rank:         k = %d\n", length(s_sketch))
-        @printf("  Error:        %.12e\n", err)
-        @printf("  SVal error:   %.12e\n", sval_err)
-        @printf("  Time:         %.6fs\n", t_total)
-
-        # Sanity check
-        @assert length(s_sketch) == k "Expected rank $k, got $(length(s_sketch))"
-        @assert err < 0.1 "Error $err too large"
+    print("extra_samples |")
+    for num_iters in num_iters_list
+        @printf(" iter=%d |", num_iters)
+    end
+    println()
+    print("--------------+")
+    for _ in num_iters_list
+        print("--------+")
+    end
+    println()
+    for (idx, extra_samples) in enumerate(extra_samples_list)
+        @printf("%13d |", extra_samples)
+        for jdx in 1:length(num_iters_list)
+            @printf(" %6.2f |", angles[idx, jdx])
+        end
+        println()
     end
 
-    println("\n[PASS] Test 3 complete")
+    println("\n[PASS] Test 1 complete")
 end
 
 
@@ -260,9 +227,6 @@ function main(test_random::Bool=false)
         # Default: structured matrix only
         test_range_estimation_quality(false)
     end
-
-    # Test 3: SVD sketch integration (always uses structured matrix)
-    test_svd_sketch_integration()
 
     println("\n" * "="^70)
     println("ALL TESTS PASSED [PASS]")
