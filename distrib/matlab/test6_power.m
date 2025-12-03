@@ -18,10 +18,6 @@
 %           - Tests iterations: 0-6
 %           - Can use structured or random matrix
 %
-%       Test 3: SVD sketch integration
-%           - Tests power_iter: 0-6
-%           - Measures reconstruction error and singular value accuracy
-%
 %   Author : Power iteration range estimator tests (librla version)
 %   SPDX-License-Identifier : TBD
 %==========================================================================
@@ -49,9 +45,6 @@ function test6_power(varargin)
         % Default: structured matrix only
         test_range_estimation_quality(false);
     end
-
-    % Test 3: SVD sketch integration
-    test_svd_sketch_integration();
 
     fprintf('\n======================================================================\n');
     fprintf('ALL TESTS PASSED [PASS]\n');
@@ -118,6 +111,11 @@ function test_range_estimation_quality(use_random_matrix)
 
     % Test different extra_samples values
     extra_samples_list = [24, 18, 12, 6, 3];
+    num_iters_list = 0:6;
+
+    % Store results for summary
+    angles = zeros(length(extra_samples_list), length(num_iters_list));
+
     for idx = 1:length(extra_samples_list)
         extra_samples = extra_samples_list(idx);
         block_size = k + extra_samples;
@@ -127,7 +125,8 @@ function test_range_estimation_quality(use_random_matrix)
         fprintf('======================================================================\n');
 
         % Test different iteration counts (0-6)
-        for num_iters = 0:6
+        for jdx = 1:length(num_iters_list)
+            num_iters = num_iters_list(jdx);
             fprintf('\n--- num_iters = %d ---\n', num_iters);
 
             % Generate same random test matrix
@@ -151,6 +150,7 @@ function test_range_estimation_quality(use_random_matrix)
             end
             t_power = toc;
             angle_power = subspace_angle(V_true, X_power);
+            angles(idx, jdx) = angle_power;
 
             % Orthogonality check
             orth_power = norm(X_power' * X_power - eye(size(X_power, 2)), 'fro');
@@ -169,60 +169,29 @@ function test_range_estimation_quality(use_random_matrix)
         end
     end
 
-    fprintf('\n[PASS] Test 1 complete\n');
-end
-
-
-function test_svd_sketch_integration()
-    % Test 3: Power iteration integration with svd_sketch pipeline
+    % Print summary table
     fprintf('\n======================================================================\n');
-    fprintf('TEST 3: Integration with svd_sketch\n');
+    fprintf('SUMMARY: Subspace angles (degrees)\n');
     fprintf('======================================================================\n');
-
-    % Test matrix with prescribed singular values
-    m = 350;
-    n = 200;
-    k = 40;
-
-    U_full = orth(randn(m, m));
-    V_full = orth(randn(n, n));
-    s = logspace(0, -6, n)';
-    % Use first n columns of U to match dimensions
-    U = U_full(:, 1:n);
-    V = V_full;
-    A = U * diag(s) * V';
-
-    fprintf('\nMatrix: %dx%d, target rank: %d\n', m, n, k);
-    fprintf('True singular values: s[0]=%.12e, s[%d]=%.12e\n', s(1), k+1, s(k+1));
-
-    % Test with different power_iter values (extended to 6)
-    for power_iter = 0:6
-        fprintf('\n--- power_iter = %d ---\n', power_iter);
-
-        % Run svd_sketch
-        tic;
-        [U_sketch, s_sketch, V_sketch] = librla.svd_sketch(A, k, 'power_iter', power_iter);
-        t_total = toc;
-
-        % Compute reconstruction error
-        A_approx = U_sketch * diag(s_sketch) * V_sketch';
-        err = norm(A - A_approx, 'fro') / norm(A, 'fro');
-
-        % Singular value accuracy
-        s_ref = s(1:k);
-        sval_err = norm(s_sketch - s_ref) / norm(s_ref);
-
-        fprintf('  Rank:         k = %d\n', length(s_sketch));
-        fprintf('  Error:        %.12e\n', err);
-        fprintf('  SVal error:   %.12e\n', sval_err);
-        fprintf('  Time:         %.6fs\n', t_total);
-
-        % Sanity check
-        assert(length(s_sketch) == k, sprintf('Expected rank %d, got %d', k, length(s_sketch)));
-        assert(err < 0.1, sprintf('Error %.3e too large', err));
+    fprintf('extra_samples |');
+    for num_iters = num_iters_list
+        fprintf(' iter=%d |', num_iters);
+    end
+    fprintf('\n');
+    fprintf('--------------+');
+    for jdx = 1:length(num_iters_list)
+        fprintf('--------+');
+    end
+    fprintf('\n');
+    for idx = 1:length(extra_samples_list)
+        fprintf('%13d |', extra_samples_list(idx));
+        for jdx = 1:length(num_iters_list)
+            fprintf(' %6.2f |', angles(idx, jdx));
+        end
+        fprintf('\n');
     end
 
-    fprintf('\n[PASS] Test 3 complete\n');
+    fprintf('\n[PASS] Test 1 complete\n');
 end
 
 

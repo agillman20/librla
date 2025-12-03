@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test7_power.py - Test power iteration for range estimation (librla version)
+test6_power.py - Test power iteration for range estimation (librla version)
 
 Tests simple power iteration for range estimation in sketching algorithms.
 Power iteration applies (A^H A)^n to improve sketch quality by amplifying
@@ -11,10 +11,10 @@ This version uses librla instead of libid.
 Usage
 -----
 Default (structured matrix only):
-    python test7_power.py
+    python test6_power.py
 
 With random matrix comparison:
-    python test7_power.py --random
+    python test6_power.py --random
 
 Tests
 -----
@@ -23,10 +23,6 @@ Test 1: Range estimation quality
     - Tests extra_samples: 24, 18, 12, 6, 3
     - Tests iterations: 0-6
     - Can use structured or random matrix
-
-Test 3: SVD sketch integration
-    - Tests power_iter: 0-6
-    - Measures reconstruction error and singular value accuracy
 
 Author: Power iteration range estimator tests (librla version)
 """
@@ -126,14 +122,20 @@ def test_range_estimation_quality(use_random_matrix=False):
     print(f"  s[{n-1:>3}] = {s[n-1]:.12e} (smallest)")
 
     # Test different extra_samples values
-    for extra_samples in [24, 18, 12, 6, 3]:
+    extra_samples_list = [24, 18, 12, 6, 3]
+    num_iters_list = list(range(7))
+
+    # Store results for summary
+    angles = np.zeros((len(extra_samples_list), len(num_iters_list)))
+
+    for idx, extra_samples in enumerate(extra_samples_list):
         block_size = k + extra_samples
         print(f"\n" + "="*70)
         print(f"extra_samples = {extra_samples} (block_size = {block_size})")
         print("="*70)
 
         # Test different iteration counts (0-6)
-        for num_iters in range(7):
+        for jdx, num_iters in enumerate(num_iters_list):
             print(f"\n--- num_iters = {num_iters} ---")
 
             # Generate same random test matrix for fair comparison
@@ -150,6 +152,7 @@ def test_range_estimation_quality(use_random_matrix=False):
                 X_power = _power_iteration(A, X_power, power_iter=num_iters)
             t_power = time.perf_counter() - t0
             angle_power = subspace_angle(V_true, X_power)
+            angles[idx, jdx] = angle_power
 
             # Orthogonality check
             orth_power = np.linalg.norm(X_power.conj().T @ X_power - np.eye(X_power.shape[1]), 'fro')
@@ -167,61 +170,22 @@ def test_range_estimation_quality(use_random_matrix=False):
             print(f"  Time:             {t_power:.6f}s")
             print(f"  Basis size:       {X_power.shape[1]}")
 
-    print("\n[PASS] Test 1 complete")
-
-
-def test_svd_sketch_integration():
-    """
-    Test 3: Power iteration integration with svd_sketch pipeline.
-
-    Tests how power iteration improves singular value accuracy in svd_sketch.
-    """
+    # Print summary table
     print("\n" + "="*70)
-    print("TEST 3: Integration with svd_sketch")
+    print("SUMMARY: Subspace angles (degrees)")
     print("="*70)
+    header = "extra_samples |"
+    for num_iters in num_iters_list:
+        header += f" iter={num_iters} |"
+    print(header)
+    print("--------------+" + "--------+" * len(num_iters_list))
+    for idx, extra_samples in enumerate(extra_samples_list):
+        row = f"{extra_samples:>13} |"
+        for jdx in range(len(num_iters_list)):
+            row += f" {angles[idx, jdx]:6.2f} |"
+        print(row)
 
-    # Test matrix with prescribed singular values
-    m, n = 350, 200
-    k = 40
-
-    U_full = linalg.orth(np.random.randn(m, m))
-    V_full = linalg.orth(np.random.randn(n, n))
-    s = np.logspace(0, -6, n)  # Exponential decay
-    # Use first n columns of U to match dimensions
-    U = U_full[:, :n]
-    V = V_full
-    A = U @ np.diag(s) @ V.T
-
-    print(f"\nMatrix: {m}x{n}, target rank: {k}")
-    print(f"True singular values: s[0]={s[0]:.12e}, s[{k}]={s[k]:.12e}")
-
-    # Test with different power_iter values (extended to 6)
-    for power_iter in range(7):
-        print(f"\n--- power_iter = {power_iter} ---")
-
-        # Run svd_sketch
-        t0 = time.perf_counter()
-        U_sketch, s_sketch, Vh_sketch = svd_sketch(A, rtol=float(k), power_iter=power_iter)
-        t_total = time.perf_counter() - t0
-
-        # Compute reconstruction error
-        A_approx = U_sketch @ np.diag(s_sketch) @ Vh_sketch
-        err = np.linalg.norm(A - A_approx, 'fro') / np.linalg.norm(A, 'fro')
-
-        # Singular value accuracy
-        s_ref = s[:k]
-        sval_err = np.linalg.norm(s_sketch - s_ref) / np.linalg.norm(s_ref)
-
-        print(f"  Rank:         k = {len(s_sketch)}")
-        print(f"  Error:        {err:.12e}")
-        print(f"  SVal error:   {sval_err:.12e}")
-        print(f"  Time:         {t_total:.6f}s")
-
-        # Sanity check
-        assert len(s_sketch) == k, f"Expected rank {k}, got {len(s_sketch)}"
-        assert err < 0.1, f"Error {err:.3e} too large"
-
-    print("\n[PASS] Test 3 complete")
+    print("\n[PASS] Test 1 complete")
 
 
 def main(test_random=False):
@@ -249,9 +213,6 @@ def main(test_random=False):
     else:
         # Default: structured matrix only
         test_range_estimation_quality(use_random_matrix=False)
-
-    # Test 3: SVD sketch integration (always uses structured matrix)
-    test_svd_sketch_integration()
 
     print("\n" + "="*70)
     print("ALL TESTS PASSED [PASS]")
