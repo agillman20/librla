@@ -170,6 +170,17 @@ def test_range_estimation_quality(use_random_matrix=False):
             print(f"  Time:             {t_power:.6f}s")
             print(f"  Basis size:       {X_power.shape[1]}")
 
+    # Print matrix info before summary
+    print("\n" + "="*70)
+    if use_random_matrix:
+        print("Matrix type: RANDOM")
+        print("Singular values: from SVD of randn(m,n)")
+    else:
+        print("Matrix type: STRUCTURED")
+        print("Singular values: logspace(0,-2,k) + logspace(-2,-10,n-k)")
+    print(f"Matrix: {m}x{n}, target rank: {k}")
+    print(f"Condition number: {cond_number:.2e}, Spectral gap: {spectral_gap_k:.2f}x")
+
     # Print summary table
     print("\n" + "="*70)
     print("SUMMARY: Subspace angles (degrees)")

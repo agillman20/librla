@@ -169,6 +169,18 @@ function test_range_estimation_quality(use_random_matrix)
         end
     end
 
+    % Print matrix info before summary
+    fprintf('\n======================================================================\n');
+    if use_random_matrix
+        fprintf('Matrix type: RANDOM\n');
+        fprintf('Singular values: from SVD of randn(m,n)\n');
+    else
+        fprintf('Matrix type: STRUCTURED\n');
+        fprintf('Singular values: logspace(0,-2,k) + logspace(-2,-10,n-k)\n');
+    end
+    fprintf('Matrix: %dx%d, target rank: %d\n', m, n, k);
+    fprintf('Condition number: %.2e, Spectral gap: %.2fx\n', cond_number, spectral_gap_k);
+
     % Print summary table
     fprintf('\n======================================================================\n');
     fprintf('SUMMARY: Subspace angles (degrees)\n');
