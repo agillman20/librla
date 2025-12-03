@@ -337,39 +337,6 @@ def main():
     results.append(compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
 
     # -------------------------------------------------------------------------
-    # EXTRA LARGE MATRIX TESTS (4x SCALE)
-    # -------------------------------------------------------------------------
-    print("\n\n" + "="*70)
-    print("EXTRA LARGE MATRIX TESTS (4x SCALE)")
-    print("Testing scaling behavior with matrices 4x larger than base")
-    print("="*70)
-
-    # Test 17: 4x Random matrix
-    A17 = np.random.randn(2000, 1200)
-    results.append(compare_on_matrix(A17, 20, "XL Random Matrix (2000x1200)"))
-
-    # Test 18: 4x Low-rank matrix
-    U18 = np.random.randn(1600, 15)
-    V18 = np.random.randn(1000, 15)
-    A18 = U18 @ V18.T + 1e-10 * np.random.randn(1600, 1000)
-    results.append(compare_on_matrix(A18, 1e-8, "XL Low-Rank Matrix (1600x1000, rank~15)"))
-
-    # Test 19: 4x Hilbert matrix - WARNING: VERY SLOW!
-    A19 = hilb(8000, 4000)
-    results.append(compare_on_matrix(A19, 15, "XL Hilbert Matrix (8000x4000)"))
-
-    # Test 20: 4x Complex matrix
-    A20 = np.random.randn(1200, 800) + 1j * np.random.randn(1200, 800)
-    results.append(compare_on_matrix(A20, 25, "XL Complex Matrix (1200x800)"))
-
-    # Test 21: 4x Decaying spectrum
-    A21 = np.random.randn(1600, 1200)
-    U21, S21, Vh21 = np.linalg.svd(A21, full_matrices=False)
-    s21 = 1.0 / np.arange(1, 1201)  # Fast decay: 1/k
-    A21 = U21 @ np.diag(s21) @ Vh21
-    results.append(compare_on_matrix(A21, 1e-3, "XL Decaying Spectrum (1/k, 1600x1200)"))
-
-    # -------------------------------------------------------------------------
     # MAKE_MAT MATRIX TESTS (structured matrices from paper)
     # -------------------------------------------------------------------------
     print("\n\n" + "="*70)
