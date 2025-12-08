@@ -558,7 +558,7 @@ Apply (A'*A)^power_iter to x with orthogonalization after each iteration.
 function _power_iteration(A, x, power_iter::Int)
     for i = 1:power_iter
         x = _rmatvec(A, _matvec(A, x))
-        F = qr(x)
+        F = qr(x, ColumnNorm())
         x = F.Q[:, 1:size(x, 2)]  # thin Q
     end
     return x
