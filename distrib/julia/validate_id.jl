@@ -1,4 +1,4 @@
-# compare_id.jl - Compare libid interpolative decomposition implementations
+# validate_id.jl - Compare libid interpolative decomposition implementations
 #
 # Compares two ID implementations from librla:
 # - id_sketch:  Randomized QR sketching (default, recommended)
@@ -11,7 +11,7 @@
 # - Rank selection behavior
 #
 # Usage:
-#     julia compare_id.jl
+#     julia validate_id.jl
 
 # No path additions needed - all files in same directory
 

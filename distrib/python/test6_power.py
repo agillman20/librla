@@ -13,7 +13,7 @@ Usage
 Default (structured matrix only):
     python test6_power.py
 
-With random matrix comparison:
+Random matrix only:
     python test6_power.py --random
 
 Tests
@@ -216,14 +216,7 @@ def main(test_random=False):
     np.random.seed(42)  # For reproducibility
 
     # Test 1: Range estimation quality
-    if test_random:
-        # Run with structured matrix first
-        test_range_estimation_quality(use_random_matrix=False)
-        # Then run with random matrix
-        test_range_estimation_quality(use_random_matrix=True)
-    else:
-        # Default: structured matrix only
-        test_range_estimation_quality(use_random_matrix=False)
+    test_range_estimation_quality(use_random_matrix=test_random)
 
     print("\n" + "="*70)
     print("ALL TESTS PASSED [PASS]")
@@ -232,6 +225,10 @@ def main(test_random=False):
 
 if __name__ == "__main__":
     import sys
+    # Check for --help flag
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(__doc__)
+        sys.exit(0)
     # Check for --random flag
     test_random = "--random" in sys.argv
     main(test_random=test_random)

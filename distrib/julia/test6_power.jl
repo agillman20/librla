@@ -9,7 +9,7 @@ This version uses librla instead of libid.
 
 Usage:
     julia test6_power.jl           # structured matrix only
-    julia test6_power.jl random    # both structured and random
+    julia test6_power.jl random    # random matrix only
 
 Tests:
     Test 1: Range estimation quality
@@ -230,15 +230,7 @@ function main(test_random::Bool=false)
     Random.seed!(42)  # For reproducibility
 
     # Test 1: Range estimation quality
-    if test_random
-        # Run with structured matrix first
-        test_range_estimation_quality(false)
-        # Then run with random matrix
-        test_range_estimation_quality(true)
-    else
-        # Default: structured matrix only
-        test_range_estimation_quality(false)
-    end
+    test_range_estimation_quality(test_random)
 
     println("\n" * "="^70)
     println("ALL TESTS PASSED [PASS]")
@@ -247,5 +239,9 @@ end
 
 
 # Run test
+if length(ARGS) > 0 && (ARGS[1] == "--help" || ARGS[1] == "-h")
+    println(@doc test_range_estimation_quality)
+    exit(0)
+end
 test_random = length(ARGS) > 0 && lowercase(ARGS[1]) == "random"
 main(test_random)
