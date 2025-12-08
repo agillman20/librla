@@ -319,6 +319,7 @@ python test4_linop_random.py
 python test5_linop_fullrank.py
 python test5_method_comparison.py
 python test6_power.py
+python test7_power.py
 ```
 
 ### MATLAB/Octave
@@ -332,6 +333,7 @@ test4_linop_random
 test5_linop_fullrank
 test5_method_comparison
 test6_power
+test7_power
 ```
 
 ### Julia
@@ -345,6 +347,7 @@ include("test4_linop_random.jl")
 include("test5_linop_fullrank.jl")
 include("test5_method_comparison.jl")
 include("test6_power.jl")
+include("test7_power.jl")
 ```
 
 ## Usage Modes

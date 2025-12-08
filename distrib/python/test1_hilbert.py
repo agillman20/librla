@@ -93,7 +93,7 @@ def test_hilbert():
     print(f"  Method         Rank    Error        Max|T|       Time")
     print("-"*70)
     print(f"  id_sketch      {k1:4d}    {err1:.3e}    {maxT1:.3e}    {t1:.4f}s")
-    print(f"  id_rrqr        {k2:4d}    {err2:.3e}    {maxT2:.3e}    {t2:.4f}s")
+    print(f"  id_qrpiv       {k2:4d}    {err2:.3e}    {maxT2:.3e}    {t2:.4f}s")
     print("="*70)
 
     # Validate

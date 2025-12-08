@@ -10,11 +10,11 @@ This distribution provides a unified randomized linear algebra library (librla)
 implemented in Python, MATLAB/Octave, and Julia. The library provides efficient
 sketching-based methods for low-rank matrix approximations.
 
-Total files: 47
+Total files: 50
 - Documentation: 3 files
-- Python files: 15 files (26K main library)
-- MATLAB files: 15 files (21K main library)
-- Julia files: 14 files (21K main library)
+- Python files: 16 files (26K main library)
+- MATLAB files: 16 files (21K main library)
+- Julia files: 15 files (21K main library)
 
 ================================================================================
 DOCUMENTATION
@@ -52,6 +52,7 @@ Test Suite:
   test5_linop_fullrank.py(8.4K) - Full-rank matrix tests
   test5_method_comparison.py(4.7K) - Compare T computation methods
   test6_power.py       (8.7K)  - Power iteration tests
+  test7_power.py       (6.0K)  - Power iteration in svd_sketch
 
 ================================================================================
 MATLAB/OCTAVE IMPLEMENTATION (matlab/)
@@ -80,6 +81,7 @@ Test Suite:
   test5_linop_fullrank.m(9.3K)  - Full-rank matrix tests
   test5_method_comparison.m(5.4K) - Compare T computation methods
   test6_power.m         (8.7K)  - Power iteration tests
+  test7_power.m         (6.0K)  - Power iteration in svd_sketch
 
 ================================================================================
 JULIA IMPLEMENTATION (julia/)
@@ -108,6 +110,7 @@ Test Suite:
   test5_linop_fullrank.jl(9.3K) - Full-rank matrix tests
   test5_method_comparison.jl(5.3K) - Compare T computation methods
   test6_power.jl        (8.4K)  - Power iteration tests
+  test7_power.jl        (6.0K)  - Power iteration in svd_sketch
 
 ================================================================================
 CORE API FUNCTIONS

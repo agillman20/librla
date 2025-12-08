@@ -85,7 +85,7 @@ function test1_hilbert()
     fprintf('  Method         Rank    Error        Max|T|       Time\n');
     fprintf('----------------------------------------------------------------------\n');
     fprintf('  id_sketch      %4d    %.3e    %.3e    %.4fs\n', k1, err1, maxT1, t1);
-    fprintf('  id_rrqr        %4d    %.3e    %.3e    %.4fs\n', k2, err2, maxT2, t2);
+    fprintf('  id_qrpiv       %4d    %.3e    %.3e    %.4fs\n', k2, err2, maxT2, t2);
     fprintf('======================================================================\n');
 
     % Validate
