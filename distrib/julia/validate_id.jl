@@ -13,7 +13,7 @@
 # Usage:
 #     julia validate_id.jl
 
-# No path additions needed - all files in same directory
+module ValidateID
 
 using LinearAlgebra
 using Printf
@@ -21,10 +21,12 @@ using Statistics
 using Random
 
 # Import ID implementations
-include("librla.jl")
-include("make_mat.jl")
+include(joinpath(@__DIR__, "librla.jl"))
+include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: id_sketch, id_qrpiv
+
+export validate
 
 
 mutable struct ComparisonResult
@@ -273,8 +275,8 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function main()
-    """Run comprehensive ID comparison tests."""
+function validate()
+    """Run comprehensive ID comparison tests. Returns 0 on success, 1 on failure."""
 
     println()
     println("="^70)
@@ -456,13 +458,17 @@ function main()
                 println("  - ", r.name)
             end
         end
+        return 1
     else
         println("\n[PASS] ALL TESTS PASSED!")
+        return 0
     end
 end
 
+end # module ValidateID
 
-# Run main function if this script is executed directly
+
+# Run validate function if this script is executed directly
 if abspath(PROGRAM_FILE) == @__FILE__
-    main()
+    exit(ValidateID.validate())
 end

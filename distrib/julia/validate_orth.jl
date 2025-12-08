@@ -1,4 +1,4 @@
-# compare_orth.jl - Test librla orthonormal basis computation
+# validate_orth.jl - Test librla orthonormal basis computation
 #
 # Tests orth_sketch (randomized orthonormal basis for column space):
 # - Column space accuracy (how well Q spans A's column space)
@@ -7,17 +7,21 @@
 # - Runtime
 #
 # Usage:
-#     julia compare_orth.jl
+#     julia validate_orth.jl
+
+module ValidateOrth
 
 using LinearAlgebra
 using Printf
 using Statistics
 using Random
 
-include("librla.jl")
-include("make_mat.jl")
+include(joinpath(@__DIR__, "librla.jl"))
+include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: orth_sketch
+
+export validate
 
 
 mutable struct ComparisonResult
@@ -257,7 +261,7 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function main()
+function validate()
     println()
     println("="^70)
     println("ORTH_SKETCH TESTS")
@@ -418,7 +422,9 @@ function main()
     end
 end
 
+end # module ValidateOrth
+
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(main())
+    exit(ValidateOrth.validate())
 end
