@@ -96,7 +96,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         x = _uniform_omega(n, block_size, is_complex_op, dtype)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
-        F = qr(y)
+        F = qr(y, ColumnNorm())
         R = F.R
 
         # Determine numerical rank
@@ -104,8 +104,8 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         rtol_eps = max(m, n) * _get_eps(dtype)
         rank = _rank_from_diag(diagR, rtol_eps)
 
-        # Materialize only needed columns of Q
-        Q = Matrix(F.Q)[:, 1:rank]
+        # Materialize only needed columns of Q (thin, not full m×m)
+        Q = F.Q[:, 1:rank]
         flag = 0
         return Q, flag, diagR
     end
@@ -130,7 +130,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         x = _uniform_omega(n, block_size, is_complex_op, dtype)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
-        F = qr(y)
+        F = qr(y, ColumnNorm())
         R = F.R
 
         # Check tolerance
@@ -142,7 +142,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
         end
         if d <= rtol
             flag = 0
-            Q = Matrix(F.Q)
+            Q = F.Q[:, 1:size(y, 2)]  # thin Q, not full m×m
             return Q, flag, diagR
         end
 
@@ -218,7 +218,6 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     if needs_fallback
         A_mat = _get_matrix(A)
         F = qr(A_mat, ColumnNorm())
-        Q = Matrix(F.Q)
         R = F.R
         p = F.p
 
@@ -234,7 +233,7 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
             rank = min(kmax, rank)
         end
 
-        Q = Q[:, 1:rank]
+        Q = F.Q[:, 1:rank]  # thin Q, not full m×m
         R = R[1:rank, :]
         return Q, R, p
     end
@@ -242,7 +241,8 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     # Project and compute QR
     B = _matmat_left(Qs, A)
     F = qr(B, ColumnNorm())
-    Qproj = Matrix(F.Q)
+    k_proj = size(B, 1)
+    Qproj = F.Q[:, 1:k_proj]  # thin Q
     R = F.R
     p = F.p
     Q = Qs * Qproj
@@ -504,7 +504,6 @@ function id_qrpiv(A, rtol; method="fast")
     # Compute full QR with pivoting (deterministic)
     A_mat = _get_matrix(A)
     F = qr(A_mat, ColumnNorm())
-    Q = Matrix(F.Q)
     R = F.R
     piv = F.p
 
@@ -522,6 +521,7 @@ function id_qrpiv(A, rtol; method="fast")
     end
 
     k = rank
+    Q = F.Q[:, 1:k]  # thin Q, not full m×m
 
     # Handle edge cases
     if k == 0
@@ -559,7 +559,7 @@ function _power_iteration(A, x, power_iter::Int)
     for i = 1:power_iter
         x = _rmatvec(A, _matvec(A, x))
         F = qr(x)
-        x = Matrix(F.Q)
+        x = F.Q[:, 1:size(x, 2)]  # thin Q
     end
     return x
 end

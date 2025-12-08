@@ -286,7 +286,7 @@ distrib/
 │   ├── kahan.py           # Kahan matrix generator
 │   ├── make_mat.py        # Matrix generation utilities
 │   ├── compare_id.py      # Comparison example
-│   └── test*.py           # Test suite (8 files)
+│   └── test*.py           # Test suite (9 files)
 ├── matlab/
 │   ├── librla.m           # Main library
 │   ├── LinearOperator.m   # Matrix-free operator class
@@ -294,7 +294,7 @@ distrib/
 │   ├── kahan.m            # Kahan matrix generator
 │   ├── make_mat.m         # Matrix generation utilities
 │   ├── compare_id.m       # Comparison example
-│   └── test*.m            # Test suite (8 files)
+│   └── test*.m            # Test suite (9 files)
 └── julia/
     ├── librla.jl          # Main library
     ├── LinearOperator.jl  # Matrix-free operator type
@@ -302,7 +302,7 @@ distrib/
     ├── kahan.jl           # Kahan matrix generator
     ├── make_mat.jl        # Matrix generation utilities
     ├── compare_id.jl      # Comparison example
-    └── test*.jl           # Test suite (8 files)
+    └── test*.jl           # Test suite (9 files)
 ```
 
 ## Requirements
@@ -374,6 +374,7 @@ The test suite provides examples for:
 | test5_linop_fullrank | Full-rank matrix tests |
 | test5_method_comparison | Compare T computation methods |
 | test6_power | Power iteration effects |
+| test7_power | Power iteration in svd_sketch |
 
 ## References
 
