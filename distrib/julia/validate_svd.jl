@@ -1,4 +1,4 @@
-# compare_svd.jl - Compare librla SVD implementations
+# validate_svd.jl - Compare librla SVD implementations
 #
 # Compares svd_sketch (randomized) vs svd (deterministic):
 # - Accuracy (reconstruction error)
@@ -7,17 +7,21 @@
 # - Runtime
 #
 # Usage:
-#     julia compare_svd.jl
+#     julia validate_svd.jl
+
+module ValidateSVD
 
 using LinearAlgebra
 using Printf
 using Statistics
 using Random
 
-include("librla.jl")
-include("make_mat.jl")
+include(joinpath(@__DIR__, "librla.jl"))
+include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: svd_sketch
+
+export validate
 
 
 mutable struct ComparisonResult
@@ -248,7 +252,7 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function main()
+function validate()
     println()
     println("="^70)
     println("SVD COMPARISON")
@@ -409,7 +413,9 @@ function main()
     end
 end
 
+end # module ValidateSVD
+
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(main())
+    exit(ValidateSVD.validate())
 end

@@ -1,4 +1,4 @@
-# compare_qr.jl - Compare librla QR implementations
+# validate_qr.jl - Compare librla QR implementations
 #
 # Compares qr_sketch (randomized) vs qr with column pivoting:
 # - Accuracy (reconstruction error)
@@ -6,17 +6,21 @@
 # - Runtime
 #
 # Usage:
-#     julia compare_qr.jl
+#     julia validate_qr.jl
+
+module ValidateQR
 
 using LinearAlgebra
 using Printf
 using Statistics
 using Random
 
-include("librla.jl")
-include("make_mat.jl")
+include(joinpath(@__DIR__, "librla.jl"))
+include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: qr_sketch
+
+export validate
 
 
 mutable struct ComparisonResult
@@ -235,7 +239,7 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function main()
+function validate()
     println()
     println("="^70)
     println("QR COMPARISON")
@@ -396,7 +400,9 @@ function main()
     end
 end
 
+end # module ValidateQR
+
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(main())
+    exit(ValidateQR.validate())
 end

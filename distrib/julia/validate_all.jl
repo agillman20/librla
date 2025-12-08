@@ -15,9 +15,18 @@
 
 using Printf
 
-function run_validation_module(script_path::String, display_name::String)
+# Get the directory containing this script
+const SCRIPT_DIR = @__DIR__
+
+# Include all validation modules (JIT compiles once for all)
+include(joinpath(SCRIPT_DIR, "validate_id.jl"))
+include(joinpath(SCRIPT_DIR, "validate_svd.jl"))
+include(joinpath(SCRIPT_DIR, "validate_qr.jl"))
+include(joinpath(SCRIPT_DIR, "validate_orth.jl"))
+
+function run_validation_module(validate_func::Function, display_name::String)
     """
-    Run a validation script as a subprocess and return (exit_code, elapsed, success).
+    Run a validation module's validate() function and return (exit_code, elapsed, success).
     """
     println()
     println("="^70)
@@ -26,11 +35,7 @@ function run_validation_module(script_path::String, display_name::String)
 
     try
         t0 = time()
-
-        # Run the script as a subprocess
-        proc = run(`julia $script_path`, wait=true)
-        exit_code = proc.exitcode
-
+        exit_code = validate_func()
         elapsed = time() - t0
 
         success = (exit_code == 0)
@@ -38,6 +43,10 @@ function run_validation_module(script_path::String, display_name::String)
 
     catch e
         println("\n[ERROR] Failed to run $display_name: $e")
+        for (exc, bt) in Base.catch_stack()
+            showerror(stdout, exc, bt)
+            println()
+        end
         return 1, 0.0, false
     end
 end
@@ -57,31 +66,20 @@ function main()
     println("Environment: Julia ", VERSION)
     println("="^70)
 
-    # Get the directory containing this script
-    script_dir = dirname(@__FILE__)
-
-    # List of validation modules
+    # List of validation modules (validate function, display name)
     modules = [
-        ("validate_id.jl", "validate_id"),
-        ("validate_svd.jl", "validate_svd"),
-        ("validate_qr.jl", "validate_qr"),
-        ("validate_orth.jl", "validate_orth"),
+        (ValidateID.validate, "validate_id"),
+        (ValidateSVD.validate, "validate_svd"),
+        (ValidateQR.validate, "validate_qr"),
+        (ValidateOrth.validate, "validate_orth"),
     ]
 
     # Results tracking: (display_name, status, elapsed, success)
     results = []
     total_elapsed = 0.0
 
-    for (filename, display_name) in modules
-        script_path = joinpath(script_dir, filename)
-
-        if !isfile(script_path)
-            println("\n[WARNING] $filename not found at $script_path")
-            push!(results, (display_name, "not found", 0.0, false))
-            continue
-        end
-
-        exit_code, elapsed, success = run_validation_module(script_path, display_name)
+    for (validate_func, display_name) in modules
+        exit_code, elapsed, success = run_validation_module(validate_func, display_name)
         total_elapsed += elapsed
 
         if success
