@@ -9,7 +9,7 @@ This version uses librla instead of libid.
 
 Usage:
     julia test7_power.jl           # structured matrix only
-    julia test7_power.jl random    # both structured and random
+    julia test7_power.jl random    # random matrix only
 
 Tests:
     Test 1: Power iteration in svd_sketch
@@ -200,15 +200,7 @@ function main(test_random::Bool=false)
     Random.seed!(42)  # For reproducibility
 
     # Test 1: Power iteration in svd_sketch
-    if test_random
-        # Run with structured matrix first
-        test_svd_sketch_power_iter(false)
-        # Then run with random matrix
-        test_svd_sketch_power_iter(true)
-    else
-        # Default: structured matrix only
-        test_svd_sketch_power_iter(false)
-    end
+    test_svd_sketch_power_iter(test_random)
 
     println("\n" * "="^70)
     println("ALL TESTS PASSED [PASS]")
@@ -217,5 +209,9 @@ end
 
 
 # Run test
+if length(ARGS) > 0 && (ARGS[1] == "--help" || ARGS[1] == "-h")
+    println(@doc test_svd_sketch_power_iter)
+    exit(0)
+end
 test_random = length(ARGS) > 0 && lowercase(ARGS[1]) == "random"
 main(test_random)

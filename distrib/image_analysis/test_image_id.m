@@ -2,7 +2,7 @@
 %
 %  Description
 %  -----------
-%    This script compares six low-rank approximation methods on RGB images:
+%    This script compares five low-rank approximation methods on RGB images:
 %
 %      1. Randomized SVD (svd_sketch)
 %      2. Interpolative Decomposition (id_sketch)

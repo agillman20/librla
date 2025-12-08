@@ -9,7 +9,7 @@
 %
 %   Usage:
 %       test6_power           % structured matrix only
-%       test6_power('random') % both structured and random
+%       test6_power('random') % random matrix only
 %
 %   Tests:
 %       Test 1: Range estimation quality
@@ -24,6 +24,10 @@
 
 function test6_power(varargin)
     % Parse input
+    if nargin > 0 && (strcmpi(varargin{1}, '--help') || strcmpi(varargin{1}, '-h') || strcmpi(varargin{1}, 'help'))
+        help test6_power
+        return
+    end
     test_random = false;
     if nargin > 0 && strcmpi(varargin{1}, 'random')
         test_random = true;
@@ -36,15 +40,7 @@ function test6_power(varargin)
     rng(42); % For reproducibility
 
     % Test 1: Range estimation quality
-    if test_random
-        % Run with structured matrix first
-        test_range_estimation_quality(false);
-        % Then run with random matrix
-        test_range_estimation_quality(true);
-    else
-        % Default: structured matrix only
-        test_range_estimation_quality(false);
-    end
+    test_range_estimation_quality(test_random);
 
     fprintf('\n======================================================================\n');
     fprintf('ALL TESTS PASSED [PASS]\n');

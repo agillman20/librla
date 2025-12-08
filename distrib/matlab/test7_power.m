@@ -9,7 +9,7 @@
 %
 %   Usage:
 %       test7_power           % structured matrix only
-%       test7_power('random') % both structured and random
+%       test7_power('random') % random matrix only
 %
 %   Tests:
 %       Test 1: Power iteration in svd_sketch
@@ -24,6 +24,10 @@
 
 function test7_power(varargin)
     % Parse input
+    if nargin > 0 && (strcmpi(varargin{1}, '--help') || strcmpi(varargin{1}, '-h') || strcmpi(varargin{1}, 'help'))
+        help test7_power
+        return
+    end
     test_random = false;
     if nargin > 0 && strcmpi(varargin{1}, 'random')
         test_random = true;
@@ -36,15 +40,7 @@ function test7_power(varargin)
     rng(42); % For reproducibility
 
     % Test 1: Power iteration in svd_sketch
-    if test_random
-        % Run with structured matrix first
-        test_svd_sketch_power_iter(false);
-        % Then run with random matrix
-        test_svd_sketch_power_iter(true);
-    else
-        % Default: structured matrix only
-        test_svd_sketch_power_iter(false);
-    end
+    test_svd_sketch_power_iter(test_random);
 
     fprintf('\n======================================================================\n');
     fprintf('ALL TESTS PASSED [PASS]\n');
