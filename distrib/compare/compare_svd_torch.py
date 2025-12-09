@@ -15,19 +15,33 @@ Compares on metrics:
 - Runtime
 
 Usage:
-    python compare_svd_torch.py
+    python compare_svd_torch.py [--threads N]
+
+Options:
+    --threads N    Number of threads for torch (default: number of CPU cores)
+                   Uses torch.set_num_threads() for Intel MKL compatibility
 
 Requires:
     - NumPy, SciPy, PyTorch
     - librla.py, make_mat.py from ../python/
 """
 
+import argparse
 import numpy as np
 import sys
 import os
 import time
 from dataclasses import dataclass
 from typing import List, Optional
+
+# Get number of CPU cores for default thread count
+NUM_CPUS = os.cpu_count() or 1
+
+# Parse arguments early, before importing torch
+parser = argparse.ArgumentParser(description='Compare librla svd_sketch vs torch.svd_lowrank')
+parser.add_argument('--threads', type=int, default=NUM_CPUS,
+                    help=f'Number of threads for torch (default: {NUM_CPUS})')
+args = parser.parse_args()
 
 # Add parent python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
@@ -42,7 +56,7 @@ try:
     # Set thread count for Intel MKL CPUs before any torch operations
     # OMP_NUM_THREADS may be ignored when MKL is present, so we call this explicitly
     # This sets both OMP and MKL threads and disables MKL dynamic mode
-    torch.set_num_threads(1)
+    torch.set_num_threads(args.threads)
 except ImportError:
     TORCH_AVAILABLE = False
     print("WARNING: PyTorch not installed. Run: pip install torch")
