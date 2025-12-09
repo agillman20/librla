@@ -18,8 +18,8 @@ Usage:
     python compare_svd_torch.py [--threads N]
 
 Options:
-    --threads N    Number of threads for torch (default: number of CPU cores)
-                   Uses torch.set_num_threads() for Intel MKL compatibility
+    --threads N    Number of threads (default: number of CPU cores)
+                   Sets threading for both numpy/scipy (MKL/OpenBLAS) and torch
 
 Requires:
     - NumPy, SciPy, PyTorch
@@ -27,21 +27,33 @@ Requires:
 """
 
 import argparse
-import numpy as np
-import sys
 import os
-import time
-from dataclasses import dataclass
-from typing import List, Optional
+import sys
 
 # Get number of CPU cores for default thread count
 NUM_CPUS = os.cpu_count() or 1
 
-# Parse arguments early, before importing torch
+# Parse arguments BEFORE any numeric library imports
+# Threading env vars must be set before numpy/scipy/torch are imported
 parser = argparse.ArgumentParser(description='Compare librla svd_sketch vs torch.svd_lowrank')
 parser.add_argument('--threads', type=int, default=NUM_CPUS,
-                    help=f'Number of threads for torch (default: {NUM_CPUS})')
+                    help=f'Number of threads (default: {NUM_CPUS})')
 args = parser.parse_args()
+
+# Set all threading environment variables BEFORE importing numpy/scipy/torch
+# This ensures consistent threading across all libraries
+thread_str = str(args.threads)
+os.environ['OMP_NUM_THREADS'] = thread_str
+os.environ['MKL_NUM_THREADS'] = thread_str
+os.environ['OPENBLAS_NUM_THREADS'] = thread_str
+os.environ['VECLIB_MAXIMUM_THREADS'] = thread_str  # macOS Accelerate
+os.environ['NUMEXPR_NUM_THREADS'] = thread_str
+
+# Now import numeric libraries
+import numpy as np
+import time
+from dataclasses import dataclass
+from typing import List, Optional
 
 # Add parent python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
@@ -53,9 +65,8 @@ from make_mat import make_mat
 try:
     import torch
     TORCH_AVAILABLE = True
-    # Set thread count for Intel MKL CPUs before any torch operations
-    # OMP_NUM_THREADS may be ignored when MKL is present, so we call this explicitly
-    # This sets both OMP and MKL threads and disables MKL dynamic mode
+    # Also set torch threads explicitly for Intel MKL compatibility
+    # This ensures torch respects our thread setting even if MKL ignores env vars
     torch.set_num_threads(args.threads)
 except ImportError:
     TORCH_AVAILABLE = False
