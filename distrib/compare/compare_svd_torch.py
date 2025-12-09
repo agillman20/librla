@@ -39,6 +39,10 @@ from make_mat import make_mat
 try:
     import torch
     TORCH_AVAILABLE = True
+    # Set thread count for Intel MKL CPUs before any torch operations
+    # OMP_NUM_THREADS may be ignored when MKL is present, so we call this explicitly
+    # This sets both OMP and MKL threads and disables MKL dynamic mode
+    torch.set_num_threads(1)
 except ImportError:
     TORCH_AVAILABLE = False
     print("WARNING: PyTorch not installed. Run: pip install torch")
@@ -487,6 +491,7 @@ def main():
     print(f"  Python:     {sys.version.split()[0]}")
     print(f"  NumPy:      {np.__version__}")
     print(f"  PyTorch:    {torch.__version__}")
+    print(f"  Threads:    {torch.get_num_threads()} (set via torch.set_num_threads for MKL compatibility)")
     cuda_available = torch.cuda.is_available()
     print(f"  CUDA:       {'Available (' + torch.cuda.get_device_name(0) + ')' if cuda_available else 'Not available'}")
 
