@@ -50,6 +50,8 @@ parser.add_argument('--extra-samples', type=int, default=12,
                     help='Number of extra samples for oversampling (default: 12)')
 parser.add_argument('--power-iter', type=int, default=0,
                     help='Number of power iterations (default: 0)')
+parser.add_argument('--verbose', action='store_true',
+                    help='Show detailed results table (default: summary only)')
 args = parser.parse_args()
 
 # Set all threading environment variables BEFORE importing numpy/scipy/torch
@@ -557,6 +559,7 @@ def main():
     print("\nComparison settings:")
     print(f"  - power_iter={args.power_iter} for both (torch defaults to niter=2, librla to 0)")
     print(f"  - extra_samples={args.extra_samples} (librla default: 12)")
+    print(f"  - verbose={args.verbose}")
     print("  - torch q = rank + extra_samples to match librla's oversampling")
     print("="*70)
 
