@@ -13,19 +13,44 @@ Compares on metrics:
 - Rank selection behavior
 
 Usage:
-    python compare_id_scipy.py
+    python compare_id_scipy.py [--precision {double,single}]
+
+Options:
+    --precision    Floating-point precision: double (default) or single
 
 Requires:
     - NumPy, SciPy
     - librla.py, make_mat.py from ../python/
 """
 
+import argparse
 import numpy as np
 import sys
 import os
 import time
 from dataclasses import dataclass
 from typing import List
+
+# Parse arguments
+parser = argparse.ArgumentParser(description='Compare librla id_sketch vs scipy interp_decomp')
+parser.add_argument('--precision', choices=['double', 'single'], default='double',
+                    help='Floating-point precision (default: double)')
+args = parser.parse_args()
+
+# Set dtype and tolerances based on precision
+DTYPE = np.float64 if args.precision == 'double' else np.float32
+PRECISION = args.precision
+
+# Precision-dependent constants
+# Double: ~16 decimal digits, Single: ~7 decimal digits
+if PRECISION == 'double':
+    EPS = 1e-10      # Noise level for low-rank matrices
+    RTOL_TIGHT = 1e-8   # Tight tolerance for low-rank tests
+    ORTH_TOL = 1e-10    # Orthonormality tolerance
+else:
+    EPS = 1e-5       # Noise level for low-rank matrices (single precision)
+    RTOL_TIGHT = 1e-4   # Tight tolerance for low-rank tests (single precision)
+    ORTH_TOL = 1e-5     # Orthonormality tolerance (single precision)
 
 # Add parent python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
@@ -58,10 +83,10 @@ class ComparisonResult:
     passed: bool
 
 
-def hilb(m, n):
+def hilb(m, n, dtype=np.float64):
     """Generate an mxn Hilbert matrix."""
-    i = np.arange(1, m + 1).reshape(-1, 1)
-    j = np.arange(1, n + 1).reshape(1, -1)
+    i = np.arange(1, m + 1, dtype=dtype).reshape(-1, 1)
+    j = np.arange(1, n + 1, dtype=dtype).reshape(1, -1)
     return 1.0 / (i + j - 1)
 
 
@@ -239,6 +264,7 @@ def main():
     print(f"  NumPy:      {np.__version__}")
     import scipy
     print(f"  SciPy:      {scipy.__version__}")
+    print(f"  Precision:  {PRECISION} ({DTYPE.__name__})")
     print("="*70)
 
     # Results collection
@@ -254,28 +280,29 @@ def main():
 
     # Test 1: Random matrix (well-conditioned)
     np.random.seed(42)
-    A1 = np.random.randn(500, 300)
+    A1 = np.random.randn(500, 300).astype(DTYPE)
     results.append(compare_on_matrix(A1, 20, "Random Matrix (well-conditioned)"))
 
     # Test 2: Low-rank matrix
-    U = np.random.randn(400, 15)
-    V = np.random.randn(250, 15)
-    A2 = U @ V.T + 1e-10 * np.random.randn(400, 250)
-    results.append(compare_on_matrix(A2, 1e-8, "Low-Rank Matrix (rank~15)"))
+    U = np.random.randn(400, 15).astype(DTYPE)
+    V = np.random.randn(250, 15).astype(DTYPE)
+    A2 = (U @ V.T + EPS * np.random.randn(400, 250)).astype(DTYPE)
+    results.append(compare_on_matrix(A2, RTOL_TIGHT, "Low-Rank Matrix (rank~15)"))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
-    A3 = hilb(2000, 1000)
+    A3 = hilb(2000, 1000, dtype=DTYPE)
     results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (severely ill-conditioned)"))
 
     # Test 4: Complex matrix
-    A4 = np.random.randn(300, 200) + 1j * np.random.randn(300, 200)
+    CDTYPE = np.complex128 if DTYPE == np.float64 else np.complex64
+    A4 = (np.random.randn(300, 200) + 1j * np.random.randn(300, 200)).astype(CDTYPE)
     results.append(compare_on_matrix(A4, 25, "Complex Matrix"))
 
     # Test 5: Decaying spectrum (tolerance mode)
-    A5 = np.random.randn(400, 300)
+    A5 = np.random.randn(400, 300).astype(DTYPE)
     U5, S5, Vh5 = np.linalg.svd(A5, full_matrices=False)
-    s5 = 1.0 / np.arange(1, 301)  # decaying: 1/k
-    A5 = U5 @ np.diag(s5) @ Vh5
+    s5 = (1.0 / np.arange(1, 301)).astype(DTYPE)
+    A5 = (U5 @ np.diag(s5) @ Vh5).astype(DTYPE)
     results.append(compare_on_matrix(A5, 1e-3, "Decaying Spectrum (1/k)"))
 
     # -------------------------------------------------------------------------
@@ -287,28 +314,28 @@ def main():
     print("="*70)
 
     # Test 6: Large random matrix
-    A6 = np.random.randn(1000, 600)
+    A6 = np.random.randn(1000, 600).astype(DTYPE)
     results.append(compare_on_matrix(A6, 20, "Large Random Matrix (1000x600)"))
 
     # Test 7: Large low-rank matrix
-    U7 = np.random.randn(800, 15)
-    V7 = np.random.randn(500, 15)
-    A7 = U7 @ V7.T + 1e-10 * np.random.randn(800, 500)
-    results.append(compare_on_matrix(A7, 1e-8, "Large Low-Rank (800x500, rank~15)"))
+    U7 = np.random.randn(800, 15).astype(DTYPE)
+    V7 = np.random.randn(500, 15).astype(DTYPE)
+    A7 = (U7 @ V7.T + EPS * np.random.randn(800, 500)).astype(DTYPE)
+    results.append(compare_on_matrix(A7, RTOL_TIGHT, "Large Low-Rank (800x500, rank~15)"))
 
     # Test 8: Large Hilbert matrix
-    A8 = hilb(4000, 2000)
+    A8 = hilb(4000, 2000, dtype=DTYPE)
     results.append(compare_on_matrix(A8, 15, "Large Hilbert Matrix (4000x2000)"))
 
     # Test 9: Large complex matrix
-    A9 = np.random.randn(600, 400) + 1j * np.random.randn(600, 400)
+    A9 = (np.random.randn(600, 400) + 1j * np.random.randn(600, 400)).astype(CDTYPE)
     results.append(compare_on_matrix(A9, 25, "Large Complex Matrix (600x400)"))
 
     # Test 10: Large decaying spectrum
-    A10 = np.random.randn(800, 600)
+    A10 = np.random.randn(800, 600).astype(DTYPE)
     U10, S10, Vh10 = np.linalg.svd(A10, full_matrices=False)
-    s10 = 1.0 / np.arange(1, 601)  # Fast decay: 1/k
-    A10 = U10 @ np.diag(s10) @ Vh10
+    s10 = (1.0 / np.arange(1, 601)).astype(DTYPE)
+    A10 = (U10 @ np.diag(s10) @ Vh10).astype(DTYPE)
     results.append(compare_on_matrix(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)"))
 
     # -------------------------------------------------------------------------
@@ -320,45 +347,45 @@ def main():
     print("="*70)
 
     # Test 11: Slow decay - sqrt (small)
-    A11 = np.random.randn(400, 300)
+    A11 = np.random.randn(400, 300).astype(DTYPE)
     U11, S11, Vh11 = np.linalg.svd(A11, full_matrices=False)
-    s11 = 1.0 / np.sqrt(np.arange(1, 301))  # Slow decay: 1/sqrt(k)
-    A11 = U11 @ np.diag(s11) @ Vh11
+    s11 = (1.0 / np.sqrt(np.arange(1, 301))).astype(DTYPE)
+    A11 = (U11 @ np.diag(s11) @ Vh11).astype(DTYPE)
     results.append(compare_on_matrix(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)"))
 
     # Test 12: Slow decay - sqrt (large)
-    A12 = np.random.randn(800, 600)
+    A12 = np.random.randn(800, 600).astype(DTYPE)
     U12, S12, Vh12 = np.linalg.svd(A12, full_matrices=False)
-    s12 = 1.0 / np.sqrt(np.arange(1, 601))  # Slow decay: 1/sqrt(k)
-    A12 = U12 @ np.diag(s12) @ Vh12
+    s12 = (1.0 / np.sqrt(np.arange(1, 601))).astype(DTYPE)
+    A12 = (U12 @ np.diag(s12) @ Vh12).astype(DTYPE)
     results.append(compare_on_matrix(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)"))
 
     # Test 13: Slow decay - polynomial (small)
-    A13 = np.random.randn(400, 300)
+    A13 = np.random.randn(400, 300).astype(DTYPE)
     U13, S13, Vh13 = np.linalg.svd(A13, full_matrices=False)
-    s13 = 1.0 / (np.arange(1, 301) ** 0.7)  # Polynomial: 1/k^0.7
-    A13 = U13 @ np.diag(s13) @ Vh13
+    s13 = (1.0 / (np.arange(1, 301) ** 0.7)).astype(DTYPE)
+    A13 = (U13 @ np.diag(s13) @ Vh13).astype(DTYPE)
     results.append(compare_on_matrix(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)"))
 
     # Test 14: Slow decay - polynomial (large)
-    A14 = np.random.randn(800, 600)
+    A14 = np.random.randn(800, 600).astype(DTYPE)
     U14, S14, Vh14 = np.linalg.svd(A14, full_matrices=False)
-    s14 = 1.0 / (np.arange(1, 601) ** 0.7)  # Polynomial: 1/k^0.7
-    A14 = U14 @ np.diag(s14) @ Vh14
+    s14 = (1.0 / (np.arange(1, 601) ** 0.7)).astype(DTYPE)
+    A14 = (U14 @ np.diag(s14) @ Vh14).astype(DTYPE)
     results.append(compare_on_matrix(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)"))
 
     # Test 15: Slow decay - exponential (small)
-    A15 = np.random.randn(400, 300)
+    A15 = np.random.randn(400, 300).astype(DTYPE)
     U15, S15, Vh15 = np.linalg.svd(A15, full_matrices=False)
-    s15 = np.exp(-np.arange(1, 301) / 100.0)  # Exponential: exp(-k/100)
-    A15 = U15 @ np.diag(s15) @ Vh15
+    s15 = np.exp(-np.arange(1, 301) / 100.0).astype(DTYPE)
+    A15 = (U15 @ np.diag(s15) @ Vh15).astype(DTYPE)
     results.append(compare_on_matrix(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)"))
 
     # Test 16: Slow decay - exponential (large)
-    A16 = np.random.randn(800, 600)
+    A16 = np.random.randn(800, 600).astype(DTYPE)
     U16, S16, Vh16 = np.linalg.svd(A16, full_matrices=False)
-    s16 = np.exp(-np.arange(1, 601) / 150.0)  # Exponential: exp(-k/150)
-    A16 = U16 @ np.diag(s16) @ Vh16
+    s16 = np.exp(-np.arange(1, 601) / 150.0).astype(DTYPE)
+    A16 = (U16 @ np.diag(s16) @ Vh16).astype(DTYPE)
     results.append(compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
 
     # -------------------------------------------------------------------------
@@ -370,15 +397,15 @@ def main():
     print("="*70)
 
     # Test 17: Gaussian Exponential Decay Matrix
-    A17 = make_mat(500, 500, 'gaussexp')
+    A17 = make_mat(500, 500, 'gaussexp').astype(DTYPE)
     results.append(compare_on_matrix(A17, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)"))
 
     # Test 18: Gaussian Mixture Model Matrix
-    A18 = make_mat(400, 400, 'gmm')
+    A18 = make_mat(400, 400, 'gmm').astype(DTYPE)
     results.append(compare_on_matrix(A18, 1e-3, "GMM (Gaussian Mixture Model, 400x400)"))
 
     # Test 19: Sparse Neural Network Matrix
-    A19 = make_mat(300, 300, 'snn')
+    A19 = make_mat(300, 300, 'snn').astype(DTYPE)
     results.append(compare_on_matrix(A19, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
 
     # =========================================================================
