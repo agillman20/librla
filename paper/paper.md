@@ -55,9 +55,11 @@ While there is a large amount of research activity in the field of randomized li
 # Mathematics
 
 The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
+
+```math
 Input: the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
 Output: an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
-
+```
 
 ```
 PROGRAM orth_sketch:
