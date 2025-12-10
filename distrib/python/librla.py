@@ -288,15 +288,15 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
 
     # Rank mode (rtol >= 1): single sketch with rank filtering
     if rtol >= 1:
+        kmax = int(np.floor(rtol))
         x = _uniform_omega(A, n, block_size, rng=rng)
         x = _power_iteration(A, x, power_iter=power_iter)
         y = _matvec(A, x)
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
-        # Determine numerical rank by filtering small diagonal elements
+        # Use requested rank directly (capped at available columns)
         diagR = np.diag(R)
-        rtol_eps = max(m, n) * np.finfo(dtype).eps
-        rank = _rank_from_diag(diagR, rtol_eps)
+        rank = min(kmax, Q.shape[1])
 
         return Q[:, :rank], 0, diagR
 
@@ -396,14 +396,10 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
         Q, R, p = linalg.qr(A_mat, mode='economic', pivoting=True)
 
         # Determine rank
-        rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-        if not rank_mode:
-            rtol_for_rank = rtol
-
-        rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
         if rank_mode:
-            rank = min(kmax, rank)
+            rank = min(kmax, Q.shape[1])
+        else:
+            rank = _rank_from_diag(np.diag(R), rtol)
 
         return Q[:, :rank], R[:rank, :], p
 
@@ -413,14 +409,10 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
     Q = Qs @ Qproj
 
     # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
     if rank_mode:
-        rank = min(kmax, rank)
+        rank = min(kmax, Q.shape[1])
+    else:
+        rank = _rank_from_diag(np.diag(R), rtol)
 
     return Q[:, :rank], R[:rank, :], p
 
@@ -518,14 +510,10 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
         U, s, V = linalg.svd(A_mat, full_matrices=False)
 
         # Determine rank
-        rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-        if not rank_mode:
-            rtol_for_rank = rtol
-
-        rank = _rank_from_svals(s, rtol_for_rank)
-
         if rank_mode:
-            rank = min(kmax, rank)
+            rank = min(kmax, len(s))
+        else:
+            rank = _rank_from_svals(s, rtol)
 
         return U[:, :rank], s[:rank], V[:rank, :]
 
@@ -535,14 +523,10 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
     U = Qs @ Uproj
 
     # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_svals(s, rtol_for_rank)
-
     if rank_mode:
-        rank = min(kmax, rank)
+        rank = min(kmax, len(s))
+    else:
+        rank = _rank_from_svals(s, rtol)
 
     return U[:, :rank], s[:rank], V[:rank, :]
 
@@ -687,12 +671,12 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     k = R.shape[0]
     piv = jpiv
 
-    # Compute rtol for SVD filtering (use machine precision in rank mode)
+    # Compute rtol for SVD filtering
     m, n = A.shape
     dtype = A.dtype if hasattr(A, 'dtype') else np.float64
     if rtol >= 1:
-        # Rank mode: use machine precision for SVD filtering
-        rtol_for_svd = max(m, n) * np.finfo(dtype).eps
+        # Rank mode: minimal filtering (only exact zeros)
+        rtol_for_svd = 0
     else:
         # Tolerance mode: use the provided tolerance
         rtol_for_svd = rtol
@@ -768,14 +752,12 @@ def id_qrpiv(A, rtol, *, method='fast'):
     Q, R, jpiv = linalg.qr(A_mat, mode='economic', pivoting=True)
 
     # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
     if rank_mode:
-        rank = min(kmax, rank)
+        rank = min(kmax, min(m, n))
+        rtol_for_svd = 0  # Minimal filtering in rank mode
+    else:
+        rank = _rank_from_diag(np.diag(R), rtol)
+        rtol_for_svd = rtol
 
     k = rank
     piv = jpiv
@@ -788,11 +770,10 @@ def id_qrpiv(A, rtol, *, method='fast'):
         return k, piv, np.zeros((k, 0), dtype=dtype)
 
     # Dispatch to shared helper functions
-    # Note: rtol_for_rank is the correct tolerance for SVD filtering
     if method == 'lstsq':
         T = _compute_T_lstsq(A, R, piv, k)
     elif method == 'svd':
-        T = _compute_T_svd(R, k, rtol_for_rank)
+        T = _compute_T_svd(R, k, rtol_for_svd)
     elif method == 'fast':
         T = _compute_T_fast(R, k)
 

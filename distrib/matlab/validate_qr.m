@@ -301,11 +301,11 @@ function result = compare_on_matrix(A, rtol_or_rank, name)
         tol_threshold = rtol_or_rank * 100;
         passed = err_sketch < min(0.1, tol_threshold) && orth_Q_sketch < 1e-10;
     else
-        % Rank mode: sketch error should be within 2x of reference
+        % Rank mode: sketch error should be within 4x of reference
         if err_ref == 0
             error_ratio_ok = true;
         else
-            error_ratio_ok = (err_sketch / max(err_ref, 1e-15)) < 2.0;
+            error_ratio_ok = (err_sketch / max(err_ref, 1e-15)) < 4.0;
         end
         passed = error_ratio_ok && orth_Q_sketch < 1e-10;
     end

@@ -93,16 +93,16 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
 
     # Rank mode (rtol >= 1): single sketch with rank filtering
     if rtol >= 1
+        kmax = Int(floor(rtol))
         x = _uniform_omega(n, block_size, is_complex_op, dtype)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Determine numerical rank
+        # Use requested rank directly (capped at available columns)
         diagR = diag(R)
-        rtol_eps = max(m, n) * _get_eps(dtype)
-        rank = _rank_from_diag(diagR, rtol_eps)
+        rank = min(kmax, size(R, 2))
 
         # Materialize only needed columns of Q (thin, not full m×m)
         Q = F.Q[:, 1:rank]
@@ -222,15 +222,10 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
         p = F.p
 
         # Determine rank
-        rtol_for_rank = _get_eps(dtype) * max(m, n)
-        if !rank_mode
-            rtol_for_rank = rtol
-        end
-
-        rank = _rank_from_diag(diag(R), rtol_for_rank)
-
         if rank_mode
-            rank = min(kmax, rank)
+            rank = min(kmax, size(R, 2))
+        else
+            rank = _rank_from_diag(diag(R), rtol)
         end
 
         Q = F.Q[:, 1:rank]  # thin Q, not full m×m
@@ -248,15 +243,10 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     Q = Qs * Qproj
 
     # Determine rank
-    rtol_for_rank = _get_eps(dtype) * max(m, n)
-    if !rank_mode
-        rtol_for_rank = rtol
-    end
-
-    rank = _rank_from_diag(diag(R), rtol_for_rank)
-
     if rank_mode
-        rank = min(kmax, rank)
+        rank = min(kmax, size(Q, 2))
+    else
+        rank = _rank_from_diag(diag(R), rtol)
     end
 
     Q = Q[:, 1:rank]
@@ -339,15 +329,10 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
         Vt = F.Vt
 
         # Determine rank
-        rtol_for_rank = _get_eps(dtype) * max(m, n)
-        if !rank_mode
-            rtol_for_rank = rtol
-        end
-
-        rank = _rank_from_svals(s, rtol_for_rank)
-
         if rank_mode
-            rank = min(kmax, rank)
+            rank = min(kmax, length(s))
+        else
+            rank = _rank_from_svals(s, rtol)
         end
 
         U = U[:, 1:rank]
@@ -365,15 +350,10 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     U = Qs * Uproj
 
     # Determine rank
-    rtol_for_rank = _get_eps(dtype) * max(m, n)
-    if !rank_mode
-        rtol_for_rank = rtol
-    end
-
-    rank = _rank_from_svals(s, rtol_for_rank)
-
     if rank_mode
-        rank = min(kmax, rank)
+        rank = min(kmax, length(s))
+    else
+        rank = _rank_from_svals(s, rtol)
     end
 
     U = U[:, 1:rank]
@@ -429,11 +409,11 @@ function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, metho
 
     k = size(R, 1)
 
-    # Compute rtol for SVD filtering (use machine precision in rank mode)
+    # Compute rtol for SVD filtering
     m, n = size(A)
     if rtol >= 1
-        # Rank mode: use machine precision for SVD filtering
-        rtol_for_svd = max(m, n) * _get_eps(eltype(R))
+        # Rank mode: minimal filtering (only exact zeros)
+        rtol_for_svd = 0
     else
         # Tolerance mode: use the provided tolerance
         rtol_for_svd = rtol
@@ -509,15 +489,11 @@ function id_qrpiv(A, rtol; method="fast")
 
     # Determine rank
     if rank_mode
-        rtol_for_rank = max(m, n) * _get_eps(eltype(A_mat))
+        rank = min(kmax, min(m, n))
+        rtol_for_svd = 0  # Minimal filtering in rank mode
     else
-        rtol_for_rank = rtol
-    end
-
-    rank = _rank_from_diag(diag(R), rtol_for_rank)
-
-    if rank_mode
-        rank = min(kmax, rank)
+        rank = _rank_from_diag(diag(R), rtol)
+        rtol_for_svd = rtol
     end
 
     k = rank
@@ -538,7 +514,7 @@ function id_qrpiv(A, rtol; method="fast")
     if method == "lstsq"
         T = _compute_T_lstsq(A, R, piv, k)
     elseif method == "svd"
-        T = _compute_T_svd(R, k, rtol_for_rank)
+        T = _compute_T_svd(R, k, rtol_for_svd)
     elseif method == "fast"
         T = _compute_T_fast(R, k)
     end

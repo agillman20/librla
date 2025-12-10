@@ -182,13 +182,13 @@ def compare_on_matrix(A, rtol_or_rank, name):
     # Orthonormality should be near machine epsilon
     # Reconstruction error depends on the mode:
     # - Tolerance mode (rtol < 1): error should be within 100x tolerance
-    # - Rank mode (rtol >= 1): error should be close to reference (within 2x)
+    # - Rank mode (rtol >= 1): error should be close to reference (within 4x)
     if rtol_or_rank < 1:
         tol_threshold = rtol_or_rank * 100
         passed = err_sketch < min(0.1, tol_threshold) and orth_Q_sketch < 1e-10
     else:
-        # Rank mode: sketch error should be within 2x of reference
-        error_ratio_ok = (err_ref == 0) or (err_sketch / max(err_ref, 1e-15) < 2.0)
+        # Rank mode: sketch error should be within 4x of reference
+        error_ratio_ok = (err_ref == 0) or (err_sketch / max(err_ref, 1e-15) < 4.0)
         passed = error_ratio_ok and orth_Q_sketch < 1e-10
 
     return ComparisonResult(

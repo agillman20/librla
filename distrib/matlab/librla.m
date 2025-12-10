@@ -77,15 +77,15 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Rank mode (rtol >= 1): single sketch with rank filtering
   if rtol >= 1
+      kmax = floor(rtol);
       x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str);
       x = librla.power_iteration(A, x, power_iter);
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
 
-      % Determine numerical rank
+      % Use requested rank directly (capped at available columns)
       diagR = diag(R);
-      rtol_eps = max(m, n) * eps(dtype_str);
-      rank = librla.rank_from_diag(diagR, rtol_eps);
+      rank = min(kmax, size(Q, 2));
 
       Q = Q(:, 1:rank);
       flag = 0;
@@ -215,15 +215,10 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
       [Q, R, p] = qr(A, 0);
 
       % Determine rank
-      rtol_for_rank = eps(dtype_str) * max(m, n);
-      if ~rank_mode
-          rtol_for_rank = rtol;
-      end
-
-      rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
       if rank_mode
-          rank = min(kmax, rank);
+          rank = min(kmax, size(Q, 2));
+      else
+          rank = librla.rank_from_diag(diag(R), rtol);
       end
 
       Q = Q(:, 1:rank);
@@ -237,15 +232,10 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   Q = Qs * Qproj;
 
   % Determine rank
-  rtol_for_rank = eps(dtype_str) * max(m, n);
-  if ~rank_mode
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
   if rank_mode
-      rank = min(kmax, rank);
+      rank = min(kmax, size(Q, 2));
+  else
+      rank = librla.rank_from_diag(diag(R), rtol);
   end
 
   Q = Q(:, 1:rank);
@@ -335,15 +325,10 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
       s = diag(S);
 
       % Determine rank
-      rtol_for_rank = eps(dtype_str) * max(m, n);
-      if ~rank_mode
-          rtol_for_rank = rtol;
-      end
-
-      rank = librla.rank_from_svals(s, rtol_for_rank);
-
       if rank_mode
-          rank = min(kmax, rank);
+          rank = min(kmax, length(s));
+      else
+          rank = librla.rank_from_svals(s, rtol);
       end
 
       U = U(:, 1:rank);
@@ -359,15 +344,10 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   U = Qs * Uproj;
 
   % Determine rank
-  rtol_for_rank = eps(dtype_str) * max(m, n);
-  if ~rank_mode
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_svals(s, rtol_for_rank);
-
   if rank_mode
-      rank = min(kmax, rank);
+      rank = min(kmax, length(s));
+  else
+      rank = librla.rank_from_svals(s, rtol);
   end
 
   U = U(:, 1:rank);
@@ -432,11 +412,11 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
 
   k = size(R, 1);
 
-  % Compute rtol for SVD filtering (use machine precision in rank mode)
+  % Compute rtol for SVD filtering
   [m, n] = size(A);
   if rtol >= 1
-      % Rank mode: use machine precision for SVD filtering
-      rtol_for_svd = max(m, n) * eps(class(R));
+      % Rank mode: minimal filtering (only exact zeros)
+      rtol_for_svd = 0;
   else
       % Tolerance mode: use the provided tolerance
       rtol_for_svd = rtol;
@@ -514,15 +494,11 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   % Determine rank
   if rank_mode
-      rtol_for_rank = max(m, n) * eps(class(A_mat));
+      rank = min(kmax, min(m, n));
+      rtol_for_svd = 0;  % Minimal filtering in rank mode
   else
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
-  if rank_mode
-      rank = min(kmax, rank);
+      rank = librla.rank_from_diag(diag(R), rtol);
+      rtol_for_svd = rtol;
   end
 
   k = rank;
@@ -539,11 +515,10 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
   end
 
   % Dispatch to shared helper functions
-  % Note: rtol_for_rank is the correct tolerance for SVD filtering
   if strcmp(method, 'lstsq')
       T = librla.compute_T_lstsq(A, R, piv, k);
   elseif strcmp(method, 'svd')
-      T = librla.compute_T_svd(R, k, rtol_for_rank);
+      T = librla.compute_T_svd(R, k, rtol_for_svd);
   elseif strcmp(method, 'fast')
       T = librla.compute_T_fast(R, k);
   end

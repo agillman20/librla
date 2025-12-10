@@ -15,13 +15,15 @@ Compares on metrics:
 - Runtime
 
 Usage:
-    python compare_svd_torch.py [--threads N] [--precision {double,single}] [--cuda]
+    python compare_svd_torch.py [--threads N] [--precision {double,single}] [--cuda] [--extra-samples N] [--power-iter N]
 
 Options:
-    --threads N    Number of threads (default: number of CPU cores)
-                   Sets threading for both numpy/scipy (MKL/OpenBLAS) and torch
-    --precision    Floating-point precision: double (default) or single
-    --cuda         Run CUDA tests (default: CPU tests only)
+    --threads N        Number of threads (default: number of CPU cores)
+                       Sets threading for both numpy/scipy (MKL/OpenBLAS) and torch
+    --precision        Floating-point precision: double (default) or single
+    --cuda             Run CUDA tests (default: CPU tests only)
+    --extra-samples N  Number of extra samples for oversampling (default: 12)
+    --power-iter N     Number of power iterations (default: 0)
 
 Requires:
     - NumPy, SciPy, PyTorch
@@ -44,6 +46,10 @@ parser.add_argument('--precision', choices=['double', 'single'], default='double
                     help='Floating-point precision (default: double)')
 parser.add_argument('--cuda', action='store_true',
                     help='Run CUDA tests (default: CPU tests only)')
+parser.add_argument('--extra-samples', type=int, default=12,
+                    help='Number of extra samples for oversampling (default: 12)')
+parser.add_argument('--power-iter', type=int, default=0,
+                    help='Number of power iterations (default: 0)')
 args = parser.parse_args()
 
 # Set all threading environment variables BEFORE importing numpy/scipy/torch
@@ -303,7 +309,7 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
     )
 
 
-def run_test_suite(device='cpu', power_iter=0):
+def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     """Run the full test suite on a given device.
 
     Parameters
@@ -312,6 +318,8 @@ def run_test_suite(device='cpu', power_iter=0):
         'cpu' or 'cuda'
     power_iter : int
         Number of power iterations for both methods (0 for fair base comparison)
+    extra_samples : int
+        Number of extra samples for oversampling (default: 12)
     """
 
     print("\n" + "#"*80)
@@ -331,24 +339,24 @@ def run_test_suite(device='cpu', power_iter=0):
     # Test 1: Random matrix (well-conditioned)
     np.random.seed(42)
     A1 = np.random.randn(500, 300).astype(DTYPE)
-    results.append(compare_on_matrix(A1, 20, "Random Matrix (well-conditioned)", device, power_iter))
+    results.append(compare_on_matrix(A1, 20, "Random Matrix (well-conditioned)", device, power_iter, extra_samples))
 
     # Test 2: Low-rank matrix
     U = np.random.randn(400, 15).astype(DTYPE)
     V = np.random.randn(250, 15).astype(DTYPE)
     A2 = (U @ V.T + EPS * np.random.randn(400, 250)).astype(DTYPE)
-    results.append(compare_on_matrix(A2, 15, "Low-Rank Matrix (rank~15)", device, power_iter))
+    results.append(compare_on_matrix(A2, 15, "Low-Rank Matrix (rank~15)", device, power_iter, extra_samples))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
     A3 = hilb(2000, 1000, dtype=DTYPE)
-    results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (ill-conditioned)", device, power_iter))
+    results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (ill-conditioned)", device, power_iter, extra_samples))
 
     # Test 4: Decaying spectrum
     A4 = np.random.randn(400, 300).astype(DTYPE)
     U4, S4, Vh4 = np.linalg.svd(A4, full_matrices=False)
     s4 = (1.0 / np.arange(1, 301)).astype(DTYPE)
     A4 = (U4 @ np.diag(s4) @ Vh4).astype(DTYPE)
-    results.append(compare_on_matrix(A4, 50, "Decaying Spectrum (1/k)", device, power_iter))
+    results.append(compare_on_matrix(A4, 50, "Decaying Spectrum (1/k)", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # LARGE MATRIX TESTS (2x larger)
@@ -360,24 +368,24 @@ def run_test_suite(device='cpu', power_iter=0):
 
     # Test 5: Large random matrix
     A5 = np.random.randn(1000, 600).astype(DTYPE)
-    results.append(compare_on_matrix(A5, 20, "Large Random Matrix (1000x600)", device, power_iter))
+    results.append(compare_on_matrix(A5, 20, "Large Random Matrix (1000x600)", device, power_iter, extra_samples))
 
     # Test 6: Large low-rank matrix
     U6 = np.random.randn(800, 15).astype(DTYPE)
     V6 = np.random.randn(500, 15).astype(DTYPE)
     A6 = (U6 @ V6.T + EPS * np.random.randn(800, 500)).astype(DTYPE)
-    results.append(compare_on_matrix(A6, 15, "Large Low-Rank (800x500, rank~15)", device, power_iter))
+    results.append(compare_on_matrix(A6, 15, "Large Low-Rank (800x500, rank~15)", device, power_iter, extra_samples))
 
     # Test 7: Large Hilbert matrix
     A7 = hilb(4000, 2000, dtype=DTYPE)
-    results.append(compare_on_matrix(A7, 15, "Large Hilbert Matrix (4000x2000)", device, power_iter))
+    results.append(compare_on_matrix(A7, 15, "Large Hilbert Matrix (4000x2000)", device, power_iter, extra_samples))
 
     # Test 8: Large decaying spectrum
     A8 = np.random.randn(800, 600).astype(DTYPE)
     U8, S8, Vh8 = np.linalg.svd(A8, full_matrices=False)
     s8 = (1.0 / np.arange(1, 601)).astype(DTYPE)
     A8 = (U8 @ np.diag(s8) @ Vh8).astype(DTYPE)
-    results.append(compare_on_matrix(A8, 50, "Large Decaying Spectrum (1/k, 800x600)", device, power_iter))
+    results.append(compare_on_matrix(A8, 50, "Large Decaying Spectrum (1/k, 800x600)", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # SLOW DECAYING SPECTRUM TESTS
@@ -392,21 +400,21 @@ def run_test_suite(device='cpu', power_iter=0):
     U9, S9, Vh9 = np.linalg.svd(A9, full_matrices=False)
     s9 = (1.0 / np.sqrt(np.arange(1, 301))).astype(DTYPE)
     A9 = (U9 @ np.diag(s9) @ Vh9).astype(DTYPE)
-    results.append(compare_on_matrix(A9, 50, "Slow Decay - Sqrt (1/sqrtk)", device, power_iter))
+    results.append(compare_on_matrix(A9, 50, "Slow Decay - Sqrt (1/sqrtk)", device, power_iter, extra_samples))
 
     # Test 10: Slow decay - polynomial
     A10 = np.random.randn(400, 300).astype(DTYPE)
     U10, S10, Vh10 = np.linalg.svd(A10, full_matrices=False)
     s10 = (1.0 / (np.arange(1, 301) ** 0.7)).astype(DTYPE)
     A10 = (U10 @ np.diag(s10) @ Vh10).astype(DTYPE)
-    results.append(compare_on_matrix(A10, 50, "Slow Decay - Polynomial (1/k^0.7)", device, power_iter))
+    results.append(compare_on_matrix(A10, 50, "Slow Decay - Polynomial (1/k^0.7)", device, power_iter, extra_samples))
 
     # Test 11: Slow decay - exponential
     A11 = np.random.randn(400, 300).astype(DTYPE)
     U11, S11, Vh11 = np.linalg.svd(A11, full_matrices=False)
     s11 = np.exp(-np.arange(1, 301) / 100.0).astype(DTYPE)
     A11 = (U11 @ np.diag(s11) @ Vh11).astype(DTYPE)
-    results.append(compare_on_matrix(A11, 50, "Slow Decay - Exponential (exp(-k/100))", device, power_iter))
+    results.append(compare_on_matrix(A11, 50, "Slow Decay - Exponential (exp(-k/100))", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # MAKE_MAT MATRIX TESTS (structured matrices from paper)
@@ -418,15 +426,15 @@ def run_test_suite(device='cpu', power_iter=0):
 
     # Test 12: Gaussian Exponential Decay Matrix
     A12 = make_mat(500, 500, 'gaussexp').astype(DTYPE)
-    results.append(compare_on_matrix(A12, 50, "Gaussexp (Gaussian Exponential Decay)", device, power_iter))
+    results.append(compare_on_matrix(A12, 50, "Gaussexp (Gaussian Exponential Decay)", device, power_iter, extra_samples))
 
     # Test 13: Gaussian Mixture Model Matrix
     A13 = make_mat(400, 400, 'gmm').astype(DTYPE)
-    results.append(compare_on_matrix(A13, 50, "GMM (Gaussian Mixture Model)", device, power_iter))
+    results.append(compare_on_matrix(A13, 50, "GMM (Gaussian Mixture Model)", device, power_iter, extra_samples))
 
     # Test 14: Sparse Neural Network Matrix
     A14 = make_mat(300, 300, 'snn').astype(DTYPE)
-    results.append(compare_on_matrix(A14, 50, "SNN (Sparse Neural Network)", device, power_iter))
+    results.append(compare_on_matrix(A14, 50, "SNN (Sparse Neural Network)", device, power_iter, extra_samples))
 
     return results
 
@@ -546,23 +554,24 @@ def main():
         print("\nERROR: --cuda flag specified but CUDA is not available.")
         return 1
 
-    print("\nNote: Fair comparison settings:")
-    print("  - power_iter=0 for both (torch defaults to niter=2, librla to 0)")
-    print("  - extra_samples=12 (librla default)")
+    print("\nComparison settings:")
+    print(f"  - power_iter={args.power_iter} for both (torch defaults to niter=2, librla to 0)")
+    print(f"  - extra_samples={args.extra_samples} (librla default: 12)")
     print("  - torch q = rank + extra_samples to match librla's oversampling")
     print("="*70)
 
     all_results = []
-    power_iter = 0  # Fair comparison: same power iterations for both
+    power_iter = args.power_iter
+    extra_samples = args.extra_samples
 
     if args.cuda:
         # Run CUDA tests only
-        gpu_results = run_test_suite(device='cuda', power_iter=power_iter)
+        gpu_results = run_test_suite(device='cuda', power_iter=power_iter, extra_samples=extra_samples)
         all_results.extend(gpu_results)
         print_summary(gpu_results, 'cuda', power_iter)
     else:
         # Run CPU tests only
-        cpu_results = run_test_suite(device='cpu', power_iter=power_iter)
+        cpu_results = run_test_suite(device='cpu', power_iter=power_iter, extra_samples=extra_samples)
         all_results.extend(cpu_results)
         print_summary(cpu_results, 'cpu', power_iter)
 

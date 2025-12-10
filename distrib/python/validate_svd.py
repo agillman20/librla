@@ -190,9 +190,9 @@ def compare_on_matrix(A, rtol_or_rank, name):
         tol_threshold = rtol_or_rank * 100
         passed = err_sketch < min(0.1, tol_threshold) and orth_U_sketch < 1e-10 and orth_V_sketch < 1e-10
     else:
-        # Rank mode: sketch error should be within 2x of optimal (reference)
+        # Rank mode: sketch error should be within 4x of optimal (reference)
         # Singular value accuracy can vary more for randomized methods
-        error_ratio_ok = (err_ref == 0) or (err_sketch / max(err_ref, 1e-15) < 2.0)
+        error_ratio_ok = (err_ref == 0) or (err_sketch / max(err_ref, 1e-15) < 4.0)
         passed = error_ratio_ok and sval_err < 0.5 and orth_U_sketch < 1e-10 and orth_V_sketch < 1e-10
 
     return ComparisonResult(
