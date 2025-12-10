@@ -178,6 +178,28 @@ Python and Julia return V transposed/adjoint; MATLAB returns V (requiring explic
 - Same interface as `id_sketch`
 - Useful for verification and when reproducibility is critical
 
+### Accuracy of Randomized Methods
+
+Randomized sketching algorithms have inherent variance in reconstruction error. In rank mode (rtol >= 1), the reconstruction error of randomized methods is typically within a small factor of the optimal (deterministic) error. The validation tests use these thresholds:
+
+| Function | Threshold | Description |
+|----------|-----------|-------------|
+| `svd_sketch` | 4x | Error within 4x of truncated SVD |
+| `qr_sketch` | 4x | Error within 4x of pivoted QR |
+| `orth_sketch` | 8x | Span error within 8x of optimal |
+| `id_sketch` | 10.0 | Absolute error < 10.0 (lenient for full-rank matrices) |
+
+This variance is expected for randomized algorithms and does not indicate a bug.
+
+For ill-conditioned matrices (e.g., Hilbert matrices), use **power iterations** to improve accuracy:
+
+```python
+# Use power_iter=2 for ill-conditioned matrices
+U, s, Vh = svd_sketch(A, 20, power_iter=2)
+```
+
+With `power_iter=2`, randomized methods achieve near-optimal accuracy even for severely ill-conditioned matrices.
+
 ## LinearOperator Usage
 
 Create matrix-free operators for implicit matrices:
