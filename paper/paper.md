@@ -58,7 +58,30 @@ The algorithm that serves as the foundations of 'librla' is called 'orth_sketch'
 
 
 ```
-PROGRAM IsEvenOrOdd:
+PROGRAM orth_sketch:
+Input: the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
+Output: an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
+
+Steps:
+
+
+  while true
+      Let $\Omega$ denote a random matrix of size $n\times 42$.
+      Set $y = \bf{A} \bf{\Omega}.
+      Define $\bf{Q}\bf{R}$ to be the matrices that result from the QR factorization of $y$.
+
+      % Check tolerance
+      diagR = abs(diag(R));
+      if isempty(diagR) || diagR(1) == 0
+          d = 0.0;
+      else
+          d = diagR(end) / diagR(1);
+      end
+      if d <= rtol
+          flag = 0;
+          return;
+      end
+
   var num = number;
   IF (num % 2 === 0)
     THEN Print "even";
