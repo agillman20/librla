@@ -1,4 +1,9 @@
 ---
+header-includes:
+  - \usepackage{algorithm2e}
+---
+
+---
 title: 'librla: A library of randomized linear algebra routines'
 tags:
   - Python
@@ -34,7 +39,7 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 'librla' includes the following options all of which can be used for both real and complex matrices: 
 
 - 'qr_sketch': Randomized QR factorization.
-- 'svd_sketch': Randomized Singular Value Decomposition
+- 'svd_sketch': Randomized Singular Value Decomposition (SVD)
 - 'id_sketch': Interpolatory Decomposition via randomized sampling.
 
 The user has the choice of specifying a tolerance or a desired rank.  The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes.  'librla' requires both the ability to apply both the matrix and its transpose via a subroutine.  If only application of the matrix is available, 
@@ -50,21 +55,47 @@ While the algorithm used in 'librla' is built in a similar manner to the randomi
 
 # Statement of need
 
-While the area of rank revealing factorization techniques, there is not an easy to use widely available factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in unnecessarily slow code.  The area of fast direct solvers for integral equations is an example of why 'Sketcher' is useful.  For sometime, developers of fast direct solvers using Matlab have been using a Fortran package [@Tygert:2008] based on [@Liberty:2007] via a specialized wrapper.  The need of this wrapper has slowed the design and use of these solvers.  
+While there is a large amount of research activity in the field of randomized linear algebra, there is not an easy to use and stable factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in an unnecessarily slow code.  The area of fast direct solvers for integral equations is an example of why 'librla' is useful.  For sometime, developers of fast direct solvers using Matlab have been using a Fortran package [@Tygert:2008] based on [@Liberty:2007] via a specialized wrapper.  The need of this wrapper has slowed the design and use of these solvers.  
 
 # Mathematics
 
-We begin with reviewing w
+The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
 
-The algorithm that is implemented is a variant of existing randomized techniques for rank revealing QR factorizations.  The algorithm was heavily influenced by the method presented in [`@Halko:2011`].    Add references to other related work.
 
-The idea behind the algorithm is simple.  The range of the matrix $\bf{A}$ can be randomly sampled by applying $\bf{A}$ to a collection of $m$ random vectors arranged as a matrix $\mtx{X}$.   By looking at the diagonal entries of QR factorization of $\bf{A}\bf{X}$, you can determine if $m$ vectors was large enough to capture the full range of $\bf{A}$.  If it is not, the number of random vectors can be increased.  We choose to increase by a factor of 4. This is continued until the range is captured to the desired accuracy.  The result is the approximate rank of $\bf{A}$ denoted $k$ and the columns of $\bf{Q}$ from the QR factorization form a basis for the range of $\bf{A}$.  
+---
+header-includes:
+  - \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+---
+# Algorithm 1
+Just a sample algorithmn
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\SetAlgoLined
+\KwResult{Write here the result}
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{Write here the input}
+\Output{Write here the output}
+\BlankLine
+\While{While condition}{
+    instructions\;
+    \eIf{condition}{
+        instructions1\;
+        instructions2\;
+    }{
+        instructions3\;
+    }
+}
+\caption{While loop with If/Else condition}
+\end{algorithm} 
+
 
 
 
 # Acknowledgements
 
 The work by A. Gillman was supported by the National Science Foundation (DMS-2110886), and a 
-Knut and Alice Wallenberg Foundation Grant. A. Gillman conducted a portion of this work while visiting the Institut Mittag-Leffler.
+Knut and Alice Wallenberg Foundation Grant. Part of this work was carried out while A. Gillman
+was in residence at Institut Mittag-Leffler in Djursholm, Sweden in autumn 2025, supported by the
+Swedish Research Council under grant no. 2021-06594.
 
 # References
