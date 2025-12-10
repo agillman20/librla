@@ -7,23 +7,35 @@ Unified runner for comparing librla against external libraries:
 - compare_svd_torch.py: librla.svd_sketch vs torch.svd_lowrank
 
 Usage:
-    python compare_all.py
+    python compare_all.py [--precision {double,single}]
+
+Options:
+    --precision    Floating-point precision: double (default) or single
 
 Requires:
     - NumPy, SciPy, PyTorch
     - librla.py, make_mat.py from ../python/
 """
 
+import argparse
 import sys
 import os
 import time
-import importlib.util
+import subprocess
+
+# Parse arguments
+parser = argparse.ArgumentParser(description='Run all librla comparison tests')
+parser.add_argument('--precision', choices=['double', 'single'], default='double',
+                    help='Floating-point precision (default: double)')
+args = parser.parse_args()
+
+PRECISION = args.precision
 
 # Add parent python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 
-def run_module(module_path, module_name):
+def run_module(module_path, module_name, precision='double'):
     """
     Run a comparison module and capture its exit code.
 
@@ -33,6 +45,8 @@ def run_module(module_path, module_name):
         Path to the Python file
     module_name : str
         Display name for the module
+    precision : str
+        Floating-point precision ('double' or 'single')
 
     Returns
     -------
@@ -47,15 +61,13 @@ def run_module(module_path, module_name):
 
     t0 = time.perf_counter()
 
-    # Load and run the module
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    module = importlib.util.module_from_spec(spec)
-
+    # Run the module as a subprocess with precision argument
     try:
-        spec.loader.exec_module(module)
-        exit_code = module.main()
-    except SystemExit as e:
-        exit_code = e.code if e.code is not None else 0
+        result = subprocess.run(
+            [sys.executable, module_path, '--precision', precision],
+            check=False
+        )
+        exit_code = result.returncode
     except Exception as e:
         print(f"\n[ERROR] {module_name} failed with exception:")
         print(f"  {type(e).__name__}: {e}")
@@ -82,6 +94,7 @@ def main():
 
     import scipy
     print(f"  SciPy:  {scipy.__version__}")
+    print(f"  Precision: {PRECISION}")
 
     try:
         import torch
@@ -123,7 +136,7 @@ def main():
             results.append((display_name, 1, 0.0, 'NOT FOUND'))
             continue
 
-        exit_code, elapsed = run_module(module_path, display_name)
+        exit_code, elapsed = run_module(module_path, display_name, PRECISION)
 
         if exit_code == 0:
             status = 'PASS'
