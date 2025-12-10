@@ -1,7 +1,3 @@
----
-header-includes:
-  - \usepackage{algorithm2e}
----
 
 ---
 title: 'librla: A library of randomized linear algebra routines'
@@ -62,33 +58,15 @@ While there is a large amount of research activity in the field of randomized li
 The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
 
 
----
-header-includes:
-  - \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
----
-# Algorithm 1
-Just a sample algorithmn
-\begin{algorithm}[H]
-\DontPrintSemicolon
-\SetAlgoLined
-\KwResult{Write here the result}
-\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-\Input{Write here the input}
-\Output{Write here the output}
-\BlankLine
-\While{While condition}{
-    instructions\;
-    \eIf{condition}{
-        instructions1\;
-        instructions2\;
-    }{
-        instructions3\;
-    }
-}
-\caption{While loop with If/Else condition}
-\end{algorithm} 
-
-
+```
+PROGRAM IsEvenOrOdd:
+  var num = number;
+  IF (num % 2 === 0)
+    THEN Print "even";
+    ELSE Print "odd";
+  ENDIF;
+END.
+```
 
 
 # Acknowledgements
