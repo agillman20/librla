@@ -15,12 +15,13 @@ Compares on metrics:
 - Runtime
 
 Usage:
-    python compare_svd_torch.py [--threads N] [--precision {double,single}]
+    python compare_svd_torch.py [--threads N] [--precision {double,single}] [--cuda]
 
 Options:
     --threads N    Number of threads (default: number of CPU cores)
                    Sets threading for both numpy/scipy (MKL/OpenBLAS) and torch
     --precision    Floating-point precision: double (default) or single
+    --cuda         Run CUDA tests (default: CPU tests only)
 
 Requires:
     - NumPy, SciPy, PyTorch
@@ -41,6 +42,8 @@ parser.add_argument('--threads', type=int, default=NUM_CPUS,
                     help=f'Number of threads (default: {NUM_CPUS})')
 parser.add_argument('--precision', choices=['double', 'single'], default='double',
                     help='Floating-point precision (default: double)')
+parser.add_argument('--cuda', action='store_true',
+                    help='Run CUDA tests (default: CPU tests only)')
 args = parser.parse_args()
 
 # Set all threading environment variables BEFORE importing numpy/scipy/torch
@@ -536,6 +539,12 @@ def main():
     print(f"  Precision:  {PRECISION} ({DTYPE.__name__})")
     cuda_available = torch.cuda.is_available()
     print(f"  CUDA:       {'Available (' + torch.cuda.get_device_name(0) + ')' if cuda_available else 'Not available'}")
+    print(f"  Mode:       {'CUDA' if args.cuda else 'CPU'}")
+
+    # Check CUDA availability if --cuda flag is set
+    if args.cuda and not cuda_available:
+        print("\nERROR: --cuda flag specified but CUDA is not available.")
+        return 1
 
     print("\nNote: Fair comparison settings:")
     print("  - power_iter=0 for both (torch defaults to niter=2, librla to 0)")
@@ -546,16 +555,16 @@ def main():
     all_results = []
     power_iter = 0  # Fair comparison: same power iterations for both
 
-    # Run CPU tests
-    cpu_results = run_test_suite(device='cpu', power_iter=power_iter)
-    all_results.extend(cpu_results)
-    print_summary(cpu_results, 'cpu', power_iter)
-
-    # Run GPU tests if available
-    if cuda_available:
+    if args.cuda:
+        # Run CUDA tests only
         gpu_results = run_test_suite(device='cuda', power_iter=power_iter)
         all_results.extend(gpu_results)
         print_summary(gpu_results, 'cuda', power_iter)
+    else:
+        # Run CPU tests only
+        cpu_results = run_test_suite(device='cpu', power_iter=power_iter)
+        all_results.extend(cpu_results)
+        print_summary(cpu_results, 'cpu', power_iter)
 
     # Overall summary
     print("\n\n" + "="*80)
