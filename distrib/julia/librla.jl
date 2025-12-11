@@ -1,37 +1,34 @@
 """
     librla - Randomized Linear Algebra Routines for Julia
 
-Port of MATLAB librla.m and Python librla.py to Julia.
-
-# Public Functions
+Randomized algorithms for low-rank matrix approximations:
 - `orth_sketch(A, rtol; kwargs...)` - Orthonormal basis for column space
 - `qr_sketch(A, rtol; kwargs...)` - Truncated QR factorization with column pivoting
-- `svd_sketch(A, rtol; kwargs...)` - Truncated SVD
+- `svd_sketch(A, rtol; kwargs...)` - Truncated singular value decomposition (SVD)
 - `id_sketch(A, rtol; kwargs...)` - Interpolative decomposition (ID)
-- `id_qrpiv(A, rtol; kwargs...)` - Deterministic ID via QR with pivoting
+
+Deterministic:
+- `id_qrpiv(A, rtol; kwargs...)` - Interpolative decomposition via QR with pivoting
 
 # Usage
 ```julia
 Q, flag, err = orth_sketch(A, rtol)
 Q, R, p = qr_sketch(A, rtol)
-U, s, V = svd_sketch(A, rtol)
+U, s, Vt = svd_sketch(A, rtol)
 k, piv, T = id_sketch(A, rtol)
+# tolerance mode: rtol < 1, rank mode: rtol >= 1
 ```
-
-# Modes
-- Tolerance mode: rtol < 1 (geometric growth until tolerance met)
-- Rank mode: rtol >= 1 (single sketch, no geometric growth)
 
 # Matrix-Free Operators
 Use the LinearOperator type for matrix-free operators:
 ```julia
 include("LinearOperator.jl")
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
-U, s, V = svd_sketch(A, rank)  # rank mode only: rtol >= 1
+U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 ```
 
 # Author
-Port of MATLAB librla.m and Python librla.py
+TBD
 
 # License
 SPDX-License-Identifier: TBD
