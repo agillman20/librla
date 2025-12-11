@@ -21,7 +21,7 @@ function X = make_mat(m,n,flag_type)
 %   Other types generate synthetic matrices (no data files needed)
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: BSD-3-Clause
+% SPDX-License-Identifier: TBD
 % Version: 1.0.0
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)

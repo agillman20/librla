@@ -28,7 +28,7 @@ For analysis scripts (test_sst_*.py), also install:
   pip install numpy scipy netCDF4 matplotlib
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)

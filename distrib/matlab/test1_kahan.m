@@ -4,7 +4,7 @@
 %   Tests basic ID algorithms (id_sketch, id_qrpiv) on a Kahan matrix.
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: BSD-3-Clause
+% SPDX-License-Identifier: TBD
 % Version: 1.0.0
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)

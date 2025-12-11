@@ -9,7 +9,7 @@ without explicitly forming the matrix.
 Mimics scipy.sparse.linalg.LinearOperator and the MATLAB LinearOperator class.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)

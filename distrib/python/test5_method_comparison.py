@@ -8,7 +8,7 @@ Tests all three T computation methods on a full-rank random matrix:
 3. method='lstsq' - Least-squares from original A (most accurate)
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)
