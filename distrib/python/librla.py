@@ -3,7 +3,7 @@ Randomized linear-algebra routines
 ==================================
 
 Randomized algorithms for low-rank matrix approximations:
-    orth_sketch  - Orthonormal basis for column space
+    orth_sketch  - Approximate orthonormal basis for column space
     qr_sketch    - Truncated QR factorization with column pivoting
     svd_sketch   - Truncated singular value decomposition (SVD)
     id_sketch    - Interpolative decomposition (ID)
@@ -43,7 +43,7 @@ from scipy.sparse.linalg import LinearOperator
 # --------------------------------------------------------------
 
 def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
-    """Compute orthonormal basis for column space using randomized range finding.
+    """Approximate orthonormal basis for column space using randomized sketching.
 
     This function uses random test matrix multiplication (A @ Omega
     where Omega has i.i.d. uniform[-1,1] entries) followed by QR

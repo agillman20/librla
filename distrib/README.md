@@ -10,7 +10,7 @@ All algorithms support both **tolerance mode** (rtol < 1) for adaptive rank sele
 
 | Function | Description |
 |----------|-------------|
-| `orth_sketch` | Orthonormal basis for column space via randomized range finding |
+| `orth_sketch` | Approximate orthonormal basis for column space via randomized sketching |
 | `qr_sketch` | Truncated QR factorization with column pivoting |
 | `svd_sketch` | Truncated singular value decomposition |
 | `id_sketch` | Interpolative decomposition via randomized sketching |
