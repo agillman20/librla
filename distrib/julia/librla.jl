@@ -119,7 +119,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
         R = F.R
 
         # Use requested rank directly (capped at available columns)
-        diagR = diag(R)
+        diagR = abs.(diag(R))
         rank = min(kmax, size(R, 2))
 
         # Materialize only needed columns of Q (thin, not full m×m)
