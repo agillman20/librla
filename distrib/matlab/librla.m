@@ -329,8 +329,14 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
       error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
-  % Compute sketch
-  [Qs, flag, ~] = librla.orth_sketch(A, rtol, ...
+  % Compute sketch: in rank mode, request all oversampled columns
+  % to get more accurate singular values (truncate to kmax after SVD)
+  if rank_mode
+      orth_rtol = block_size;
+  else
+      orth_rtol = rtol;
+  end
+  [Qs, flag, ~] = librla.orth_sketch(A, orth_rtol, ...
                   'block_size', block_size, 'power_iter', power_iter, 'rng', rng_param);
 
   k = size(Qs, 2);

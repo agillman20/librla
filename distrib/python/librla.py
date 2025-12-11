@@ -296,8 +296,10 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=No
             f"Got rtol={rtol}. Please specify target rank as rtol."
         )
 
-    # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter, rng=rng)
+    # Compute sketch: in rank mode, request all oversampled columns
+    # to get more accurate singular values (truncate to kmax after SVD)
+    orth_rtol = block_size if rank_mode else rtol
+    Qs, flag, _ = orth_sketch(A, orth_rtol, block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = Qs.shape[1] if flag == 0 else min(m, n)
 
