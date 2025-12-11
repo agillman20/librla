@@ -14,7 +14,7 @@ All three language implementations expose the same five core functions:
 
 | Function | Description |
 |----------|-------------|
-| `orth_sketch(A, rtol)` | Orthonormal basis for column space |
+| `orth_sketch(A, rtol)` | Approximate orthonormal basis for column space |
 | `qr_sketch(A, rtol)` | Truncated QR factorization |
 | `svd_sketch(A, rtol)` | Truncated SVD |
 | `id_sketch(A, rtol)` | Interpolative decomposition (randomized) |

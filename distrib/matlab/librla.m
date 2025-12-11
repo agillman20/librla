@@ -2,7 +2,7 @@ classdef librla
 % LIBRLA - Randomized linear algebra routines for MATLAB/Octave
 %
 % Randomized algorithms for low-rank matrix approximations:
-%   librla.orth_sketch  - Orthonormal basis for column space
+%   librla.orth_sketch  - Approximate orthonormal basis for column space
 %   librla.qr_sketch    - Truncated QR factorization with column pivoting
 %   librla.svd_sketch   - Truncated singular value decomposition (SVD)
 %   librla.id_sketch    - Interpolative decomposition (ID)
@@ -31,7 +31,7 @@ classdef librla
 methods (Static)
 
 function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
-% ORTH_SKETCH - Compute orthonormal basis for column space using randomized range finding
+% ORTH_SKETCH - Approximate orthonormal basis for column space using randomized sketching
 %
 % Syntax:
 %   Q = librla.orth_sketch(A, rtol)

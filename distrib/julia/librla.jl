@@ -2,7 +2,7 @@
     librla - Randomized Linear Algebra Routines for Julia
 
 Randomized algorithms for low-rank matrix approximations:
-- `orth_sketch(A, rtol; kwargs...)` - Orthonormal basis for column space
+- `orth_sketch(A, rtol; kwargs...)` - Approximate orthonormal basis for column space
 - `qr_sketch(A, rtol; kwargs...)` - Truncated QR factorization with column pivoting
 - `svd_sketch(A, rtol; kwargs...)` - Truncated singular value decomposition (SVD)
 - `id_sketch(A, rtol; kwargs...)` - Interpolative decomposition (ID)
@@ -65,7 +65,7 @@ export LinearOperator, from_matrix, matvec, rmatvec
 """
     orth_sketch(A, rtol; block_size=42, power_iter=0)
 
-Compute orthonormal basis for column space using randomized range finding.
+Approximate orthonormal basis for column space using randomized sketching.
 
 This function uses random test matrix multiplication (A*Ω where Ω has i.i.d.
 uniform[-1,1] entries) followed by QR factorization to approximate the range
