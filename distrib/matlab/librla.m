@@ -215,8 +215,14 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
       error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
-  % Compute sketch
-  [Qs, flag, ~] = librla.orth_sketch(A, rtol, ...
+  % Compute sketch: in rank mode, request all oversampled columns
+  % for better accuracy (truncate to kmax after QR)
+  if rank_mode
+      orth_rtol = block_size;
+  else
+      orth_rtol = rtol;
+  end
+  [Qs, flag, ~] = librla.orth_sketch(A, orth_rtol, ...
                   'block_size', block_size, ...
                   'power_iter', power_iter, ...
                   'rng', rng_param);
