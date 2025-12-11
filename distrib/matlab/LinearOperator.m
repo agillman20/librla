@@ -49,6 +49,12 @@ classdef LinearOperator
 %   [U, s, V] = librla.svd_sketch(A, 10);
 %
 % See also: svd_sketch, qr_sketch, id_sketch
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 
 properties (SetAccess = private)
     m            % Number of rows

@@ -3,6 +3,12 @@
 test1_kahan.py - Test with Kahan matrix (384x384, theta=0.8)
 
 Tests basic ID algorithms (id_sketch, id_qrpiv) on a Kahan matrix.
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

@@ -30,6 +30,12 @@ Requirements
 ------------
 * librla.py in the path
 * pip install numpy scipy netCDF4 matplotlib
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import sys

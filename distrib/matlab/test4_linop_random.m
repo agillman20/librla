@@ -5,6 +5,12 @@
 %   1. Dense matrix (baseline)
 %   2. Explicit LinearOperator (matrix wrapper)
 %   3. Matrix-free LinearOperator (function handles - rank mode only)
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function test4_linop_random()

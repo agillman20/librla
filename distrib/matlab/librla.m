@@ -22,8 +22,11 @@ classdef librla
 %     A = LinearOperator(matvec_fun, rmatvec_fun, m, n);
 %     [U, s, V] = librla.svd_sketch(A, rank);  % rank mode only: rtol >= 1
 %
-% Author: TBD
-% License: SPDX-License-Identifier: TBD
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 
 methods (Static)
 
@@ -45,8 +48,8 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   The algorithm has two modes:
 %     - Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
 %       smallest column norm falls below rtol times the largest norm
-%     - Rank mode (rtol >= 1): Performs a single sketch of size block_size
-%       and returns columns with norms above machine epsilon
+%     - Rank mode (rtol >= 1): Performs a single sketch and returns the
+%       requested number of columns (rtol interpreted as target rank)
 %
 % Input Arguments:
 %   A          - Input matrix (m x n) or LinearOperator
@@ -55,21 +58,36 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   power_iter - Number of power iterations to improve accuracy (default: 0)
 %                Setting power_iter=1 or 2 can significantly improve results for
 %                matrices with slowly decaying singular values
+%   rng        - Random number generator state or seed (default: [] uses current state)
+%                Can be a seed (integer) or rng state struct from rng()
 %
 % Output Arguments:
 %   Q     - Orthonormal matrix (m x k) spanning approximate range of A
-%   flag  - Exit status: 0=success, 1=early termination
+%   flag  - Exit status:
+%           0: Success, Q contains valid orthonormal basis
+%           1: Early termination (tolerance mode only). Occurs when:
+%              (a) rtol < machine epsilon (tolerance too tight), or
+%              (b) sketch size grew to min(m,n) without meeting tolerance,
+%                  indicating matrix is effectively full-rank at this tolerance
+%              When flag=1, Q is empty (m x 0).
 %   diagR - Diagonal elements from pivoted QR factorization, representing
 %           column norms of the sketched matrix (sorted in decreasing order)
+%
+% Note:
+%   Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
+%   fall back to deterministic (full) QR or SVD when orth_sketch terminates
+%   early, so users of those functions do not need to handle flag=1 explicitly.
 
 % Parse optional parameters
   p = inputParser;
   addParameter(p, 'block_size', 42);
   addParameter(p, 'power_iter', 0);
+  addParameter(p, 'rng', []);
   parse(p, varargin{:});
 
   block_size = p.Results.block_size;
   power_iter = p.Results.power_iter;
+  rng_param = p.Results.rng;
 
   [m, n] = size(A);
   is_complex_op = librla.is_complex_type(A);
@@ -77,15 +95,15 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Rank mode (rtol >= 1): single sketch with rank filtering
   if rtol >= 1
-      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str);
+      kmax = floor(rtol);
+      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str, rng_param);
       x = librla.power_iteration(A, x, power_iter);
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
 
-      % Determine numerical rank
-      diagR = diag(R);
-      rtol_eps = max(m, n) * eps(dtype_str);
-      rank = librla.rank_from_diag(diagR, rtol_eps);
+      % Use requested rank directly (capped at available columns)
+      diagR = abs(diag(R));
+      rank = min(kmax, size(Q, 2));
 
       Q = Q(:, 1:rank);
       flag = 0;
@@ -109,7 +127,7 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 
   % Main loop with geometric growth
   while true
-      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str);
+      x = librla.uniform_omega(n, block_size, is_complex_op, dtype_str, rng_param);
       x = librla.power_iteration(A, x, power_iter);
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
@@ -162,6 +180,7 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
 %   power_iter    - Number of power iterations for accuracy (default: 0)
 %   extra_samples - Oversampling for rank mode (default: 12)
 %                   Rank mode uses block_size = rank + extra_samples
+%   rng           - Random number generator state or seed (default: [] uses current state)
 %
 % Output Arguments:
 %   Q - Orthonormal matrix (m x k), k <= min(m,n)
@@ -174,11 +193,13 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   addParameter(p_parser, 'block_size', 42);
   addParameter(p_parser, 'power_iter', 0);
   addParameter(p_parser, 'extra_samples', 12);
+  addParameter(p_parser, 'rng', []);
   parse(p_parser, varargin{:});
 
   block_size = p_parser.Results.block_size;
   power_iter = p_parser.Results.power_iter;
   extra_samples = p_parser.Results.extra_samples;
+  rng_param = p_parser.Results.rng;
 
   [m, n] = size(A);
   is_matrix_free = isa(A, 'LinearOperator');
@@ -194,10 +215,17 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
       error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
-  % Compute sketch
-  [Qs, flag, ~] = librla.orth_sketch(A, rtol, ...
+  % Compute sketch: in rank mode, request all oversampled columns
+  % for better accuracy (truncate to kmax after QR)
+  if rank_mode
+      orth_rtol = block_size;
+  else
+      orth_rtol = rtol;
+  end
+  [Qs, flag, ~] = librla.orth_sketch(A, orth_rtol, ...
                   'block_size', block_size, ...
-                  'power_iter', power_iter);
+                  'power_iter', power_iter, ...
+                  'rng', rng_param);
 
   k = size(Qs, 2);
   if flag ~= 0
@@ -215,15 +243,10 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
       [Q, R, p] = qr(A, 0);
 
       % Determine rank
-      rtol_for_rank = eps(dtype_str) * max(m, n);
-      if ~rank_mode
-          rtol_for_rank = rtol;
-      end
-
-      rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
       if rank_mode
-          rank = min(kmax, rank);
+          rank = min(kmax, size(Q, 2));
+      else
+          rank = librla.rank_from_diag(diag(R), rtol);
       end
 
       Q = Q(:, 1:rank);
@@ -237,15 +260,10 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   Q = Qs * Qproj;
 
   % Determine rank
-  rtol_for_rank = eps(dtype_str) * max(m, n);
-  if ~rank_mode
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
   if rank_mode
-      rank = min(kmax, rank);
+      rank = min(kmax, size(Q, 2));
+  else
+      rank = librla.rank_from_diag(diag(R), rtol);
   end
 
   Q = Q(:, 1:rank);
@@ -276,6 +294,7 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
 %   block_size    - Sketch size for tolerance mode (default: 42)
 %   power_iter    - Number of power iterations for accuracy (default: 0)
 %   extra_samples - Oversampling for rank mode (default: 12)
+%   rng           - Random number generator state or seed (default: [] uses current state)
 %
 % Output Arguments:
 %   U - Left singular vectors (m x k), orthonormal columns
@@ -288,11 +307,13 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   addParameter(p, 'block_size', 42);
   addParameter(p, 'power_iter', 0);
   addParameter(p, 'extra_samples', 12);
+  addParameter(p, 'rng', []);
   parse(p, varargin{:});
 
   block_size = p.Results.block_size;
   power_iter = p.Results.power_iter;
   extra_samples = p.Results.extra_samples;
+  rng_param = p.Results.rng;
 
   [m, n] = size(A);
   is_matrix_free = isa(A, 'LinearOperator');
@@ -300,7 +321,7 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
 
   % Handle wide matrices via transpose
   if m < n
-      [V, s, U] = librla.svd_sketch(A', rtol, 'block_size', block_size, 'power_iter', power_iter, 'extra_samples', extra_samples);
+      [V, s, U] = librla.svd_sketch(A', rtol, 'block_size', block_size, 'power_iter', power_iter, 'extra_samples', extra_samples, 'rng', rng_param);
       return;
   end
 
@@ -314,9 +335,15 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
       error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
-  % Compute sketch
-  [Qs, flag, ~] = librla.orth_sketch(A, rtol, ...
-                  'block_size', block_size, 'power_iter', power_iter);
+  % Compute sketch: in rank mode, request all oversampled columns
+  % to get more accurate singular values (truncate to kmax after SVD)
+  if rank_mode
+      orth_rtol = block_size;
+  else
+      orth_rtol = rtol;
+  end
+  [Qs, flag, ~] = librla.orth_sketch(A, orth_rtol, ...
+                  'block_size', block_size, 'power_iter', power_iter, 'rng', rng_param);
 
   k = size(Qs, 2);
   if flag ~= 0
@@ -335,15 +362,10 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
       s = diag(S);
 
       % Determine rank
-      rtol_for_rank = eps(dtype_str) * max(m, n);
-      if ~rank_mode
-          rtol_for_rank = rtol;
-      end
-
-      rank = librla.rank_from_svals(s, rtol_for_rank);
-
       if rank_mode
-          rank = min(kmax, rank);
+          rank = min(kmax, length(s));
+      else
+          rank = librla.rank_from_svals(s, rtol);
       end
 
       U = U(:, 1:rank);
@@ -359,15 +381,10 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   U = Qs * Uproj;
 
   % Determine rank
-  rtol_for_rank = eps(dtype_str) * max(m, n);
-  if ~rank_mode
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_svals(s, rtol_for_rank);
-
   if rank_mode
-      rank = min(kmax, rank);
+      rank = min(kmax, length(s));
+  else
+      rank = librla.rank_from_svals(s, rtol);
   end
 
   U = U(:, 1:rank);
@@ -404,6 +421,7 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
 %            'fast'  - Triangular solve R11 \ R12 (fastest)
 %            'svd'   - SVD-based pseudoinverse (stable for ill-conditioned)
 %            'lstsq' - Least-squares from original A (most accurate, slowest)
+%   rng           - Random number generator state or seed (default: [] uses current state)
 %
 % Output Arguments:
 %   k   - Rank of the approximation (number of skeleton columns)
@@ -419,24 +437,26 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
   addParameter(p, 'power_iter', 0);
   addParameter(p, 'extra_samples', 12);
   addParameter(p, 'method', 'fast', @(x) ismember(x, {'fast', 'svd', 'lstsq'}));
+  addParameter(p, 'rng', []);
   parse(p, varargin{:});
 
   block_size = p.Results.block_size;
   power_iter = p.Results.power_iter;
   extra_samples = p.Results.extra_samples;
   method = p.Results.method;
+  rng_param = p.Results.rng;
 
   % Get QR factorization
   [~, R, piv] = librla.qr_sketch(A, rtol, 'block_size', block_size, ...
-                'power_iter', power_iter, 'extra_samples', extra_samples);
+                'power_iter', power_iter, 'extra_samples', extra_samples, 'rng', rng_param);
 
   k = size(R, 1);
 
-  % Compute rtol for SVD filtering (use machine precision in rank mode)
+  % Compute rtol for SVD filtering
   [m, n] = size(A);
   if rtol >= 1
-      % Rank mode: use machine precision for SVD filtering
-      rtol_for_svd = max(m, n) * eps(class(R));
+      % Rank mode: minimal filtering (only exact zeros)
+      rtol_for_svd = 0;
   else
       % Tolerance mode: use the provided tolerance
       rtol_for_svd = rtol;
@@ -514,15 +534,11 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   % Determine rank
   if rank_mode
-      rtol_for_rank = max(m, n) * eps(class(A_mat));
+      rank = min(kmax, min(m, n));
+      rtol_for_svd = 0;  % Minimal filtering in rank mode
   else
-      rtol_for_rank = rtol;
-  end
-
-  rank = librla.rank_from_diag(diag(R), rtol_for_rank);
-
-  if rank_mode
-      rank = min(kmax, rank);
+      rank = librla.rank_from_diag(diag(R), rtol);
+      rtol_for_svd = rtol;
   end
 
   k = rank;
@@ -539,11 +555,10 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
   end
 
   % Dispatch to shared helper functions
-  % Note: rtol_for_rank is the correct tolerance for SVD filtering
   if strcmp(method, 'lstsq')
       T = librla.compute_T_lstsq(A, R, piv, k);
   elseif strcmp(method, 'svd')
-      T = librla.compute_T_svd(R, k, rtol_for_rank);
+      T = librla.compute_T_svd(R, k, rtol_for_svd);
   elseif strcmp(method, 'fast')
       T = librla.compute_T_fast(R, k);
   end
@@ -562,8 +577,16 @@ function x = power_iteration(A, x, power_iter)
   end
 end
 
-function omega = uniform_omega(n, block_size, is_complex, dtype_str)
+function omega = uniform_omega(n, block_size, is_complex, dtype_str, rng_param)
 % UNIFORM_OMEGA - Generate uniform[-1,1] test matrix
+  % Set rng state if provided
+  if ~isempty(rng_param)
+      if isstruct(rng_param)
+          rng(rng_param);
+      else
+          rng(rng_param);
+      end
+  end
   if is_complex
       omega = 2 * rand(n, block_size, dtype_str) - 1 + 1i * (2 * rand(n, block_size, dtype_str) - 1);
   else

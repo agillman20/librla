@@ -21,8 +21,13 @@
 %
 %  See also: librla.svd_sketch, imread, imagesc
 %
-% ----------------------------------------------------------------------
-% Image source: https://www.pexels.com/photo/silver-metal-round-gears-connected-to-each-other-149387/
+%  Image source: https://www.pexels.com/photo/silver-metal-round-gears-connected-to-each-other-149387/
+%
+%  Author: Adrianna Gillman, Zydrunas Gimbutas
+%  SPDX-License-Identifier: TBD
+%  Version: 1.0.0
+%  Date: TBD
+%  Assisted by: Claude Code (Anthropic)
 % ----------------------------------------------------------------------
 
 if exist('OCTAVE_VERSION', 'builtin')
