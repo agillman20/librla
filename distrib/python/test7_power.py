@@ -24,7 +24,11 @@ Test 1: Power iteration in svd_sketch
     - Measures reconstruction error and singular value accuracy
     - Can use structured or random matrix
 
-Author: Power iteration tests (librla version)
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

@@ -3,6 +3,12 @@ test2_svd_hilbert.jl - Simple test with medium-size Hilbert matrix for SVD
 
 Tests SVD algorithms (svd_sketch vs standard SVD) on an ill-conditioned
 Hilbert matrix.
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 using LinearAlgebra

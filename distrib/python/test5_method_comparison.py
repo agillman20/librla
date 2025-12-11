@@ -6,6 +6,12 @@ Tests all three T computation methods on a full-rank random matrix:
 1. method='fast' - Triangular solve (fastest, may have error > 1.0)
 2. method='svd' - SVD-based pseudoinverse (stable)
 3. method='lstsq' - Least-squares from original A (most accurate)
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

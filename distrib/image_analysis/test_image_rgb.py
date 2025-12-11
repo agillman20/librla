@@ -23,6 +23,12 @@ Requirements
 See also: librla.svd_sketch, test_image.py
 
 Image source: https://www.pexels.com/photo/silver-metal-round-gears-connected-to-each-other-149387/
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import sys

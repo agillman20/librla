@@ -18,8 +18,11 @@
 %           - Tests iterations: 0-6
 %           - Can use structured or random matrix
 %
-%   Author : Power iteration range estimator tests (librla version)
-%   SPDX-License-Identifier : TBD
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: BSD-3-Clause
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function test6_power(varargin)

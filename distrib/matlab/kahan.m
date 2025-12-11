@@ -61,7 +61,11 @@ function K = kahan(n, varargin)
 %   [3] NIST Matrix Market: Kahan Matrix,
 %       https://math.nist.gov/MatrixMarket/deli/Kahan/information.html
 %
-% Author: Claude Code
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: BSD-3-Clause
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 % Compatible with: MATLAB, Octave
 
 % Parse input arguments
