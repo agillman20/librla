@@ -8,6 +8,12 @@ without explicitly forming the matrix.
 
 Mimics scipy.sparse.linalg.LinearOperator and the MATLAB LinearOperator class.
 
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
+
 # Construction
 ```julia
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n;

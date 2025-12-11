@@ -26,8 +26,11 @@ Matrix-free operators:
         A = LinearOperator((m, n), matvec=matvec_fun, rmatvec=rmatvec_fun)
         U, s, Vh = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 
-Author: TBD
-License: SPDX-License-Identifier: TBD
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np
@@ -51,8 +54,8 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
     The algorithm has two modes:
     - Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
       smallest column norm falls below rtol times the largest norm
-    - Rank mode (rtol >= 1): Performs a single sketch of size block_size
-      and returns columns with norms above machine epsilon
+    - Rank mode (rtol >= 1): Performs a single sketch and returns the
+      requested number of columns (rtol interpreted as target rank)
 
     Parameters
     ----------
@@ -123,7 +126,7 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
 # 2. Truncated QR with column pivoting
 # --------------------------------------------------------------
 
-def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
+def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=None):
     """Compute truncated QR factorization with column pivoting via randomized sketching.
 
     The algorithm sketches an orthonormal basis for the column space
@@ -150,6 +153,8 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
     extra_samples : int, optional
         Oversampling for rank mode (default: 12).
         Rank mode uses block_size = rank + extra_samples
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
 
     Returns
     -------
@@ -179,7 +184,7 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
         )
 
     # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter)
+    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = Qs.shape[1] if flag == 0 else min(m, n)
 
@@ -218,7 +223,7 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
 # 3. Truncated SVD
 # --------------------------------------------------------------
 
-def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
+def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=None):
     """Compute truncated singular value decomposition (SVD) via randomized sketching.
 
     The algorithm sketches an orthonormal basis for the column space
@@ -244,6 +249,8 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
         Number of power iterations for accuracy (default: 0)
     extra_samples : int, optional
         Oversampling for rank mode (default: 12)
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
 
     Returns
     -------
@@ -262,7 +269,7 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
 
     if m < n:
         A_T = _transpose_linop(A)
-        V, s, U = svd_sketch(A_T, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples)
+        V, s, U = svd_sketch(A_T, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples, rng=rng)
         return U.conj().T, s, V.conj().T
 
     # Rank mode vs tolerance mode
@@ -278,7 +285,7 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
         )
 
     # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter)
+    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = Qs.shape[1] if flag == 0 else min(m, n)
 
@@ -317,7 +324,7 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
 # 4. Interpolative decomposition (ID) - randomized
 # --------------------------------------------------------------
 
-def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method='fast'):
+def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method='fast', rng=None):
     """Compute interpolative decomposition (ID) via randomized sketching.
 
     An ID represents a matrix A by selecting k of its columns and expressing
@@ -348,6 +355,8 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
         - 'fast': Triangular solve R11 \\ R12 (fastest)
         - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
         - 'lstsq': Least-squares from original A (most accurate, slowest)
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
 
     Returns
     -------
@@ -365,7 +374,7 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     if method not in valid_methods:
         raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
 
-    _, R, jpiv = qr_sketch(A, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples)
+    _, R, jpiv = qr_sketch(A, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples, rng=rng)
 
     k = R.shape[0]
     piv = jpiv

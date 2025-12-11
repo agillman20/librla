@@ -10,6 +10,12 @@
 %     matlab -batch "validate_qr"
 %
 % Returns 0 if all tests pass, 1 otherwise.
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: BSD-3-Clause
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 
 function exit_code = validate_qr()
 

@@ -2,6 +2,12 @@
 % test1_kahan.m - Test with Kahan matrix (384x384, theta=0.8)
 %
 %   Tests basic ID algorithms (id_sketch, id_qrpiv) on a Kahan matrix.
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: BSD-3-Clause
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function test1_kahan()

@@ -28,10 +28,19 @@ U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 ```
 
 # Author
+Adrianna Gillman, Zydrunas Gimbutas
+
+# SPDX-License-Identifier
+BSD-3-Clause
+
+# Version
+1.0.0
+
+# Date
 TBD
 
-# License
-SPDX-License-Identifier: TBD
+# Assisted by
+Claude Code (Anthropic)
 """
 module librla
 
@@ -66,8 +75,8 @@ decaying singular values.
 The algorithm has two modes:
 - Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
   smallest column norm falls below rtol times the largest norm
-- Rank mode (rtol >= 1): Performs a single sketch of size block_size
-  and returns columns with norms above machine epsilon
+- Rank mode (rtol >= 1): Performs a single sketch and returns the
+  requested number of columns (rtol interpreted as target rank)
 
 # Arguments
 - `A`: Input matrix (m×n) or LinearOperator
@@ -76,6 +85,7 @@ The algorithm has two modes:
 - `power_iter`: Number of power iterations to improve accuracy (default: 0)
   Setting power_iter=1 or 2 can significantly improve results for matrices
   with slowly decaying singular values
+- `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `Q`: Orthonormal matrix (m×k) spanning approximate range of A
@@ -83,7 +93,7 @@ The algorithm has two modes:
 - `diagR`: Diagonal elements from pivoted QR factorization, representing
   column norms of the sketched matrix (sorted in decreasing order)
 """
-function orth_sketch(A, rtol; block_size=42, power_iter=0)
+function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
     m, n = size(A)
     is_complex_op = _is_complex_type(A)
     dtype = _get_dtype(A)
@@ -91,7 +101,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
     # Rank mode (rtol >= 1): single sketch with rank filtering
     if rtol >= 1
         kmax = Int(floor(rtol))
-        x = _uniform_omega(n, block_size, is_complex_op, dtype)
+        x = _uniform_omega(n, block_size, is_complex_op, dtype, rng)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
         F = qr(y, ColumnNorm())
@@ -124,7 +134,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0)
 
     # Main loop with geometric growth
     while true
-        x = _uniform_omega(n, block_size, is_complex_op, dtype)
+        x = _uniform_omega(n, block_size, is_complex_op, dtype, rng)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
         F = qr(y, ColumnNorm())
@@ -176,6 +186,7 @@ much smaller than min(m,n).
 - `power_iter`: Power iterations for accuracy (default: 0)
 - `extra_samples`: Oversampling for rank mode (default: 12)
   Rank mode uses block_size = rank + extra_samples
+- `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `Q`: Orthonormal matrix (m×k), k ≤ min(m,n)
@@ -183,7 +194,7 @@ much smaller than min(m,n).
 - `p`: Column permutation vector (1-based indexing), length n
   The decomposition satisfies A[:, p] ≈ Q*R
 """
-function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
     is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
@@ -199,7 +210,7 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     end
 
     # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter)
+    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = size(Qs, 2)
     if flag != 0
@@ -253,7 +264,7 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
 end
 
 """
-    svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+    svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
 
 Compute truncated singular value decomposition (SVD) via randomized sketching.
 
@@ -273,6 +284,7 @@ much smaller than min(m,n).
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
 - `extra_samples`: Oversampling for rank mode (default: 12)
+- `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `U`: Left singular vectors (m×k), orthonormal columns
@@ -280,7 +292,7 @@ much smaller than min(m,n).
 - `Vt`: Right singular vectors transposed (k×n), orthonormal rows
   The decomposition satisfies A ≈ U*diagm(s)*Vt
 """
-function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
     is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
@@ -288,7 +300,7 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     # Handle wide matrices via transpose
     if m < n
         Vt_tmp, s, Ut_tmp = svd_sketch(A', rtol; block_size=block_size,
-                                     power_iter=power_iter, extra_samples=extra_samples)
+                                     power_iter=power_iter, extra_samples=extra_samples, rng=rng)
         U = Ut_tmp'
         Vt = Vt_tmp'
         return U, s, Vt
@@ -305,7 +317,7 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
     end
 
     # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter)
+    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = size(Qs, 2)
     if flag != 0
@@ -361,7 +373,7 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
 end
 
 """
-    id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast")
+    id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast", rng=nothing)
 
 Compute interpolative decomposition (ID) via randomized sketching.
 
@@ -386,6 +398,7 @@ This function uses qr_sketch() to identify the column permutation.
   - "fast": Triangular solve R11 \\ R12 (fastest)
   - "svd": SVD-based pseudoinverse (stable for ill-conditioned)
   - "lstsq": Least-squares from original A (most accurate, slowest)
+- `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `k`: Rank of the approximation (number of skeleton columns)
@@ -395,14 +408,14 @@ This function uses qr_sketch() to identify the column permutation.
 - `T`: Interpolation matrix (k×(n-k))
   The approximation is A[:, piv[k+1:n]] ≈ A[:, piv[1:k]] * T
 """
-function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast")
+function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast", rng=nothing)
     if !(method in ["fast", "svd", "lstsq"])
         error("method must be one of: 'fast', 'svd', 'lstsq'")
     end
 
     # Get QR factorization
     _, R, piv = qr_sketch(A, rtol; block_size=block_size,
-                          power_iter=power_iter, extra_samples=extra_samples)
+                          power_iter=power_iter, extra_samples=extra_samples, rng=rng)
 
     k = size(R, 1)
 
@@ -538,40 +551,44 @@ function _power_iteration(A, x, power_iter::Int)
 end
 
 """
-    _uniform_omega(n, block_size, is_complex, dtype)
+    _uniform_omega(n, block_size, is_complex, dtype, rng)
 
 Generate uniform[-1,1] random test matrix.
 """
-function _uniform_omega(n::Int, block_size::Int, is_complex::Bool, dtype::Type)
+function _uniform_omega(n::Int, block_size::Int, is_complex::Bool, dtype::Type, rng)
+    # Use provided rng or default
+    r = isnothing(rng) ? Random.default_rng() : rng
     if is_complex
         if dtype <: Complex
             T = real(dtype)
         else
             T = dtype
         end
-        omega = 2 * rand(T, n, block_size) .- 1 .+
-                1im * (2 * rand(T, n, block_size) .- 1)
+        omega = 2 * rand(r, T, n, block_size) .- 1 .+
+                1im * (2 * rand(r, T, n, block_size) .- 1)
     else
-        omega = 2 * rand(dtype, n, block_size) .- 1
+        omega = 2 * rand(r, dtype, n, block_size) .- 1
     end
     return omega
 end
 
 """
-    _gaussian_omega(n, block_size, is_complex, dtype)
+    _gaussian_omega(n, block_size, is_complex, dtype, rng)
 
 Generate Gaussian random test matrix.
 """
-function _gaussian_omega(n::Int, block_size::Int, is_complex::Bool, dtype::Type)
+function _gaussian_omega(n::Int, block_size::Int, is_complex::Bool, dtype::Type, rng)
+    # Use provided rng or default
+    r = isnothing(rng) ? Random.default_rng() : rng
     if is_complex
         if dtype <: Complex
             T = real(dtype)
         else
             T = dtype
         end
-        omega = randn(T, n, block_size) .+ 1im * randn(T, n, block_size)
+        omega = randn(r, T, n, block_size) .+ 1im * randn(r, T, n, block_size)
     else
-        omega = randn(dtype, n, block_size)
+        omega = randn(r, dtype, n, block_size)
     end
     return omega
 end

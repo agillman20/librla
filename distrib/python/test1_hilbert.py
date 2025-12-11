@@ -4,6 +4,12 @@ test1_hilbert.py - Simple test with medium-size Hilbert matrix
 
 Tests basic ID algorithms (id_sketch, id_qrpiv) on an ill-conditioned
 Hilbert matrix.
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: BSD-3-Clause
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

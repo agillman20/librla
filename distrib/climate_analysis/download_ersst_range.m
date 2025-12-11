@@ -4,6 +4,12 @@ function all_files = download_ersst_range(start_year, end_year, BASE_URL, DATA_D
     % Usage:
     %   download_ersst_range(1970, 1979)
     %   download_ersst_range(1854, 1979)
+    %
+    % Author: Adrianna Gillman, Zydrunas Gimbutas
+    % SPDX-License-Identifier: BSD-3-Clause
+    % Version: 1.0.0
+    % Date: TBD
+    % Assisted by: Claude Code (Anthropic)
 
     if nargin < 3
         BASE_URL = 'https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/';
