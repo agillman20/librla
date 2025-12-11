@@ -102,7 +102,7 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
       [Q, R, ~] = qr(y, 0);
 
       % Use requested rank directly (capped at available columns)
-      diagR = diag(R);
+      diagR = abs(diag(R));
       rank = min(kmax, size(Q, 2));
 
       Q = Q(:, 1:rank);

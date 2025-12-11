@@ -106,7 +106,7 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
         # Use requested rank directly (capped at available columns)
-        diagR = np.diag(R)
+        diagR = np.abs(np.diag(R))
         rank = min(kmax, Q.shape[1])
 
         return Q[:, :rank], 0, diagR
