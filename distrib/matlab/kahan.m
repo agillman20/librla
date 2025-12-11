@@ -62,7 +62,7 @@ function K = kahan(n, varargin)
 %       https://math.nist.gov/MatrixMarket/deli/Kahan/information.html
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: BSD-3-Clause
+% SPDX-License-Identifier: TBD
 % Version: 1.0.0
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)

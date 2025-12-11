@@ -25,7 +25,7 @@ Test 1: Range estimation quality
     - Can use structured or random matrix
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)

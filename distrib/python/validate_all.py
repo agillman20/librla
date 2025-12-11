@@ -17,7 +17,7 @@ Requires:
     - validate_id.py, validate_svd.py, validate_qr.py, validate_orth.py
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)

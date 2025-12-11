@@ -25,7 +25,7 @@
 %  https://1.img-dpreview.com/files/p/sample_galleries/6044553814/1399808671.jpg
 %
 %  Author: Adrianna Gillman, Zydrunas Gimbutas
-%  SPDX-License-Identifier: BSD-3-Clause
+%  SPDX-License-Identifier: TBD
 %  Version: 1.0.0
 %  Date: TBD
 %  Assisted by: Claude Code (Anthropic)

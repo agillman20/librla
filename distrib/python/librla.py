@@ -27,7 +27,7 @@ Matrix-free operators:
         U, s, Vh = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: TBD
 Version: 1.0.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)
@@ -77,10 +77,22 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
     Q : ndarray, shape (m, k)
         Orthonormal matrix spanning approximate range of A
     flag : int
-        Exit status: 0=success, 1=early termination
+        Exit status:
+        - 0: Success, Q contains valid orthonormal basis
+        - 1: Early termination (tolerance mode only). Occurs when:
+          (a) rtol < machine epsilon (tolerance too tight), or
+          (b) sketch size grew to min(m,n) without meeting tolerance,
+              indicating matrix is effectively full-rank at this tolerance
+          When flag=1, Q is empty (m×0).
     diagR : ndarray
         Diagonal elements from pivoted QR factorization, representing
         column norms of the sketched matrix (sorted in decreasing order)
+
+    Note
+    ----
+    Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
+    fall back to deterministic (full) QR or SVD when orth_sketch terminates
+    early, so users of those functions do not need to handle flag=1 explicitly.
     """
     m, n = A.shape
     dtype = _get_dtype(A)
