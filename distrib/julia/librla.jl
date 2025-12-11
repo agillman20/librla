@@ -220,8 +220,10 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
         error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
-    # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter, rng=rng)
+    # Compute sketch: in rank mode, request all oversampled columns
+    # for better accuracy (truncate to kmax after QR)
+    orth_rtol = rank_mode ? block_size : rtol
+    Qs, flag, _ = orth_sketch(A, orth_rtol; block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = size(Qs, 2)
     if flag != 0
