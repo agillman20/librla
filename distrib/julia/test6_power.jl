@@ -18,8 +18,11 @@ Tests:
         - Tests iterations: 0-6
         - Can use structured or random matrix
 
-Author: Power iteration range estimator tests (librla version)
+Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 using LinearAlgebra

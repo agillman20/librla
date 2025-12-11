@@ -9,7 +9,11 @@ References
 W. Kahan, Numerical Linear Algebra, Canadian Math. Bulletin, 9 (1966),
 pp. 757-801.
 
-Author: Claude Code
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

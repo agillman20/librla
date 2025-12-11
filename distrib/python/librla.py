@@ -2,25 +2,515 @@
 Randomized linear-algebra routines
 ==================================
 
-Author: Your Name
-License: SPDX-License-Identifier: TBD
+Randomized algorithms for low-rank matrix approximations:
+    orth_sketch  - Orthonormal basis for column space
+    qr_sketch    - Truncated QR factorization with column pivoting
+    svd_sketch   - Truncated singular value decomposition (SVD)
+    id_sketch    - Interpolative decomposition (ID)
 
-Features
---------
-* _gaussian_omega    - generate a Gaussian test matrix (real or complex)
-* _uniform_omega     - generate a uniform[-1, 1] test matrix (real or complex)
-* _power_iteration   - simple power iteration to improve the sketch
-* orth_sketch        - sketch an orthonormal basis for the column space
-* qr_sketch          - truncated QR factorization using a random sketch
-* svd_sketch         - truncated SVD via a random sketch
-* id_sketch          - interpolative decomposition (ID) using a random sketch
-* id_qrpiv           - deterministic interpolative decomposition (ID)
+Deterministic:
+    id_qrpiv     - Interpolative decomposition via QR with pivoting
+
+Usage::
+
+    Q, flag, err = orth_sketch(A, rtol)
+    Q, R, p = qr_sketch(A, rtol)
+    U, s, Vh = svd_sketch(A, rtol)
+    k, piv, T = id_sketch(A, rtol)
+    # tolerance mode: rtol < 1, rank mode: rtol >= 1
+
+Matrix-free operators:
+    Use scipy.sparse.linalg.LinearOperator for matrix-free operators::
+
+        from scipy.sparse.linalg import LinearOperator
+        A = LinearOperator((m, n), matvec=matvec_fun, rmatvec=rmatvec_fun)
+        U, s, Vh = svd_sketch(A, rank)  # rank mode only: rtol >= 1
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np
 from scipy import linalg
 from numpy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
+
+# --------------------------------------------------------------
+# 1. Orthogonal sketch
+# --------------------------------------------------------------
+
+def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
+    """Compute orthonormal basis for column space using randomized range finding.
+
+    This function uses random test matrix multiplication (A @ Omega
+    where Omega has i.i.d. uniform[-1,1] entries) followed by QR
+    factorization to approximate the range of A. The approach is
+    particularly efficient for matrices with rapidly decaying singular
+    values.
+
+    The algorithm has two modes:
+    - Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
+      smallest column norm falls below rtol times the largest norm
+    - Rank mode (rtol >= 1): Performs a single sketch and returns the
+      requested number of columns (rtol interpreted as target rank)
+
+    Parameters
+    ----------
+    A : ndarray or LinearOperator
+        Input matrix (m, n) or linear operator
+    rtol : float
+        Relative tolerance (< 1) or target rank (>= 1)
+    block_size : int, optional
+        Initial number of random test vectors (default: 42)
+    power_iter : int, optional
+        Number of power iterations to improve accuracy (default: 0).
+        Setting power_iter=1 or 2 can significantly improve results for
+        matrices with slowly decaying singular values.
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
+
+    Returns
+    -------
+    Q : ndarray, shape (m, k)
+        Orthonormal matrix spanning approximate range of A
+    flag : int
+        Exit status:
+        - 0: Success, Q contains valid orthonormal basis
+        - 1: Early termination (tolerance mode only). Occurs when:
+          (a) rtol < machine epsilon (tolerance too tight), or
+          (b) sketch size grew to min(m,n) without meeting tolerance,
+              indicating matrix is effectively full-rank at this tolerance
+          When flag=1, Q is empty (m×0).
+    diagR : ndarray
+        Diagonal elements from pivoted QR factorization, representing
+        column norms of the sketched matrix (sorted in decreasing order)
+
+    Note
+    ----
+    Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
+    fall back to deterministic (full) QR or SVD when orth_sketch terminates
+    early, so users of those functions do not need to handle flag=1 explicitly.
+    """
+    m, n = A.shape
+    dtype = _get_dtype(A)
+
+    # Rank mode (rtol >= 1): single sketch with rank filtering
+    if rtol >= 1:
+        kmax = int(np.floor(rtol))
+        x = _uniform_omega(A, n, block_size, rng=rng)
+        x = _power_iteration(A, x, power_iter=power_iter)
+        y = _matvec(A, x)
+        Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
+
+        # Use requested rank directly (capped at available columns)
+        diagR = np.abs(np.diag(R))
+        rank = min(kmax, Q.shape[1])
+
+        return Q[:, :rank], 0, diagR
+
+    # Tolerance mode (rtol < 1): geometric growth with tolerance checking
+    if rtol < np.finfo(dtype).eps:
+        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
+
+    if block_size >= min(m, n):
+        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
+
+    while True:
+        x = _uniform_omega(A, n, block_size, rng=rng)
+        x = _power_iteration(A, x, power_iter=power_iter)
+        y = _matvec(A, x)
+        Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
+
+        diagR = np.abs(R.diagonal())
+        d = diagR[-1] / diagR[0] if diagR.size > 0 and diagR[0] > 0 else 0.0
+        if d <= rtol:
+            return Q, 0, diagR
+
+        block_size = min(block_size * 4, min(m, n))
+        if block_size >= min(m, n):
+            return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
+
+
+# --------------------------------------------------------------
+# 2. Truncated QR with column pivoting
+# --------------------------------------------------------------
+
+def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=None):
+    """Compute truncated QR factorization with column pivoting via randomized sketching.
+
+    The algorithm sketches an orthonormal basis for the column space
+    of A, projects A onto this basis, computes the QR of the smaller
+    projected matrix, and then expands back to the original space.  If
+    the matrix is effectively full rank a deterministic QR is
+    performed.
+
+    This is much faster than full QR for matrices where the target
+    rank k is much smaller than min(m,n).
+
+    Parameters
+    ----------
+    A : ndarray or LinearOperator
+        Input matrix (m, n) or linear operator
+    rtol : float
+        Relative tolerance (< 1) or target rank (>= 1)
+        - Tolerance mode: keep columns with norm >= rtol * max_norm
+        - Rank mode: return k leading columns
+    block_size : int, optional
+        Sketch size for tolerance mode (default: 42)
+    power_iter : int, optional
+        Number of power iterations for accuracy (default: 0)
+    extra_samples : int, optional
+        Oversampling for rank mode (default: 12).
+        Rank mode uses block_size = rank + extra_samples
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
+
+    Returns
+    -------
+    Q : ndarray, shape (m, k)
+        Orthonormal matrix, k <= min(m, n)
+    R : ndarray, shape (k, n)
+        Upper triangular matrix
+    p : ndarray, shape (n,)
+        Column permutation (0-based indexing).
+        The decomposition satisfies A[:, p] ≈ Q @ R
+    """
+    m, n = A.shape
+    dtype = _get_dtype(A)
+    is_matrix_free = _is_matrix_free_linop(A)
+    is_linop = _is_linop(A)
+
+    # Rank mode vs tolerance mode
+    rank_mode = False
+    if rtol >= 1:
+        rank_mode = True
+        kmax = int(np.floor(rtol))
+        block_size = kmax + extra_samples
+    elif is_matrix_free:
+        raise ValueError(
+            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
+            f"Got rtol={rtol}. Please specify target rank as rtol."
+        )
+
+    # Compute sketch: in rank mode, request all oversampled columns
+    # for better accuracy (truncate to kmax after QR)
+    orth_rtol = block_size if rank_mode else rtol
+    Qs, flag, _ = orth_sketch(A, orth_rtol, block_size=block_size, power_iter=power_iter, rng=rng)
+
+    k = Qs.shape[1] if flag == 0 else min(m, n)
+
+    # Fallback to full QR if needed
+    needs_fallback = (flag != 0 or k >= min(m, n))
+    if needs_fallback and rank_mode:
+        needs_fallback = False
+
+    if needs_fallback:
+        A_mat = _get_matrix(A)
+        Q, R, p = linalg.qr(A_mat, mode='economic', pivoting=True)
+
+        # Determine rank
+        if rank_mode:
+            rank = min(kmax, Q.shape[1])
+        else:
+            rank = _rank_from_diag(np.diag(R), rtol)
+
+        return Q[:, :rank], R[:rank, :], p
+
+    # Project and compute QR
+    B = _matmat_left(Qs, A)
+    Qproj, R, p = linalg.qr(B, mode='economic', pivoting=True)
+    Q = Qs @ Qproj
+
+    # Determine rank
+    if rank_mode:
+        rank = min(kmax, Q.shape[1])
+    else:
+        rank = _rank_from_diag(np.diag(R), rtol)
+
+    return Q[:, :rank], R[:rank, :], p
+
+
+# --------------------------------------------------------------
+# 3. Truncated SVD
+# --------------------------------------------------------------
+
+def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=None):
+    """Compute truncated singular value decomposition (SVD) via randomized sketching.
+
+    The algorithm sketches an orthonormal basis for the column space
+    of A, projects A onto this basis, computes the SVD of the smaller
+    projected matrix, and then expands back to the original space.  If
+    the matrix is effectively full rank a deterministic SVD is
+    performed.
+
+    This is much faster than full SVD for matrices where the target
+    rank k is much smaller than min(m,n).
+
+    Parameters
+    ----------
+    A : ndarray or LinearOperator
+        Input matrix (m, n) or linear operator
+    rtol : float
+        Relative tolerance (< 1) or target rank (>= 1)
+        - Tolerance mode: keep singular values >= rtol * s[0]
+        - Rank mode: return k leading singular triplets
+    block_size : int, optional
+        Sketch size for tolerance mode (default: 42)
+    power_iter : int, optional
+        Number of power iterations for accuracy (default: 0)
+    extra_samples : int, optional
+        Oversampling for rank mode (default: 12)
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
+
+    Returns
+    -------
+    U : ndarray, shape (m, k)
+        Left singular vectors, orthonormal columns
+    s : ndarray, shape (k,)
+        Singular values, sorted descending
+    Vh : ndarray, shape (k, n)
+        Right singular vectors (conjugate transpose), orthonormal rows
+        The decomposition satisfies A ≈ U @ np.diag(s) @ Vh
+    """
+    m, n = A.shape
+    dtype = _get_dtype(A)
+    is_matrix_free = _is_matrix_free_linop(A)
+    is_linop = _is_linop(A)
+
+    if m < n:
+        A_T = _transpose_linop(A)
+        V, s, U = svd_sketch(A_T, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples, rng=rng)
+        return U.conj().T, s, V.conj().T
+
+    # Rank mode vs tolerance mode
+    rank_mode = False
+    if rtol >= 1:
+        rank_mode = True
+        kmax = int(np.floor(rtol))
+        block_size = kmax + extra_samples
+    elif is_matrix_free:
+        raise ValueError(
+            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
+            f"Got rtol={rtol}. Please specify target rank as rtol."
+        )
+
+    # Compute sketch: in rank mode, request all oversampled columns
+    # to get more accurate singular values (truncate to kmax after SVD)
+    orth_rtol = block_size if rank_mode else rtol
+    Qs, flag, _ = orth_sketch(A, orth_rtol, block_size=block_size, power_iter=power_iter, rng=rng)
+
+    k = Qs.shape[1] if flag == 0 else min(m, n)
+
+    # Fallback to full SVD if needed
+    needs_fallback = (flag != 0 or k >= min(m, n))
+    if needs_fallback and rank_mode:
+        needs_fallback = False
+
+    if needs_fallback:
+        A_mat = _get_matrix(A)
+        U, s, V = linalg.svd(A_mat, full_matrices=False)
+
+        # Determine rank
+        if rank_mode:
+            rank = min(kmax, len(s))
+        else:
+            rank = _rank_from_svals(s, rtol)
+
+        return U[:, :rank], s[:rank], V[:rank, :]
+
+    # Project and compute SVD
+    Aproj = _matmat_left(Qs, A)
+    Uproj, s, V = linalg.svd(Aproj, full_matrices=False)
+    U = Qs @ Uproj
+
+    # Determine rank
+    if rank_mode:
+        rank = min(kmax, len(s))
+    else:
+        rank = _rank_from_svals(s, rtol)
+
+    return U[:, :rank], s[:rank], V[:rank, :]
+
+
+# --------------------------------------------------------------
+# 4. Interpolative decomposition (ID) - randomized
+# --------------------------------------------------------------
+
+def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method='fast', rng=None):
+    """Compute interpolative decomposition (ID) via randomized sketching.
+
+    An ID represents a matrix A by selecting k of its columns and expressing
+    the remaining columns as linear combinations of the selected ones:
+
+        A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+
+    where piv is a column permutation and T is a k×(n-k) interpolation matrix.
+    The selected columns (skeleton) capture the essential features of A, while
+    T provides the coefficients to reconstruct the other columns.
+
+    This function uses qr_sketch() to identify the column permutation.
+
+    Parameters
+    ----------
+    A : ndarray or LinearOperator
+        Input matrix (m, n) or linear operator
+    rtol : float
+        Relative tolerance (< 1) or target rank (>= 1)
+    block_size : int, optional
+        Sketch size for tolerance mode (default: 42)
+    power_iter : int, optional
+        Number of power iterations for accuracy (default: 0)
+    extra_samples : int, optional
+        Oversampling for rank mode (default: 12)
+    method : str, optional
+        Method for computing T matrix (default: 'fast')
+        - 'fast': Triangular solve R11 \\ R12 (fastest)
+        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
+        - 'lstsq': Least-squares from original A (most accurate, slowest)
+    rng : Generator, optional
+        Random number generator (default: None uses numpy default)
+
+    Returns
+    -------
+    k : int
+        Rank of the approximation (number of skeleton columns)
+    piv : ndarray, shape (n,)
+        Column permutation (0-based indexing)
+        - piv[:k] are indices of skeleton columns
+        - piv[k:] are indices of interpolated columns
+    T : ndarray, shape (k, n-k)
+        Interpolation matrix
+        The approximation is A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+    """
+    valid_methods = {'fast', 'svd', 'lstsq'}
+    if method not in valid_methods:
+        raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
+
+    _, R, jpiv = qr_sketch(A, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples, rng=rng)
+
+    k = R.shape[0]
+    piv = jpiv
+
+    # Compute rtol for SVD filtering
+    m, n = A.shape
+    dtype = A.dtype if hasattr(A, 'dtype') else np.float64
+    if rtol >= 1:
+        # Rank mode: minimal filtering (only exact zeros)
+        rtol_for_svd = 0
+    else:
+        # Tolerance mode: use the provided tolerance
+        rtol_for_svd = rtol
+
+    # Dispatch to shared helper functions
+    if method == 'lstsq':
+        T = _compute_T_lstsq(A, R, piv, k)
+    elif method == 'svd':
+        T = _compute_T_svd(R, k, rtol_for_svd)
+    elif method == 'fast':
+        T = _compute_T_fast(R, k)
+
+    return k, piv, T
+
+
+# --------------------------------------------------------------
+# 5. Interpolative decomposition (ID) - deterministic
+# --------------------------------------------------------------
+
+def id_qrpiv(A, rtol, *, method='fast'):
+    """Interpolative decomposition via deterministic QR with column pivoting.
+
+    An ID represents a matrix A by selecting k of its columns and expressing
+    the remaining columns as linear combinations of the selected ones:
+
+        A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+
+    where piv is a column permutation and T is a k×(n-k) interpolation matrix.
+    The selected columns (skeleton) capture the essential features of A, while
+    T provides the coefficients to reconstruct the other columns.
+
+    This function provides a deterministic alternative to id_sketch by
+    computing the interpolative decomposition using only QR with column
+    pivoting (LAPACK geqp3), without any randomized sketching. It preserves
+    LinearOperator support and uses the same T matrix computation logic as
+    id_sketch.
+
+    Parameters
+    ----------
+    A : ndarray or LinearOperator
+        Input matrix or operator
+    rtol : float
+        Relative tolerance (rtol < 1) or target rank (rtol >= 1)
+    method : str, optional
+        Method for computing T matrix (default: 'fast')
+        - 'fast': Triangular solve R11 \\ R12 (fastest)
+        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
+        - 'lstsq': Least-squares from original A (most accurate, slowest)
+
+    Returns
+    -------
+    k : int
+        Rank of the ID approximation
+    piv : ndarray, shape (n,)
+        Column permutation
+    T : ndarray, shape (k, n-k)
+        Interpolation matrix
+    """
+    valid_methods = {'fast', 'svd', 'lstsq'}
+    if method not in valid_methods:
+        raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
+
+    is_linop = _is_linop(A)
+    is_matrix_free = _is_matrix_free_linop(A)
+
+    m, n = A.shape
+    dtype = A.dtype if hasattr(A, 'dtype') else np.float64
+
+    # Determine rank mode vs tolerance mode
+    rank_mode = False
+    if rtol >= 1:
+        rank_mode = True
+        kmax = int(np.floor(rtol))
+
+    # Compute full QR with pivoting (deterministic)
+    A_mat = _get_matrix(A)
+    Q, R, jpiv = linalg.qr(A_mat, mode='economic', pivoting=True)
+
+    # Determine rank
+    if rank_mode:
+        rank = min(kmax, min(m, n))
+        rtol_for_svd = 0  # Minimal filtering in rank mode
+    else:
+        rank = _rank_from_diag(np.diag(R), rtol)
+        rtol_for_svd = rtol
+
+    k = rank
+    piv = jpiv
+
+    # Handle edge cases
+    if k == 0:
+        return 0, piv, np.zeros((0, n), dtype=dtype)
+
+    if k == n:
+        return k, piv, np.zeros((k, 0), dtype=dtype)
+
+    # Dispatch to shared helper functions
+    if method == 'lstsq':
+        T = _compute_T_lstsq(A, R, piv, k)
+    elif method == 'svd':
+        T = _compute_T_svd(R, k, rtol_for_svd)
+    elif method == 'fast':
+        T = _compute_T_fast(R, k)
+
+    return k, piv, T
+
+
+# ==============================================================
+# Private helper functions
+# ==============================================================
 
 # --------------------------------------------------------------
 # LinearOperator detection and utilities
@@ -214,7 +704,7 @@ def _uniform_omega(A, n, block_size, *, rng=None):
 
 
 # --------------------------------------------------------------
-# Power iteration (optional)
+# Power iteration
 # --------------------------------------------------------------
 def _power_iteration(A, x, power_iter=0):
     """Apply (A^H A)^n to x and orthogonalize.
@@ -240,193 +730,7 @@ def _power_iteration(A, x, power_iter=0):
 
 
 # --------------------------------------------------------------
-# 1. Orthogonal sketch
-# --------------------------------------------------------------
-
-def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
-    """Compute orthonormal basis for column space using randomized range finding.
-
-    This function uses random test matrix multiplication (A @ Omega
-    where Omega has i.i.d. uniform[-1,1] entries) followed by QR
-    factorization to approximate the range of A. The approach is
-    particularly efficient for matrices with rapidly decaying singular
-    values.
-
-    The algorithm has two modes:
-    - Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
-      smallest column norm falls below rtol times the largest norm
-    - Rank mode (rtol >= 1): Performs a single sketch of size block_size
-      and returns columns with norms above machine epsilon
-
-    Parameters
-    ----------
-    A : ndarray or LinearOperator
-        Input matrix (m, n) or linear operator
-    rtol : float
-        Relative tolerance (< 1) or target rank (>= 1)
-    block_size : int, optional
-        Initial number of random test vectors (default: 42)
-    power_iter : int, optional
-        Number of power iterations to improve accuracy (default: 0).
-        Setting power_iter=1 or 2 can significantly improve results for
-        matrices with slowly decaying singular values.
-    rng : Generator, optional
-        Random number generator (default: None uses numpy default)
-
-    Returns
-    -------
-    Q : ndarray, shape (m, k)
-        Orthonormal matrix spanning approximate range of A
-    flag : int
-        Exit status: 0=success, 1=early termination
-    diagR : ndarray
-        Diagonal elements from pivoted QR factorization, representing
-        column norms of the sketched matrix (sorted in decreasing order)
-    """
-    m, n = A.shape
-    dtype = _get_dtype(A)
-
-    # Rank mode (rtol >= 1): single sketch with rank filtering
-    if rtol >= 1:
-        x = _uniform_omega(A, n, block_size, rng=rng)
-        x = _power_iteration(A, x, power_iter=power_iter)
-        y = _matvec(A, x)
-        Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
-
-        # Determine numerical rank by filtering small diagonal elements
-        diagR = np.diag(R)
-        rtol_eps = max(m, n) * np.finfo(dtype).eps
-        rank = _rank_from_diag(diagR, rtol_eps)
-
-        return Q[:, :rank], 0, diagR
-
-    # Tolerance mode (rtol < 1): geometric growth with tolerance checking
-    if rtol < np.finfo(dtype).eps:
-        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
-
-    if block_size >= min(m, n):
-        return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
-
-    while True:
-        x = _uniform_omega(A, n, block_size, rng=rng)
-        x = _power_iteration(A, x, power_iter=power_iter)
-        y = _matvec(A, x)
-        Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
-
-        diagR = np.abs(R.diagonal())
-        d = diagR[-1] / diagR[0] if diagR.size > 0 and diagR[0] > 0 else 0.0
-        if d <= rtol:
-            return Q, 0, diagR
-
-        block_size = min(block_size * 4, min(m, n))
-        if block_size >= min(m, n):
-            return np.empty((m, 0), dtype=dtype), 1, np.array([], dtype=dtype)
-
-
-# --------------------------------------------------------------
-# 2. Truncated QR with column pivoting
-# --------------------------------------------------------------
-def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
-    """Compute truncated QR factorization with column pivoting via randomized sketching.
-
-    The algorithm sketches an orthonormal basis for the column space
-    of A, projects A onto this basis, computes the QR of the smaller
-    projected matrix, and then expands back to the original space.  If
-    the matrix is effectively full rank a deterministic QR is
-    performed.
-
-    This is much faster than full QR for matrices where the target
-    rank k is much smaller than min(m,n).
-
-    Parameters
-    ----------
-    A : ndarray or LinearOperator
-        Input matrix (m, n) or linear operator
-    rtol : float
-        Relative tolerance (< 1) or target rank (>= 1)
-        - Tolerance mode: keep columns with norm >= rtol * max_norm
-        - Rank mode: return k leading columns
-    block_size : int, optional
-        Sketch size for tolerance mode (default: 42)
-    power_iter : int, optional
-        Number of power iterations for accuracy (default: 0)
-    extra_samples : int, optional
-        Oversampling for rank mode (default: 12).
-        Rank mode uses block_size = rank + extra_samples
-
-    Returns
-    -------
-    Q : ndarray, shape (m, k)
-        Orthonormal matrix, k <= min(m, n)
-    R : ndarray, shape (k, n)
-        Upper triangular matrix
-    p : ndarray, shape (n,)
-        Column permutation (0-based indexing).
-        The decomposition satisfies A[:, p] ≈ Q @ R
-    """
-    m, n = A.shape
-    dtype = _get_dtype(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-    is_linop = _is_linop(A)
-
-    # Rank mode vs tolerance mode
-    rank_mode = False
-    if rtol >= 1:
-        rank_mode = True
-        kmax = int(np.floor(rtol))
-        block_size = kmax + extra_samples
-    elif is_matrix_free:
-        raise ValueError(
-            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
-            f"Got rtol={rtol}. Please specify target rank as rtol."
-        )
-
-    # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter)
-
-    k = Qs.shape[1] if flag == 0 else min(m, n)
-
-    # Fallback to full QR if needed
-    needs_fallback = (flag != 0 or k >= min(m, n))
-    if needs_fallback and rank_mode:
-        needs_fallback = False
-
-    if needs_fallback:
-        A_mat = _get_matrix(A)
-        Q, R, p = linalg.qr(A_mat, mode='economic', pivoting=True)
-
-        # Determine rank
-        rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-        if not rank_mode:
-            rtol_for_rank = rtol
-
-        rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
-        if rank_mode:
-            rank = min(kmax, rank)
-
-        return Q[:, :rank], R[:rank, :], p
-
-    # Project and compute QR
-    B = _matmat_left(Qs, A)
-    Qproj, R, p = linalg.qr(B, mode='economic', pivoting=True)
-    Q = Qs @ Qproj
-
-    # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
-    if rank_mode:
-        rank = min(kmax, rank)
-
-    return Q[:, :rank], R[:rank, :], p
-
-
-# --------------------------------------------------------------
-# 2. Helper for rank from singular values (used everywhere)
+# Rank determination helpers
 # --------------------------------------------------------------
 def _rank_from_svals(s, rtol):
     """Return the numerical rank given singular values `s`."""
@@ -441,117 +745,10 @@ def _rank_from_diag(diag_vals, rtol):
         return 0
     return int(np.sum(diag_abs >= rtol * diag_abs[0]))
 
-# --------------------------------------------------------------
-# 3. Truncated SVD
-# --------------------------------------------------------------
-def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12):
-    """Compute truncated singular value decomposition (SVD) via randomized sketching.
-
-    The algorithm sketches an orthonormal basis for the column space
-    of A, projects A onto this basis, computes the SVD of the smaller
-    projected matrix, and then expands back to the original space.  If
-    the matrix is effectively full rank a deterministic SVD is
-    performed.
-
-    This is much faster than full SVD for matrices where the target
-    rank k is much smaller than min(m,n).
-
-    Parameters
-    ----------
-    A : ndarray or LinearOperator
-        Input matrix (m, n) or linear operator
-    rtol : float
-        Relative tolerance (< 1) or target rank (>= 1)
-        - Tolerance mode: keep singular values >= rtol * s[0]
-        - Rank mode: return k leading singular triplets
-    block_size : int, optional
-        Sketch size for tolerance mode (default: 42)
-    power_iter : int, optional
-        Number of power iterations for accuracy (default: 0)
-    extra_samples : int, optional
-        Oversampling for rank mode (default: 12)
-
-    Returns
-    -------
-    U : ndarray, shape (m, k)
-        Left singular vectors, orthonormal columns
-    s : ndarray, shape (k,)
-        Singular values, sorted descending
-    Vh : ndarray, shape (k, n)
-        Right singular vectors (conjugate transpose), orthonormal rows
-        The decomposition satisfies A ≈ U @ np.diag(s) @ Vh
-    """
-    m, n = A.shape
-    dtype = _get_dtype(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-    is_linop = _is_linop(A)
-
-    if m < n:
-        A_T = _transpose_linop(A)
-        V, s, U = svd_sketch(A_T, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples)
-        return U.conj().T, s, V.conj().T
-
-    # Rank mode vs tolerance mode
-    rank_mode = False
-    if rtol >= 1:
-        rank_mode = True
-        kmax = int(np.floor(rtol))
-        block_size = kmax + extra_samples
-    elif is_matrix_free:
-        raise ValueError(
-            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
-            f"Got rtol={rtol}. Please specify target rank as rtol."
-        )
-
-    # Compute sketch
-    Qs, flag, _ = orth_sketch(A, rtol, block_size=block_size, power_iter=power_iter)
-
-    k = Qs.shape[1] if flag == 0 else min(m, n)
-
-    # Fallback to full SVD if needed
-    needs_fallback = (flag != 0 or k >= min(m, n))
-    if needs_fallback and rank_mode:
-        needs_fallback = False
-
-    if needs_fallback:
-        A_mat = _get_matrix(A)
-        U, s, V = linalg.svd(A_mat, full_matrices=False)
-
-        # Determine rank
-        rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-        if not rank_mode:
-            rtol_for_rank = rtol
-
-        rank = _rank_from_svals(s, rtol_for_rank)
-
-        if rank_mode:
-            rank = min(kmax, rank)
-
-        return U[:, :rank], s[:rank], V[:rank, :]
-
-    # Project and compute SVD
-    Aproj = _matmat_left(Qs, A)
-    Uproj, s, V = linalg.svd(Aproj, full_matrices=False)
-    U = Qs @ Uproj
-
-    # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_svals(s, rtol_for_rank)
-
-    if rank_mode:
-        rank = min(kmax, rank)
-
-    return U[:, :rank], s[:rank], V[:rank, :]
-
 
 # --------------------------------------------------------------
-# 4. Interpolative decomposition (ID)
+# T matrix computation helpers for ID
 # --------------------------------------------------------------
-
-# Helper functions for computing interpolation matrix T
 def _compute_T_lstsq(A, R, piv, k):
     """Compute T using least-squares from original A columns."""
     m, n = A.shape
@@ -632,168 +829,3 @@ def _compute_T_fast(R, k):
     T = solve_triangular(np.triu(R11), R12, lower=False,
                          overwrite_b=False, check_finite=False)
     return T
-
-
-def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method='fast'):
-    """Compute interpolative decomposition (ID) via randomized sketching.
-
-    An ID represents a matrix A by selecting k of its columns and expressing
-    the remaining columns as linear combinations of the selected ones:
-
-        A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
-
-    where piv is a column permutation and T is a k×(n-k) interpolation matrix.
-    The selected columns (skeleton) capture the essential features of A, while
-    T provides the coefficients to reconstruct the other columns.
-
-    This function uses qr_sketch() to identify the column permutation.
-
-    Parameters
-    ----------
-    A : ndarray or LinearOperator
-        Input matrix (m, n) or linear operator
-    rtol : float
-        Relative tolerance (< 1) or target rank (>= 1)
-    block_size : int, optional
-        Sketch size for tolerance mode (default: 42)
-    power_iter : int, optional
-        Number of power iterations for accuracy (default: 0)
-    extra_samples : int, optional
-        Oversampling for rank mode (default: 12)
-    method : str, optional
-        Method for computing T matrix (default: 'fast')
-        - 'fast': Triangular solve R11 \\ R12 (fastest)
-        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
-        - 'lstsq': Least-squares from original A (most accurate, slowest)
-
-    Returns
-    -------
-    k : int
-        Rank of the approximation (number of skeleton columns)
-    piv : ndarray, shape (n,)
-        Column permutation (0-based indexing)
-        - piv[:k] are indices of skeleton columns
-        - piv[k:] are indices of interpolated columns
-    T : ndarray, shape (k, n-k)
-        Interpolation matrix
-        The approximation is A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
-    """
-    valid_methods = {'fast', 'svd', 'lstsq'}
-    if method not in valid_methods:
-        raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
-
-    _, R, jpiv = qr_sketch(A, rtol, block_size=block_size, power_iter=power_iter, extra_samples=extra_samples)
-
-    k = R.shape[0]
-    piv = jpiv
-
-    # Compute rtol for SVD filtering (use machine precision in rank mode)
-    m, n = A.shape
-    dtype = A.dtype if hasattr(A, 'dtype') else np.float64
-    if rtol >= 1:
-        # Rank mode: use machine precision for SVD filtering
-        rtol_for_svd = max(m, n) * np.finfo(dtype).eps
-    else:
-        # Tolerance mode: use the provided tolerance
-        rtol_for_svd = rtol
-
-    # Dispatch to shared helper functions
-    if method == 'lstsq':
-        T = _compute_T_lstsq(A, R, piv, k)
-    elif method == 'svd':
-        T = _compute_T_svd(R, k, rtol_for_svd)
-    elif method == 'fast':
-        T = _compute_T_fast(R, k)
-
-    return k, piv, T
-
-
-def id_qrpiv(A, rtol, *, method='fast'):
-    """Interpolative decomposition via deterministic QR with column pivoting.
-
-    An ID represents a matrix A by selecting k of its columns and expressing
-    the remaining columns as linear combinations of the selected ones:
-
-        A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
-
-    where piv is a column permutation and T is a k×(n-k) interpolation matrix.
-    The selected columns (skeleton) capture the essential features of A, while
-    T provides the coefficients to reconstruct the other columns.
-
-    This function provides a deterministic alternative to id_sketch by
-    computing the interpolative decomposition using only QR with column
-    pivoting (LAPACK geqp3), without any randomized sketching. It preserves
-    LinearOperator support and uses the same T matrix computation logic as
-    id_sketch.
-
-    Parameters
-    ----------
-    A : ndarray or LinearOperator
-        Input matrix or operator
-    rtol : float
-        Relative tolerance (rtol < 1) or target rank (rtol >= 1)
-    method : str, optional
-        Method for computing T matrix (default: 'fast')
-        - 'fast': Triangular solve R11 \\ R12 (fastest)
-        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
-        - 'lstsq': Least-squares from original A (most accurate, slowest)
-
-    Returns
-    -------
-    k : int
-        Rank of the ID approximation
-    piv : ndarray, shape (n,)
-        Column permutation
-    T : ndarray, shape (k, n-k)
-        Interpolation matrix
-    """
-    valid_methods = {'fast', 'svd', 'lstsq'}
-    if method not in valid_methods:
-        raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
-
-    is_linop = _is_linop(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-
-    m, n = A.shape
-    dtype = A.dtype if hasattr(A, 'dtype') else np.float64
-
-    # Determine rank mode vs tolerance mode
-    rank_mode = False
-    if rtol >= 1:
-        rank_mode = True
-        kmax = int(np.floor(rtol))
-
-    # Compute full QR with pivoting (deterministic)
-    A_mat = _get_matrix(A)
-    Q, R, jpiv = linalg.qr(A_mat, mode='economic', pivoting=True)
-
-    # Determine rank
-    rtol_for_rank = max(m, n) * np.finfo(dtype).eps
-    if not rank_mode:
-        rtol_for_rank = rtol
-
-    rank = _rank_from_diag(np.diag(R), rtol_for_rank)
-
-    if rank_mode:
-        rank = min(kmax, rank)
-
-    k = rank
-    piv = jpiv
-
-    # Handle edge cases
-    if k == 0:
-        return 0, piv, np.zeros((0, n), dtype=dtype)
-
-    if k == n:
-        return k, piv, np.zeros((k, 0), dtype=dtype)
-
-    # Dispatch to shared helper functions
-    # Note: rtol_for_rank is the correct tolerance for SVD filtering
-    if method == 'lstsq':
-        T = _compute_T_lstsq(A, R, piv, k)
-    elif method == 'svd':
-        T = _compute_T_svd(R, k, rtol_for_rank)
-    elif method == 'fast':
-        T = _compute_T_fast(R, k)
-
-    return k, piv, T

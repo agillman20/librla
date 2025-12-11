@@ -7,6 +7,12 @@
 %   2. Explicit LinearOperator - with method='lstsq'
 %   3. Matrix-free LinearOperator - method='lstsq' (accurate, n matvecs)
 %   4. Matrix-free LinearOperator - method='fast' (fast, uses R matrix)
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function test5_linop_fullrank()

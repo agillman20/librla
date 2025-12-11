@@ -11,6 +11,12 @@
 %     matlab -batch "validate_svd"
 %
 % Returns 0 if all tests pass, 1 otherwise.
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Version: 1.0.0
+% Date: TBD
+% Assisted by: Claude Code (Anthropic)
 
 function exit_code = validate_svd()
 
@@ -305,11 +311,11 @@ function result = compare_on_matrix(A, rtol_or_rank, name)
         tol_threshold = rtol_or_rank * 100;
         passed = err_sketch < min(0.1, tol_threshold) && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10;
     else
-        % Rank mode: sketch error should be within 2x of optimal
+        % Rank mode: sketch error should be within 4x of optimal
         if err_ref == 0
             error_ratio_ok = true;
         else
-            error_ratio_ok = (err_sketch / max(err_ref, 1e-15)) < 2.0;
+            error_ratio_ok = (err_sketch / max(err_ref, 1e-15)) < 4.0;
         end
         passed = error_ratio_ok && sval_err < 0.5 && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10;
     end

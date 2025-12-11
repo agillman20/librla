@@ -26,6 +26,12 @@ Requirements
 * MATLAB R2014b+ with NetCDF support (built-in)
 * Statistics and Machine Learning Toolbox (for corr function)
 * librla.m (automatically added to path)
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 %}
 
 % Add parent directory to path for librla

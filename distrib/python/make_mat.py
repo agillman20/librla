@@ -12,7 +12,11 @@ Matrix Types:
 - gmm: Gaussian Mixture Model-like matrix
 - snn: Sparse Neural Network-like matrix
 
-Author: Port from MATLAB/Julia versions
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

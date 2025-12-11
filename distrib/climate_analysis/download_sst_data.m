@@ -27,6 +27,12 @@ Requirements
 For analysis scripts (test_sst_*.m):
 * Statistics and Machine Learning Toolbox (for corr function)
 * Or use: corrcoef(x,y) and extract r=c(1,2) instead
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Version: 1.0.0
+Date: TBD
+Assisted by: Claude Code (Anthropic)
 %}
 
 function download_sst_data()
