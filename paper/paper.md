@@ -56,21 +56,14 @@ While there is a large amount of research activity in the field of randomized li
 
 The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
 
-```math
-Input: the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
-Output: an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
-```
+##Pseudocode
 
-```
-PROGRAM orth_sketch:
-Input: the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
-Output: an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
+**Input:** the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
+**Output:** an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
 
-Steps:
+**Blocking loop**
 
-
-  while true
-      Let $\Omega$ denote a random matrix of size $n\times 42$.
+      Let '$\Omega$' denote a random matrix of size $n\times 42$.
       Set $y = \bf{A} \bf{\Omega}.
       Define $\bf{Q}\bf{R}$ to be the matrices that result from the QR factorization of $y$.
 
@@ -92,7 +85,6 @@ Steps:
     ELSE Print "odd";
   ENDIF;
 END.
-```
 
 
 # Acknowledgements
