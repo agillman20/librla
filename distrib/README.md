@@ -43,10 +43,10 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 ```python
 import numpy as np
 from librla import orth_sketch, qr_sketch, svd_sketch, id_sketch
-from hilb import hilb
+from hilbert import hilbert
 
 # Create a test matrix (Hilbert matrix is ill-conditioned)
-A = hilb(1000, 500)
+A = hilbert(1000, 500)
 
 # Orthonormal basis with relative tolerance
 Q, flag, err = orth_sketch(A, rtol=1e-6)
@@ -68,7 +68,7 @@ k, piv, T = id_sketch(A, rtol=1e-6, method='lstsq')
 
 ```matlab
 % Create a test matrix
-A = hilb(1000, 500);
+A = hilbert(1000, 500);
 
 % Orthonormal basis
 [Q, flag, err] = librla.orth_sketch(A, 1e-6);
@@ -93,7 +93,7 @@ include("librla.jl")
 using .librla
 
 # Create a test matrix
-A = hilb(1000, 500)
+A = hilbert(1000, 500)
 
 # Orthonormal basis
 Q, flag, err = orth_sketch(A, 1e-6)
@@ -304,27 +304,24 @@ distrib/
 ├── FILE_MANIFEST.txt      # Complete file listing
 ├── python/
 │   ├── librla.py          # Main library
-│   ├── hilb.py            # Hilbert matrix generator
+│   ├── hilbert.py         # Hilbert matrix generator
 │   ├── kahan.py           # Kahan matrix generator
-│   ├── make_mat.py        # Matrix generation utilities
-│   ├── compare_id.py      # Comparison example
-│   └── test*.py           # Test suite (9 files)
+│   ├── demo_utils.py      # Demo utilities
+│   └── demo*.py           # Demo suite
 ├── matlab/
 │   ├── librla.m           # Main library
 │   ├── LinearOperator.m   # Matrix-free operator class
-│   ├── hilb.m             # Hilbert matrix generator
+│   ├── hilbert.m          # Hilbert matrix generator
 │   ├── kahan.m            # Kahan matrix generator
-│   ├── make_mat.m         # Matrix generation utilities
-│   ├── compare_id.m       # Comparison example
-│   └── test*.m            # Test suite (9 files)
+│   ├── demo_utils.m       # Demo utilities
+│   └── demo*.m            # Demo suite
 └── julia/
     ├── librla.jl          # Main library
     ├── LinearOperator.jl  # Matrix-free operator type
-    ├── hilb.jl            # Hilbert matrix generator
+    ├── hilbert.jl         # Hilbert matrix generator
     ├── kahan.jl           # Kahan matrix generator
-    ├── make_mat.jl        # Matrix generation utilities
-    ├── compare_id.jl      # Comparison example
-    └── test*.jl           # Test suite (9 files)
+    ├── demo_utils.jl      # Demo utilities
+    └── demo*.jl           # Demo suite
 ```
 
 ## Requirements
@@ -359,44 +356,38 @@ include("/path/to/distrib/julia/librla.jl")
 using .librla
 ```
 
-## Testing
+## Demos
 
-Run the test suite to verify installation:
+Run the demos to see the library in action:
 
 ```bash
 # Python
 cd distrib/python
-python test1_hilbert.py
-python test2_svd_hilbert.py
+python demo01_basic.py
+python demo02_svd.py
 
 # MATLAB (in MATLAB command window)
 cd distrib/matlab
-test1_hilbert
-test2_svd_hilbert
+demo01_basic
+demo02_svd
 
 # Julia
 cd distrib/julia
-julia -e 'include("test1_hilbert.jl")'
-julia -e 'include("test2_svd_hilbert.jl")'
+julia demo01_basic.jl
+julia demo02_svd.jl
 ```
 
 ## Examples
 
-See the `compare_id.*` files for comprehensive examples comparing the randomized sketching (`id_sketch`) and deterministic QR pivoting (`id_qrpiv`) methods.
+The demo suite provides examples for:
 
-The test suite provides examples for:
-
-| Test | Description |
+| Demo | Description |
 |------|-------------|
-| test1_hilbert | Basic Hilbert matrix tests |
-| test1_kahan | Kahan matrix tests |
-| test2_svd_hilbert | SVD on Hilbert matrices |
-| test3_linop_hilbert | LinearOperator with Hilbert matrix |
-| test4_linop_random | LinearOperator with random matrices |
-| test5_linop_fullrank | Full-rank matrix tests |
-| test5_method_comparison | Compare T computation methods |
-| test6_power | Power iteration effects |
-| test7_power | Power iteration in svd_sketch |
+| demo01_basic | Basic ID algorithms (id_sketch, id_qrpiv) |
+| demo02_svd | SVD and QR sketching |
+| demo03_linop | LinearOperator abstraction |
+| demo04_power | Power iteration effects |
+| demo05_methods | T computation methods comparison |
 
 ## References
 

@@ -12,7 +12,7 @@ using LinearAlgebra
 using Printf
 
 """
-    kahan(n; theta=1.2, pert=0.25)
+    kahan(m, n=m; theta=1.2, pert=25.0)
 
 Generate Kahan matrix.
 
@@ -20,7 +20,8 @@ Kahan's matrix is a classic test matrix for numerical stability.
 It's upper triangular with controlled condition number.
 
 # Arguments
-- `n::Int`: Size of the matrix (n x n)
+- `m::Int`: Number of rows
+- `n::Int`: Number of columns (default: m)
 - `theta::Real`: Angle parameter in radians (default: 1.2)
   - Controls the condition number via cos(theta)
   - Smaller theta -> better conditioned
@@ -30,7 +31,7 @@ It's upper triangular with controlled condition number.
   - Setting pert = 0 gives no diagonal perturbation
 
 # Returns
-- `K::Matrix`: Kahan matrix (n x n)
+- `K::Matrix`: Kahan matrix (m x n)
 
 # Matrix Structure
 The matrix has the form:
@@ -81,39 +82,39 @@ println("Purely diagonal: ", istriu(K_diag) && isdiag(K_diag))
 # Author
 Claude Code
 """
-function kahan(n::Int; theta::Real=1.2, pert::Real=25)
-    if n < 1
-        error("n must be positive, got $n")
+function kahan(m::Int, n::Int=m; theta::Real=1.2, pert::Real=25)
+    if m < 1 || n < 1
+        error("Dimensions must be positive, got $m x $n")
     end
 
     s = sin(theta)
     c = cos(theta)
     eps_val = eps(Float64)
+    r = min(m, n)
 
-    # Create matrix following Octave gallery('kahan') implementation:
-    # K = I - c * triu(ones(n), 1)
-    # K = diag(s.^[0:n-1]) * K + pert*eps*diag([n:-1:1])
+    # Create rectangular Kahan matrix
+    K = zeros(m, n)
 
-    # Start with identity
-    K = Matrix{Float64}(I, n, n)
+    # Set diagonal
+    for i in 1:r
+        K[i, i] = 1.0
+    end
 
-    # Subtract c * strict_upper_triangle(ones)
-    # This makes all strict upper triangle elements equal to -c
-    for i in 1:n
+    # Set upper triangular part
+    for i in 1:m
         for j in (i+1):n
             K[i, j] = -c
         end
     end
 
-    # Left-multiply by diagonal matrix diag(s^[0:n-1])
-    # This scales row i by s^(i-1)
-    for i in 1:n
+    # Scale rows by s^(i-1)
+    for i in 1:m
         K[i, :] .*= s^(i-1)
     end
 
-    # Add diagonal perturbation: pert*eps*diag([n, n-1, ..., 1])
-    for i in 1:n
-        K[i, i] += pert * eps_val * (n - i + 1)
+    # Add diagonal perturbation
+    for i in 1:r
+        K[i, i] += pert * eps_val * (r - i + 1)
     end
 
     return K

@@ -134,7 +134,7 @@ class ComparisonResult:
     passed: bool
 
 
-def hilb(m, n, dtype=np.float64):
+def hilbert(m, n, dtype=np.float64):
     """Generate an mxn Hilbert matrix."""
     i = np.arange(1, m + 1, dtype=dtype).reshape(-1, 1)
     j = np.arange(1, n + 1, dtype=dtype).reshape(1, -1)
@@ -356,7 +356,7 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     results.append(compare_on_matrix(A2, 15, "Low-Rank Matrix (rank~15)", device, power_iter, extra_samples))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
-    A3 = hilb(2000, 1000, dtype=DTYPE)
+    A3 = hilbert(2000, 1000, dtype=DTYPE)
     results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (ill-conditioned)", device, power_iter, extra_samples))
 
     # Test 4: Decaying spectrum
@@ -385,7 +385,7 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     results.append(compare_on_matrix(A6, 15, "Large Low-Rank (800x500, rank~15)", device, power_iter, extra_samples))
 
     # Test 7: Large Hilbert matrix
-    A7 = hilb(4000, 2000, dtype=DTYPE)
+    A7 = hilbert(4000, 2000, dtype=DTYPE)
     results.append(compare_on_matrix(A7, 15, "Large Hilbert Matrix (4000x2000)", device, power_iter, extra_samples))
 
     # Test 8: Large decaying spectrum

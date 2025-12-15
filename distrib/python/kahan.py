@@ -19,7 +19,7 @@ Assisted by: Claude Code (Anthropic)
 import numpy as np
 
 
-def kahan(n, theta=1.2, pert=25):
+def kahan(m, n=None, theta=1.2, pert=25):
     """
     Generate Kahan matrix.
 
@@ -29,8 +29,10 @@ def kahan(n, theta=1.2, pert=25):
 
     Parameters
     ----------
-    n : int
-        Size of the matrix (n x n)
+    m : int
+        Number of rows
+    n : int, optional
+        Number of columns (default: m)
     theta : float, optional
         Angle parameter in radians (default: 1.2)
         Controls the condition number via cos(theta)
@@ -43,31 +45,35 @@ def kahan(n, theta=1.2, pert=25):
 
     Returns
     -------
-    K : ndarray, shape (n, n)
+    K : ndarray, shape (m, n)
         Kahan matrix
 
     Notes
     -----
     The matrix has the form:
-        K(i,i) = s^(i-1) + pert*eps*(n-i+1)  for i = 1,...,n (diagonal)
+        K(i,i) = s^(i-1) + pert*eps*(r-i+1)  for i = 1,...,r (diagonal)
         K(i,j) = -c * s^(i-1)                for i < j       (upper triangle)
         K(i,j) = 0                           for i > j       (lower triangle)
 
-    where s = sin(theta), c = cos(theta), and eps is machine epsilon.
+    where s = sin(theta), c = cos(theta), eps is machine epsilon, and r = min(m,n).
 
-    The diagonal perturbation (pert*eps*(n-i+1)) ensures QR factorization
+    The diagonal perturbation (pert*eps*(r-i+1)) ensures QR factorization
     with column pivoting does not interchange columns in the presence of
     rounding errors. The default pert=25 ensures no interchanges up to
     N=90 in IEEE arithmetic.
 
-    The condition number is approximately 1/cos(theta)^n, so it grows
-    exponentially with n and theta.
+    The condition number is approximately 1/cos(theta)^r, so it grows
+    exponentially with min(m,n) and theta.
 
     Examples
     --------
     >>> import numpy as np
     >>> K = kahan(5)  # 5x5 Kahan matrix with default parameters
     >>> print(f"Condition number: {np.linalg.cond(K):.2e}")
+
+    >>> # Rectangular matrix
+    >>> K_rect = kahan(100, 50)
+    >>> print(f"Shape: {K_rect.shape}")
 
     >>> # Well-conditioned version (small theta)
     >>> K_good = kahan(10, theta=0.5)
@@ -77,47 +83,41 @@ def kahan(n, theta=1.2, pert=25):
     >>> K_bad = kahan(10, theta=1.5)
     >>> print(f"Condition (theta=1.5): {np.linalg.cond(K_bad):.2e}")
 
-    >>> # Diagonal matrix (no perturbation)
-    >>> K_diag = kahan(5, pert=0.0)
-    >>> print("Purely diagonal:", np.allclose(K_diag, np.diag(np.diag(K_diag))))
-
     References
     ----------
     .. [1] Nicholas J. Higham, "Accuracy and Stability of Numerical
            Algorithms", 2nd ed., SIAM, 2002, Chapter 28.
     .. [2] W. Kahan, Numerical Linear Algebra, Canadian Math. Bulletin,
            9 (1966), pp. 757-801.
-    .. [3] NIST Matrix Market: Kahan Matrix,
-           https://math.nist.gov/MatrixMarket/deli/Kahan/information.html
     """
-    if n < 1:
-        raise ValueError(f"n must be positive, got {n}")
+    if n is None:
+        n = m
+    if m < 1 or n < 1:
+        raise ValueError(f"Dimensions must be positive, got {m} x {n}")
 
     s = np.sin(theta)
     c = np.cos(theta)
     eps = np.finfo(float).eps
+    r = min(m, n)
 
-    # Create matrix following Octave gallery('kahan') implementation:
-    # U = eye(n) - c * triu(ones(n), 1)
-    # U = diag(s.^[0:n-1]) * U + pert*eps*diag([n:-1:1])
+    K = np.zeros((m, n))
 
-    # Start with identity
-    K = np.eye(n)
+    # Set diagonal
+    for i in range(r):
+        K[i, i] = 1.0
 
-    # Subtract c * strict_upper_triangle(ones)
-    # This makes all strict upper triangle elements equal to -c
-    for i in range(n):
+    # Set upper triangular part
+    for i in range(m):
         for j in range(i + 1, n):
             K[i, j] = -c
 
-    # Left-multiply by diagonal matrix diag(s^[0:n-1])
-    # This scales row i by s^i
-    for i in range(n):
+    # Scale rows by s^i
+    for i in range(m):
         K[i, :] *= (s ** i)
 
-    # Add diagonal perturbation: pert*eps*diag([n, n-1, ..., 1])
-    for i in range(n):
-        K[i, i] += pert * eps * (n - i)
+    # Add diagonal perturbation
+    for i in range(r):
+        K[i, i] += pert * eps * (r - i)
 
     return K
 

@@ -101,7 +101,7 @@ class ComparisonResult:
     fail_reason: str = ""
 
 
-def hilb(m, n, dtype=np.float64):
+def hilbert(m, n, dtype=np.float64):
     """Generate an mxn Hilbert matrix."""
     i = np.arange(1, m + 1, dtype=dtype).reshape(-1, 1)
     j = np.arange(1, n + 1, dtype=dtype).reshape(1, -1)
@@ -274,7 +274,7 @@ def run_test_suite(power_iter=0, extra_samples=12):
     results.append(compare_on_matrix(A2, 15, "Low-Rank Matrix (rank~15)", power_iter, extra_samples))
 
     # Test 3: Hilbert matrix
-    A3 = hilb(1000, 500, dtype=DTYPE)
+    A3 = hilbert(1000, 500, dtype=DTYPE)
     results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (1000x500)", power_iter, extra_samples))
 
     # Test 4: Complex matrix
@@ -307,7 +307,7 @@ def run_test_suite(power_iter=0, extra_samples=12):
     results.append(compare_on_matrix(A7, 15, "Large Low-Rank (800x500)", power_iter, extra_samples))
 
     # Test 8: Large Hilbert
-    A8 = hilb(2000, 1000, dtype=DTYPE)
+    A8 = hilbert(2000, 1000, dtype=DTYPE)
     results.append(compare_on_matrix(A8, 15, "Large Hilbert (2000x1000)", power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
