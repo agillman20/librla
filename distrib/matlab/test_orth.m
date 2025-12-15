@@ -161,15 +161,15 @@ function exit_code = test_orth()
     fprintf('======================================================================\n');
 
     % Test 22: Gaussian Exponential Decay Matrix
-    A22 = make_mat(500, 500, 'gaussexp');
+    A22 = test_utils.make_mat(500, 500, 'gaussexp');
     results(end+1) = compare_on_matrix(A22, 1e-3, 'Gaussexp (Gaussian Exponential Decay, 500x500)');
 
     % Test 23: Gaussian Mixture Model Matrix
-    A23 = make_mat(400, 400, 'gmm');
+    A23 = test_utils.make_mat(400, 400, 'gmm');
     results(end+1) = compare_on_matrix(A23, 1e-3, 'GMM (Gaussian Mixture Model, 400x400)');
 
     % Test 24: Sparse Neural Network Matrix
-    A24 = make_mat(300, 300, 'snn');
+    A24 = test_utils.make_mat(300, 300, 'snn');
     results(end+1) = compare_on_matrix(A24, 1e-3, 'SNN (Sparse Neural Network, 300x300)');
 
     % =========================================================================

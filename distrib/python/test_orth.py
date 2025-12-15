@@ -30,7 +30,7 @@ from typing import List
 
 # Import orth_sketch implementation
 from librla import orth_sketch
-from make_mat import make_mat
+from test_utils import make_mat
 
 
 @dataclass

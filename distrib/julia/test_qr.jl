@@ -22,7 +22,8 @@ using Statistics
 using Random
 
 include(joinpath(@__DIR__, "librla.jl"))
-include(joinpath(@__DIR__, "make_mat.jl"))
+include(joinpath(@__DIR__, "test_utils.jl"))
+using .TestUtils: make_mat
 
 using .librla: qr_sketch
 

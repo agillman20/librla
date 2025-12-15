@@ -28,7 +28,8 @@ using Random
 
 # Import ID implementations
 include(joinpath(@__DIR__, "librla.jl"))
-include(joinpath(@__DIR__, "make_mat.jl"))
+include(joinpath(@__DIR__, "test_utils.jl"))
+using .TestUtils: make_mat
 
 using .librla: id_sketch, id_qrpiv
 

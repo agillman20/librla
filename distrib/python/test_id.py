@@ -36,7 +36,7 @@ from typing import List
 
 # Import ID implementations
 from librla import id_sketch, id_qrpiv
-from make_mat import make_mat
+from test_utils import make_mat
 
 
 @dataclass

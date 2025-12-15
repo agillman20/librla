@@ -27,7 +27,7 @@ Options:
 
 Requires:
     - NumPy, SciPy, PyTorch
-    - librla.py, make_mat.py from ../python/
+    - librla.py, test_utils.py from ../python/
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
@@ -94,7 +94,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 # Import implementations
 from librla import svd_sketch
-from make_mat import make_mat
+from test_utils import make_mat
 
 try:
     import torch
