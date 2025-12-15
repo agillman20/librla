@@ -1,4 +1,4 @@
-% validate_qr.m - Validate librla QR implementations
+% test_qr.m - Test librla QR implementations
 %
 % Compares qr_sketch (randomized) vs qr with column pivoting:
 % - Accuracy (reconstruction error)
@@ -6,8 +6,8 @@
 % - Runtime
 %
 % Usage:
-%     octave --no-gui --eval "validate_qr"
-%     matlab -batch "validate_qr"
+%     octave --no-gui --eval "test_qr"
+%     matlab -batch "test_qr"
 %
 % Returns 0 if all tests pass, 1 otherwise.
 %
@@ -17,7 +17,7 @@
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)
 
-function exit_code = validate_qr()
+function exit_code = test_qr()
 
     fprintf('\n======================================================================\n');
     fprintf('QR COMPARISON\n');

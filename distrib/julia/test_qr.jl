@@ -1,4 +1,4 @@
-# validate_qr.jl - Compare librla QR implementations
+# test_qr.jl - Compare librla QR implementations
 #
 # Compares qr_sketch (randomized) vs qr with column pivoting:
 # - Accuracy (reconstruction error)
@@ -6,7 +6,7 @@
 # - Runtime
 #
 # Usage:
-#     julia validate_qr.jl
+#     julia test_qr.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: TBD
@@ -14,7 +14,7 @@
 # Date: TBD
 # Assisted by: Claude Code (Anthropic)
 
-module ValidateQR
+module TestQR
 
 using LinearAlgebra
 using Printf
@@ -406,9 +406,9 @@ function validate()
     end
 end
 
-end # module ValidateQR
+end # module TestQR
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(ValidateQR.validate())
+    exit(TestQR.validate())
 end

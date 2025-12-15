@@ -1,4 +1,4 @@
-# validate_id.jl - Compare libid interpolative decomposition implementations
+# test_id.jl - Compare libid interpolative decomposition implementations
 #
 # Compares two ID implementations from librla:
 # - id_sketch:  Randomized QR sketching (default, recommended)
@@ -11,7 +11,7 @@
 # - Rank selection behavior
 #
 # Usage:
-#     julia validate_id.jl
+#     julia test_id.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: TBD
@@ -19,7 +19,7 @@
 # Date: TBD
 # Assisted by: Claude Code (Anthropic)
 
-module ValidateID
+module TestID
 
 using LinearAlgebra
 using Printf
@@ -471,10 +471,10 @@ function validate()
     end
 end
 
-end # module ValidateID
+end # module TestID
 
 
 # Run validate function if this script is executed directly
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(ValidateID.validate())
+    exit(TestID.validate())
 end

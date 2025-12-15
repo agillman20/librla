@@ -1,13 +1,13 @@
-# validate_orth.jl - Test librla orthonormal basis computation
+# test_svd.jl - Compare librla SVD implementations
 #
-# Tests orth_sketch (randomized orthonormal basis for column space):
-# - Column space accuracy (how well Q spans A's column space)
-# - Orthonormality of Q
-# - diagR values (sorted column norms, conditioning indicator)
+# Compares svd_sketch (randomized) vs svd (deterministic):
+# - Accuracy (reconstruction error)
+# - Singular value accuracy
+# - Orthonormality of U and V
 # - Runtime
 #
 # Usage:
-#     julia validate_orth.jl
+#     julia test_svd.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: TBD
@@ -15,7 +15,7 @@
 # Date: TBD
 # Assisted by: Claude Code (Anthropic)
 
-module ValidateOrth
+module TestSVD
 
 using LinearAlgebra
 using Printf
@@ -25,7 +25,7 @@ using Random
 include(joinpath(@__DIR__, "librla.jl"))
 include(joinpath(@__DIR__, "make_mat.jl"))
 
-using .librla: orth_sketch
+using .librla: svd_sketch
 
 export validate
 
@@ -34,15 +34,19 @@ mutable struct ComparisonResult
     name::String
     rtol_or_rank::Float64
 
-    k::Int
+    k_sketch::Int
+    k_ref::Int
 
-    span_err::Float64
-    orth_err::Float64
-    diagR_ratio::Float64
+    err_sketch::Float64
+    err_ref::Float64
 
-    flag::Int
+    sval_err::Float64
+
+    orth_U_sketch::Float64
+    orth_V_sketch::Float64
 
     t_sketch::Float64
+    t_ref::Float64
 
     passed::Bool
 end
@@ -57,7 +61,7 @@ end
 
 
 function compare_on_matrix(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
-    """Test orth_sketch on a single matrix."""
+    """Compare SVD implementations on a single matrix."""
 
     println("\n", "="^70)
     println("Test: ", name)
@@ -73,137 +77,116 @@ function compare_on_matrix(A::Matrix{T}, rtol_or_rank::Float64, name::String) wh
     normA = norm(A)
 
     # -------------------------------------------------------------------------
-    # orth_sketch (randomized)
+    # 1. svd_sketch (randomized)
     # -------------------------------------------------------------------------
-    println("\n--- orth_sketch (randomized) ---")
+    println("\n--- svd_sketch (randomized) ---")
 
-    t_sketch = @elapsed Q, flag, diagR = orth_sketch(A, rtol_or_rank)
+    t_sketch = @elapsed U_sketch, s_sketch, Vt_sketch = svd_sketch(A, rtol_or_rank)
 
-    k = size(Q, 2)
+    k_sketch = length(s_sketch)
 
-    # Column space error: how well Q spans A's column space
-    QQtA = Q * (Q' * A)
-    span_err = norm(A - QQtA) / normA
+    # Reconstruction error (Vt is already transposed in Julia)
+    A_recon_sketch = U_sketch * Diagonal(s_sketch) * Vt_sketch
+    err_sketch = norm(A - A_recon_sketch) / normA
 
-    # Orthonormality check
-    if k > 0
-        orth_err = norm(Q' * Q - I(k))
-    else
-        orth_err = 0.0
-    end
+    # Orthonormality checks
+    orth_U_sketch = norm(U_sketch' * U_sketch - I(k_sketch))
+    orth_V_sketch = norm(Vt_sketch * Vt_sketch' - I(k_sketch))
 
-    # diagR ratio (conditioning indicator)
-    abs_diagR = abs.(diagR)
-    if !isempty(abs_diagR) && abs_diagR[1] != 0
-        diagR_ratio = abs_diagR[end] / abs_diagR[1]
-    else
-        diagR_ratio = 0.0
-    end
-
-    @printf("Rank:       k = %d\n", k)
-    if flag == 0
-        @printf("Flag:       %d (success)\n", flag)
-    else
-        @printf("Flag:       %d (early termination)\n", flag)
-    end
-    @printf("Span Err:   ||A - Q*Q'*A|| / ||A|| = %.3e\n", span_err)
-    @printf("Orth Err:   ||Q'Q - I|| = %.3e\n", orth_err)
-    if !isempty(abs_diagR)
-        @printf("|diagR[1]|: %.3e\n", abs_diagR[1])
-        @printf("|diagR[end]|:%.3e\n", abs_diagR[end])
-    else
-        println("|diagR[1]|: N/A")
-        println("|diagR[end]|:N/A")
-    end
-    @printf("diagR ratio: %.3e\n", diagR_ratio)
+    @printf("Rank:       k = %d\n", k_sketch)
+    @printf("Error:      ||A - U @ S @ Vt|| / ||A|| = %.3e\n", err_sketch)
+    @printf("Orth U:     ||U'U - I|| = %.3e\n", orth_U_sketch)
+    @printf("Orth V:     ||Vt*Vt' - I|| = %.3e\n", orth_V_sketch)
     @printf("Time:       %.4f s\n", t_sketch)
 
     # -------------------------------------------------------------------------
-    # Compare with full SVD (reference)
+    # 2. svd (deterministic, truncated)
     # -------------------------------------------------------------------------
-    println("\n--- Reference (full SVD truncated) ---")
+    println("\n--- svd (deterministic) ---")
 
     t_ref = @elapsed F = svd(A)
 
-    U_ref = F.U
+    U_ref_full = F.U
+    s_ref_full = F.S
+    Vt_ref_full = F.Vt
 
-    # Truncate to same rank
-    if k > 0
-        U_k = U_ref[:, 1:k]
-        UUtA = U_k * (U_k' * A)
-        span_err_ref = norm(A - UUtA) / normA
+    # Determine reference rank (same as sketch for fair comparison)
+    if rtol_or_rank >= 1
+        k_ref = Int(floor(rtol_or_rank))
     else
-        span_err_ref = 1.0
+        k_ref = k_sketch
     end
 
-    @printf("Rank:       k = %d\n", k)
-    @printf("Span Err:   ||A - U_k*U_k'*A|| / ||A|| = %.3e\n", span_err_ref)
+    # Truncate to target rank
+    U_ref = U_ref_full[:, 1:k_ref]
+    s_ref = s_ref_full[1:k_ref]
+    Vt_ref = Vt_ref_full[1:k_ref, :]
+
+    # Reconstruction error
+    A_recon_ref = U_ref * Diagonal(s_ref) * Vt_ref
+    err_ref = norm(A - A_recon_ref) / normA
+
+    @printf("Rank:       k = %d\n", k_ref)
+    @printf("Error:      ||A - U @ S @ Vt|| / ||A|| = %.3e\n", err_ref)
     @printf("Time:       %.4f s (full SVD)\n", t_ref)
+
+    # -------------------------------------------------------------------------
+    # Singular value accuracy
+    # -------------------------------------------------------------------------
+    k_cmp = min(k_sketch, length(s_ref_full))
+    if k_cmp > 0
+        sval_err = norm(s_sketch[1:k_cmp] - s_ref_full[1:k_cmp]) / norm(s_ref_full[1:k_cmp])
+    else
+        sval_err = 0.0
+    end
+
+    @printf("\nSingular value accuracy: ||s_sketch - s_ref|| / ||s_ref|| = %.3e\n", sval_err)
 
     # -------------------------------------------------------------------------
     # Summary comparison
     # -------------------------------------------------------------------------
     println("\n--- Summary ---")
-    @printf("%-28s %-8s %-12s %-12s %-10s\n", "Method", "Rank", "Span Err", "Orth Err", "Time (s)")
+    @printf("%-28s %-8s %-12s %-12s %-10s\n", "Method", "Rank", "Recon Err", "SVal Err", "Time (s)")
     println("-"^75)
-    @printf("%-28s %-8d %-12.3e %-12.3e %-10.4f\n", "orth_sketch (randomized)", k, span_err, orth_err, t_sketch)
-    @printf("%-28s %-8d %-12.3e %-12s %-10.4f\n", "SVD (optimal)", k, span_err_ref, "(ref)", t_ref)
+    @printf("%-28s %-8d %-12.3e %-12.3e %-10.4f\n", "svd_sketch (randomized)", k_sketch, err_sketch, sval_err, t_sketch)
+    @printf("%-28s %-8d %-12.3e %-12s %-10.4f\n", "svd (deterministic)", k_ref, err_ref, "(ref)", t_ref)
 
-    # Quality comparison
-    if span_err_ref > 0
-        quality_ratio = span_err / span_err_ref
-        @printf("\nQuality ratio: orth_sketch error / optimal error = %.2fx\n", quality_ratio)
-    end
+    # Highlight fastest method
+    methods = ["svd_sketch", "svd"]
+    times = [t_sketch, t_ref]
+    fastest_idx = argmin(times)
+    @printf("\nFastest method: %s (%.4fs)\n", methods[fastest_idx], times[fastest_idx])
 
     # Speedup
     if t_sketch > 0
         speedup = t_ref / t_sketch
         if speedup > 1
-            @printf("Speedup: orth_sketch is %.1fx faster than full SVD\n", speedup)
+            @printf("Speedup: svd_sketch is %.1fx faster\n", speedup)
         else
-            @printf("Speedup: full SVD is %.1fx faster\n", 1/speedup)
+            @printf("Speedup: svd is %.1fx faster\n", 1/speedup)
         end
     end
 
     # -------------------------------------------------------------------------
     # Determine if test passed
     # -------------------------------------------------------------------------
-    # Orthonormality should be near machine precision (or 0 if k=0)
-    # Early termination (flag=1) is OK - it's expected for some matrices
-    # Key criterion: span error should be close to optimal (SVD reference)
-
-    orth_ok = (k == 0) || (orth_err < 1e-10)
-
-    # Quality threshold: randomized methods typically achieve within 8x of optimal
-    # (slightly relaxed to account for randomness in ill-conditioned cases)
-    quality_threshold = 8.0
-
     if rtol_or_rank < 1
-        # Tolerance mode: span error should be within threshold of optimal
-        if span_err_ref == 0
-            quality_ok = span_err < 1e-10
-        else
-            quality_ok = (span_err / max(span_err_ref, 1e-15)) < quality_threshold
-        end
-        passed = quality_ok && orth_ok
+        tol_threshold = rtol_or_rank * 100
+        passed = err_sketch < min(0.1, tol_threshold) && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10
     else
-        # Rank mode: span error should be within threshold of optimal
-        if span_err_ref == 0
-            passed = orth_ok
-        else
-            passed = ((span_err / max(span_err_ref, 1e-15)) < quality_threshold) && orth_ok
-        end
+        # Rank mode: sketch error should be within 4x of optimal
+        error_ratio_ok = (err_ref == 0) || (err_sketch / max(err_ref, 1e-15) < 4.0)
+        passed = error_ratio_ok && sval_err < 0.5 && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10
     end
 
     return ComparisonResult(
         name,
         rtol_or_rank,
-        k,
-        span_err,
-        orth_err,
-        diagR_ratio,
-        flag,
-        t_sketch,
+        k_sketch, k_ref,
+        err_sketch, err_ref,
+        sval_err,
+        orth_U_sketch, orth_V_sketch,
+        t_sketch, t_ref,
         passed
     )
 end
@@ -239,28 +222,36 @@ function print_summary(results::Vector{ComparisonResult})
     println("Performance Summary")
     println("="^80)
 
-    avg_time = mean([r.t_sketch for r in results])
-    min_time = minimum([r.t_sketch for r in results])
-    max_time = maximum([r.t_sketch for r in results])
+    avg_time_sketch = mean([r.t_sketch for r in results])
+    avg_time_ref = mean([r.t_ref for r in results])
 
-    @printf("\north_sketch timing: mean=%.4fs, min=%.4fs, max=%.4fs\n", avg_time, min_time, max_time)
+    println()
+    @printf("%-28s %-12s %-15s\n", "Method", "Avg Time", "vs SVD")
+    println("-"^80)
+    @printf("%-28s %8.4fs    %6.1fx\n", "svd_sketch (randomized)", avg_time_sketch, avg_time_ref/avg_time_sketch)
+    @printf("%-28s %8.4fs    %6.1fx -\n", "svd (deterministic)", avg_time_ref, 1.0)
 
     # Accuracy summary
-    println("\nColumn Space Error Summary (||A - Q*Q'*A|| / ||A||):")
+    println("\nReconstruction Error Summary:")
     println("-"^80)
-    avg_span_err = mean([r.span_err for r in results])
-    max_span_err = maximum([r.span_err for r in results])
-    @printf("  orth_sketch:    mean=%.3e, max=%.3e\n", avg_span_err, max_span_err)
+    avg_err_sketch = mean([r.err_sketch for r in results])
+    max_err_sketch = maximum([r.err_sketch for r in results])
+    @printf("  svd_sketch:    mean=%.3e, max=%.3e\n", avg_err_sketch, max_err_sketch)
+
+    # Singular value accuracy
+    println("\nSingular Value Accuracy (vs reference):")
+    println("-"^80)
+    avg_sval_err = mean([r.sval_err for r in results])
+    max_sval_err = maximum([r.sval_err for r in results])
+    @printf("  svd_sketch:    mean=%.3e, max=%.3e\n", avg_sval_err, max_sval_err)
 
     # Orthonormality summary
-    println("\nOrthonormality Summary (||Q'Q - I||):")
+    println("\nOrthonormality Summary:")
     println("-"^80)
-    max_orth_err = maximum([r.orth_err for r in results])
-    @printf("  orth_sketch:    max=%.3e\n", max_orth_err)
-
-    # Flag summary
-    early_term_count = sum([r.flag == 1 for r in results])
-    @printf("\nEarly termination flags: %d/%d\n", early_term_count, total_count)
+    max_orth_U = maximum([r.orth_U_sketch for r in results])
+    max_orth_V = maximum([r.orth_V_sketch for r in results])
+    @printf("  max ||U'U - I||:    %.3e\n", max_orth_U)
+    @printf("  max ||Vt*Vt' - I||: %.3e\n", max_orth_V)
 
     println()
     println("="^80)
@@ -270,8 +261,8 @@ end
 function validate()
     println()
     println("="^70)
-    println("ORTH_SKETCH TESTS")
-    println("Testing orthonormal basis computation via randomized sketching")
+    println("SVD COMPARISON")
+    println("svd_sketch (randomized) vs svd (deterministic)")
     println("="^70)
     println("\nEnvironment:")
     println("  Julia:      ", VERSION)
@@ -281,7 +272,7 @@ function validate()
     println("\nJIT warm-up (compiling methods)...")
     A_warmup = randn(50, 30)
     try
-        orth_sketch(A_warmup, 10.0)
+        svd_sketch(A_warmup, 10.0)
         svd(A_warmup)
     catch
     end
@@ -428,9 +419,9 @@ function validate()
     end
 end
 
-end # module ValidateOrth
+end # module TestSVD
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(ValidateOrth.validate())
+    exit(TestSVD.validate())
 end
