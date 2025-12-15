@@ -26,7 +26,7 @@ include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: qr_sketch
 
-export validate
+export test
 
 
 mutable struct ComparisonResult
@@ -245,7 +245,7 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function validate()
+function test()
     println()
     println("="^70)
     println("QR COMPARISON")
