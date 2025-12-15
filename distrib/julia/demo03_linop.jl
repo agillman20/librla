@@ -37,10 +37,9 @@ using Printf
 using Random
 
 include("librla.jl")
-include("LinearOperator.jl")
 include("demo_utils.jl")
 
-using .librla: id_sketch, svd_sketch
+using .librla: id_sketch, svd_sketch, LinearOperator
 using .demo_utils: hilbert, id_error, print_header, print_subheader
 
 
