@@ -5,6 +5,7 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 classdef demo_utils

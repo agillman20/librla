@@ -14,6 +14,10 @@
 %   - Stability (fast may produce large T, svd/lstsq are stable)
 %   - Accuracy (lstsq gives best reconstruction)
 %
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Assisted by: Claude Code (Anthropic)
+%
 % Try changing the CONFIGURATION parameters below to experiment!
 %==========================================================================
 

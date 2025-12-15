@@ -10,6 +10,10 @@
 % The SVD factorizes A as: A = U * diag(s) * V'
 %
 % Try changing the CONFIGURATION parameters below to experiment!
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function demo02_svd()

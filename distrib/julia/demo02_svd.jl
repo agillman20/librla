@@ -11,6 +11,10 @@ Both functions use randomized sketching for efficiency on large matrices.
 The SVD factorizes A as: A ≈ U * diagm(s) * Vt
 
 Try changing the CONFIGURATION parameters below to experiment!
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 #==============================================================================
