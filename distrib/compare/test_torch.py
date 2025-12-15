@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-validate_torch_compat.py - Validate torch_compat wrappers against PyTorch
+test_torch.py - Test torch_compat wrappers against PyTorch
 
-Validates that torch_compat.svd_lowrank and torch_compat.pca_lowrank
+Tests that torch_compat.svd_lowrank and torch_compat.pca_lowrank
 produce equivalent results to torch.svd_lowrank and torch.pca_lowrank.
 
 Tests:
@@ -11,7 +11,7 @@ Tests:
 - Similar singular values
 
 Usage:
-    python validate_torch.py
+    python test_torch.py
 
 Requires:
     - NumPy, SciPy, PyTorch
@@ -41,8 +41,8 @@ except ImportError:
     sys.exit(1)
 
 
-def validate_svd_lowrank(A, q, niter, M=None, name="test"):
-    """Validate svd_lowrank wrapper against torch.svd_lowrank."""
+def test_svd_lowrank(A, q, niter, M=None, name="test"):
+    """Test svd_lowrank wrapper against torch.svd_lowrank."""
     print(f"\n--- svd_lowrank: {name} ---")
     print(f"    A: {A.shape}, q={q}, niter={niter}, M={'yes' if M is not None else 'no'}")
 
@@ -89,8 +89,8 @@ def validate_svd_lowrank(A, q, niter, M=None, name="test"):
     return passed
 
 
-def validate_pca_lowrank(A, q, center, niter, name="test"):
-    """Validate pca_lowrank wrapper against torch.pca_lowrank."""
+def test_pca_lowrank(A, q, center, niter, name="test"):
+    """Test pca_lowrank wrapper against torch.pca_lowrank."""
     print(f"\n--- pca_lowrank: {name} ---")
     print(f"    A: {A.shape}, q={q}, center={center}, niter={niter}")
 
@@ -159,25 +159,25 @@ def main():
 
     # Test 1: Basic random matrix
     A1 = np.random.randn(200, 100)
-    results.append(validate_svd_lowrank(A1, q=20, niter=2, name="Random 200x100"))
+    results.append(test_svd_lowrank(A1, q=20, niter=2, name="Random 200x100"))
 
     # Test 2: With M parameter
     A2 = np.random.randn(150, 80)
     M2 = np.random.randn(150, 80) * 0.1
-    results.append(validate_svd_lowrank(A2, q=15, niter=2, M=M2, name="With M subtraction"))
+    results.append(test_svd_lowrank(A2, q=15, niter=2, M=M2, name="With M subtraction"))
 
     # Test 3: Different q values
     A3 = np.random.randn(100, 100)
-    results.append(validate_svd_lowrank(A3, q=6, niter=2, name="Default q=6"))
+    results.append(test_svd_lowrank(A3, q=6, niter=2, name="Default q=6"))
 
     # Test 4: Different niter
     A4 = np.random.randn(150, 100)
-    results.append(validate_svd_lowrank(A4, q=20, niter=0, name="niter=0"))
-    results.append(validate_svd_lowrank(A4, q=20, niter=5, name="niter=5"))
+    results.append(test_svd_lowrank(A4, q=20, niter=0, name="niter=0"))
+    results.append(test_svd_lowrank(A4, q=20, niter=5, name="niter=5"))
 
     # Test 5: Wide matrix
     A5 = np.random.randn(50, 200)
-    results.append(validate_svd_lowrank(A5, q=20, niter=2, name="Wide 50x200"))
+    results.append(test_svd_lowrank(A5, q=20, niter=2, name="Wide 50x200"))
 
     # -------------------------------------------------------------------------
     # pca_lowrank tests
@@ -188,20 +188,20 @@ def main():
 
     # Test 1: Basic with centering
     A6 = np.random.randn(200, 50)
-    results.append(validate_pca_lowrank(A6, q=10, center=True, niter=2, name="Centered"))
+    results.append(test_pca_lowrank(A6, q=10, center=True, niter=2, name="Centered"))
 
     # Test 2: Without centering
     A7 = np.random.randn(200, 50)
-    results.append(validate_pca_lowrank(A7, q=10, center=False, niter=2, name="Not centered"))
+    results.append(test_pca_lowrank(A7, q=10, center=False, niter=2, name="Not centered"))
 
     # Test 3: Default q
     A8 = np.random.randn(100, 100)
-    results.append(validate_pca_lowrank(A8, q=None, center=True, niter=2, name="Default q"))
+    results.append(test_pca_lowrank(A8, q=None, center=True, niter=2, name="Default q"))
 
     # Test 4: Different niter
     A9 = np.random.randn(150, 80)
-    results.append(validate_pca_lowrank(A9, q=15, center=True, niter=0, name="niter=0"))
-    results.append(validate_pca_lowrank(A9, q=15, center=True, niter=5, name="niter=5"))
+    results.append(test_pca_lowrank(A9, q=15, center=True, niter=0, name="niter=0"))
+    results.append(test_pca_lowrank(A9, q=15, center=True, niter=5, name="niter=5"))
 
     # -------------------------------------------------------------------------
     # Summary
