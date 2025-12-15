@@ -4,11 +4,6 @@ hilbert - Generate Hilbert matrix
 The Hilbert matrix is a classic ill-conditioned test matrix for numerical
 algorithms. Entries are H[i,j] = 1/(i+j-1).
 
-References
-----------
-D. Hilbert, "Ein Beitrag zur Theorie des Legendre'schen Polynoms",
-Acta Mathematica, 18 (1894), pp. 155-159.
-
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
 Version: 1.0.0
@@ -37,29 +32,6 @@ def hilbert(m, n=None):
     -------
     H : ndarray, shape (m, n)
         Hilbert matrix
-
-    Notes
-    -----
-    The condition number grows exponentially with matrix size:
-    cond(H) ~ O((1+sqrt(2))^(4n) / sqrt(n))
-
-    The singular values decay rapidly, making this matrix ideal
-    for testing rank-revealing and low-rank approximation algorithms.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> H = hilbert(5)  # 5x5 Hilbert matrix
-    >>> print(f"Condition number: {np.linalg.cond(H):.2e}")
-
-    >>> # Rectangular matrix
-    >>> H_rect = hilbert(100, 50)
-    >>> print(f"Shape: {H_rect.shape}")
-
-    References
-    ----------
-    .. [1] Nicholas J. Higham, "Accuracy and Stability of Numerical
-           Algorithms", 2nd ed., SIAM, 2002, Chapter 28.
     """
     if n is None:
         n = m

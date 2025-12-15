@@ -28,35 +28,6 @@ H[i,j] = 1/(i+j-1). Useful for testing numerical stability.
 
 # Returns
 - `H::Matrix`: Hilbert matrix (m x n)
-
-# Notes
-The condition number grows exponentially with matrix size:
-cond(H) ~ O((1+sqrt(2))^(4n) / sqrt(n))
-
-The singular values decay rapidly, making this matrix ideal
-for testing rank-revealing and low-rank approximation algorithms.
-
-# Examples
-```julia
-using LinearAlgebra
-
-# 5x5 Hilbert matrix
-H = hilbert(5)
-println("Condition number: ", cond(H))
-
-# Rectangular matrix
-H_rect = hilbert(100, 50)
-println("Shape: ", size(H_rect))
-```
-
-# References
-- Nicholas J. Higham, "Accuracy and Stability of Numerical Algorithms",
-  2nd ed., SIAM, 2002, Chapter 28.
-- D. Hilbert, "Ein Beitrag zur Theorie des Legendre'schen Polynoms",
-  Acta Mathematica, 18 (1894), pp. 155-159.
-
-# Author
-Claude Code
 """
 function hilbert(m::Int, n::Int=m)
     if m < 1 || n < 1
