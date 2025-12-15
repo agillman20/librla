@@ -30,9 +30,9 @@ include(joinpath(SCRIPT_DIR, "test_svd.jl"))
 include(joinpath(SCRIPT_DIR, "test_qr.jl"))
 include(joinpath(SCRIPT_DIR, "test_orth.jl"))
 
-function run_test_module(validate_func::Function, display_name::String)
+function run_test_module(test_func::Function, display_name::String)
     """
-    Run a test module's validate() function and return (exit_code, elapsed, success).
+    Run a test module's test() function and return (exit_code, elapsed, success).
     """
     println()
     println("="^70)
@@ -41,7 +41,7 @@ function run_test_module(validate_func::Function, display_name::String)
 
     try
         t0 = time()
-        exit_code = validate_func()
+        exit_code = test_func()
         elapsed = time() - t0
 
         success = (exit_code == 0)
@@ -72,20 +72,20 @@ function main()
     println("Environment: Julia ", VERSION)
     println("="^70)
 
-    # List of test modules (validate function, display name)
+    # List of test modules (test function, display name)
     modules = [
-        (ValidateID.validate, "test_id"),
-        (ValidateSVD.validate, "test_svd"),
-        (ValidateQR.validate, "test_qr"),
-        (ValidateOrth.validate, "test_orth"),
+        (TestID.test, "test_id"),
+        (TestSVD.test, "test_svd"),
+        (TestQR.test, "test_qr"),
+        (TestOrth.test, "test_orth"),
     ]
 
     # Results tracking: (display_name, status, elapsed, success)
     results = []
     total_elapsed = 0.0
 
-    for (validate_func, display_name) in modules
-        exit_code, elapsed, success = run_test_module(validate_func, display_name)
+    for (test_func, display_name) in modules
+        exit_code, elapsed, success = run_test_module(test_func, display_name)
         total_elapsed += elapsed
 
         if success

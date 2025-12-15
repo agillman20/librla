@@ -32,7 +32,7 @@ include(joinpath(@__DIR__, "make_mat.jl"))
 
 using .librla: id_sketch, id_qrpiv
 
-export validate
+export test
 
 
 mutable struct ComparisonResult
@@ -281,7 +281,7 @@ function print_summary(results::Vector{ComparisonResult})
 end
 
 
-function validate()
+function test()
     """Run comprehensive ID comparison tests. Returns 0 on success, 1 on failure."""
 
     println()
