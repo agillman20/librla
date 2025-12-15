@@ -5,6 +5,7 @@ Matrix generators and helper functions used across all demos.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 import numpy as np

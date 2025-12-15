@@ -17,6 +17,10 @@ The demo tests a 2D grid of parameters:
 Trade-off: More iterations/samples = better accuracy but more computation.
 
 Try changing the CONFIGURATION parameters below to experiment!
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 #==============================================================================

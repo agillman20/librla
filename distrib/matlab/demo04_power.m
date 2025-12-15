@@ -13,6 +13,10 @@
 %   - extra_samples: How much oversampling (more = better accuracy)
 %   - power_iter: Number of power iterations (more = better accuracy)
 %
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Assisted by: Claude Code (Anthropic)
+%
 % Trade-off: More iterations/samples = better accuracy but more computation.
 %
 % Try changing the CONFIGURATION parameters below to experiment!

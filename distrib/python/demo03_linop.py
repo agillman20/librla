@@ -13,6 +13,10 @@ Three modes are demonstrated:
 Note: Matrix-free mode only supports rank mode (rtol >= 1), not tolerance mode.
 
 Try changing the CONFIGURATION parameters below to experiment!
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 # =============================================================================

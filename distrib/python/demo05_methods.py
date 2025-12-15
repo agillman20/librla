@@ -16,6 +16,10 @@ The choice of method affects:
   - Accuracy (lstsq gives best reconstruction)
 
 Try changing the CONFIGURATION parameters below to experiment!
+
+Author: Adrianna Gillman, Zydrunas Gimbutas
+SPDX-License-Identifier: TBD
+Assisted by: Claude Code (Anthropic)
 """
 
 # =============================================================================

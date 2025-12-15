@@ -11,6 +11,10 @@
 % where piv(1:k) selects the "skeleton" columns and T is the interpolation matrix.
 %
 % Try changing the CONFIGURATION parameters below to experiment!
+%
+% Author: Adrianna Gillman, Zydrunas Gimbutas
+% SPDX-License-Identifier: TBD
+% Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
 function demo01_basic()
