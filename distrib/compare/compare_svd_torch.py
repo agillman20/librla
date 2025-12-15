@@ -77,6 +77,7 @@ from typing import List, Optional
 
 # Set dtype and tolerances based on precision
 DTYPE = np.float64 if args.precision == 'double' else np.float32
+CDTYPE = np.complex128 if args.precision == 'double' else np.complex64
 PRECISION = args.precision
 
 # Precision-dependent constants
@@ -148,7 +149,7 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
     Parameters
     ----------
     A : ndarray
-        Input matrix to decompose (real only, torch doesn't support complex)
+        Input matrix to decompose (real or complex)
     rank : int
         Target rank for approximation
     name : str
@@ -203,9 +204,9 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
     else:
         sval_err_librla = 0.0
 
-    # Orthonormality checks
-    orth_U_librla = np.linalg.norm(U_librla.T @ U_librla - np.eye(k_librla), 'fro')
-    orth_V_librla = np.linalg.norm(Vh_librla @ Vh_librla.T - np.eye(k_librla), 'fro')
+    # Orthonormality checks (use conjugate transpose for complex)
+    orth_U_librla = np.linalg.norm(U_librla.conj().T @ U_librla - np.eye(k_librla), 'fro')
+    orth_V_librla = np.linalg.norm(Vh_librla @ Vh_librla.conj().T - np.eye(k_librla), 'fro')
 
     print(f"Rank:       k = {k_librla}")
     print(f"Error:      ||A - U @ S @ Vh|| / ||A|| = {err_librla:.3e}")
@@ -240,9 +241,10 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
 
     # Convert back to numpy and truncate to target rank (like librla does)
     # torch returns q columns, we truncate to rank for fair comparison
-    U_torch_full = U_torch.cpu().numpy()
+    # Use resolve_conj() for complex tensors (V may have conjugate bit set)
+    U_torch_full = U_torch.resolve_conj().cpu().numpy()
     s_torch_full = S_torch.cpu().numpy()
-    V_torch_full = V_torch.cpu().numpy()
+    V_torch_full = V_torch.resolve_conj().cpu().numpy()
 
     # Truncate to target rank (matching librla behavior)
     k_torch = min(rank, len(s_torch_full))
@@ -251,8 +253,8 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
     V_torch_np = V_torch_full[:, :k_torch]
 
     # Reconstruction error
-    # torch returns V (not V'), so reconstruction is U @ diag(S) @ V.T
-    A_recon_torch = U_torch_np @ np.diag(s_torch_np) @ V_torch_np.T
+    # torch returns V (not V'), so reconstruction is U @ diag(S) @ V.H
+    A_recon_torch = U_torch_np @ np.diag(s_torch_np) @ V_torch_np.conj().T
     err_torch = np.linalg.norm(A - A_recon_torch, 'fro') / normA
 
     # Singular value accuracy
@@ -262,12 +264,12 @@ def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=1
     else:
         sval_err_torch = 0.0
 
-    # Orthonormality checks
-    orth_U_torch = np.linalg.norm(U_torch_np.T @ U_torch_np - np.eye(k_torch), 'fro')
-    orth_V_torch = np.linalg.norm(V_torch_np.T @ V_torch_np - np.eye(k_torch), 'fro')
+    # Orthonormality checks (use conjugate transpose for complex)
+    orth_U_torch = np.linalg.norm(U_torch_np.conj().T @ U_torch_np - np.eye(k_torch), 'fro')
+    orth_V_torch = np.linalg.norm(V_torch_np.conj().T @ V_torch_np - np.eye(k_torch), 'fro')
 
     print(f"Rank:       k = {k_torch} (truncated from q={q_torch})")
-    print(f"Error:      ||A - U @ S @ V'|| / ||A|| = {err_torch:.3e}")
+    print(f"Error:      ||A - U @ S @ V^H|| / ||A|| = {err_torch:.3e}")
     print(f"SVal Err:   ||s - s_ref|| / ||s_ref|| = {sval_err_torch:.3e}")
     print(f"Orth U:     ||U'U - I|| = {orth_U_torch:.3e}")
     print(f"Orth V:     ||V'V - I|| = {orth_V_torch:.3e}")
@@ -443,6 +445,40 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     # Test 14: Sparse Neural Network Matrix
     A14 = make_mat(300, 300, 'snn').astype(DTYPE)
     results.append(compare_on_matrix(A14, 50, "SNN (Sparse Neural Network)", device, power_iter, extra_samples))
+
+    # -------------------------------------------------------------------------
+    # COMPLEX MATRIX TESTS
+    # -------------------------------------------------------------------------
+    print("\n\n" + "="*70)
+    print("COMPLEX MATRIX TESTS")
+    print("Testing complex-valued matrices (both real and imaginary parts)")
+    print("="*70)
+
+    # Test 15: Complex random matrix
+    A15 = (np.random.randn(500, 300) + 1j * np.random.randn(500, 300)).astype(CDTYPE)
+    results.append(compare_on_matrix(A15, 20, "Complex Random Matrix", device, power_iter, extra_samples))
+
+    # Test 16: Complex low-rank matrix
+    U16 = (np.random.randn(400, 15) + 1j * np.random.randn(400, 15)).astype(CDTYPE)
+    V16 = (np.random.randn(250, 15) + 1j * np.random.randn(250, 15)).astype(CDTYPE)
+    A16 = U16 @ V16.conj().T + EPS * (np.random.randn(400, 250) + 1j * np.random.randn(400, 250)).astype(CDTYPE)
+    results.append(compare_on_matrix(A16, 15, "Complex Low-Rank (rank~15)", device, power_iter, extra_samples))
+
+    # Test 17: Complex decaying spectrum
+    A17 = (np.random.randn(400, 300) + 1j * np.random.randn(400, 300)).astype(CDTYPE)
+    U17, S17, Vh17 = np.linalg.svd(A17, full_matrices=False)
+    s17 = (1.0 / np.arange(1, 301)).astype(DTYPE)
+    A17 = (U17 @ np.diag(s17) @ Vh17).astype(CDTYPE)
+    results.append(compare_on_matrix(A17, 50, "Complex Decaying Spectrum (1/k)", device, power_iter, extra_samples))
+
+    # Test 18: Complex Hermitian-like matrix (A @ A.H is Hermitian)
+    B18 = (np.random.randn(300, 150) + 1j * np.random.randn(300, 150)).astype(CDTYPE)
+    A18 = B18 @ B18.conj().T  # Hermitian positive semi-definite
+    results.append(compare_on_matrix(A18, 30, "Complex Hermitian (B @ B^H)", device, power_iter, extra_samples))
+
+    # Test 19: Large complex matrix
+    A19 = (np.random.randn(800, 500) + 1j * np.random.randn(800, 500)).astype(CDTYPE)
+    results.append(compare_on_matrix(A19, 20, "Large Complex Random (800x500)", device, power_iter, extra_samples))
 
     return results
 
