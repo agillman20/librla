@@ -10,11 +10,11 @@ This distribution provides a unified randomized linear algebra library (librla)
 implemented in Python, MATLAB/Octave, and Julia. The library provides efficient
 sketching-based methods for low-rank matrix approximations.
 
-Total files: 50
-- Documentation: 3 files
-- Python files: 16 files (26K main library)
-- MATLAB files: 16 files (21K main library)
-- Julia files: 15 files (21K main library)
+Total files: ~35
+- Documentation: 5 files
+- Python files: ~10 files (26K main library)
+- MATLAB files: ~10 files (21K main library)
+- Julia files: ~10 files (21K main library)
 
 ================================================================================
 DOCUMENTATION
@@ -34,25 +34,16 @@ Main Library:
                                            id_sketch, id_qrpiv
 
 Utilities:
-  LinearOperator.py            - Matrix-free operator abstraction (planned)
-  hilb.py              (1.1K)  - Hilbert matrix generator
-  kahan.py             (4.9K)  - Kahan matrix generator
-  make_mat.py          (7.0K)  - Matrix generation utilities
-  python-local.sh       (79B)  - Local Python path helper script
+  hilbert.py                   - Hilbert matrix generator
+  kahan.py                     - Kahan matrix generator
+  demo_utils.py                - Demo utilities
 
-Comparison/Examples:
-  compare_id.py         (17K)  - Compare ID algorithms (sketch vs qrpiv)
-
-Test Suite:
-  test1_hilbert.py     (3.3K)  - Basic Hilbert matrix tests
-  test1_kahan.py       (3.1K)  - Kahan matrix tests
-  test2_svd_hilbert.py (3.8K)  - SVD on Hilbert matrix
-  test3_linop_hilbert.py(6.2K) - LinearOperator tests with Hilbert matrix
-  test4_linop_random.py (6.1K)  - LinearOperator tests with random matrices
-  test5_linop_fullrank.py(8.4K) - Full-rank matrix tests
-  test5_method_comparison.py(4.7K) - Compare T computation methods
-  test6_power.py       (8.7K)  - Power iteration tests
-  test7_power.py       (6.0K)  - Power iteration in svd_sketch
+Demo Suite:
+  demo01_basic.py              - Basic ID algorithms (id_sketch, id_qrpiv)
+  demo02_svd.py                - SVD and QR sketching
+  demo03_linop.py              - LinearOperator abstraction
+  demo04_power.py              - Power iteration effects
+  demo05_methods.py            - T computation methods comparison
 
 ================================================================================
 MATLAB/OCTAVE IMPLEMENTATION (matlab/)
@@ -64,24 +55,17 @@ Main Library:
                                                 id_sketch, id_qrpiv
 
 Utilities:
-  LinearOperator.m     (8.4K)  - Matrix-free operator class
-  hilb.m               (208B)  - Hilbert matrix generator
-  kahan.m              (3.3K)  - Kahan matrix generator
-  make_mat.m           (2.4K)  - Matrix generation utilities
+  LinearOperator.m             - Matrix-free operator class
+  hilbert.m                    - Hilbert matrix generator
+  kahan.m                      - Kahan matrix generator
+  demo_utils.m                 - Demo utilities
 
-Comparison/Examples:
-  compare_id.m          (18K)  - Compare ID algorithms (sketch vs qrpiv)
-
-Test Suite:
-  test1_hilbert.m      (3.7K)  - Basic Hilbert matrix tests
-  test1_kahan.m        (3.8K)  - Kahan matrix tests
-  test2_svd_hilbert.m  (4.3K)  - SVD on Hilbert matrix
-  test3_linop_hilbert.m (6.5K)  - LinearOperator tests with Hilbert matrix
-  test4_linop_random.m  (6.7K)  - LinearOperator tests with random matrices
-  test5_linop_fullrank.m(9.3K)  - Full-rank matrix tests
-  test5_method_comparison.m(5.4K) - Compare T computation methods
-  test6_power.m         (8.7K)  - Power iteration tests
-  test7_power.m         (6.0K)  - Power iteration in svd_sketch
+Demo Suite:
+  demo01_basic.m               - Basic ID algorithms (id_sketch, id_qrpiv)
+  demo02_svd.m                 - SVD and QR sketching
+  demo03_linop.m               - LinearOperator abstraction
+  demo04_power.m               - Power iteration effects
+  demo05_methods.m             - T computation methods comparison
 
 ================================================================================
 JULIA IMPLEMENTATION (julia/)
@@ -93,24 +77,17 @@ Main Library:
                                          id_sketch, id_qrpiv
 
 Utilities:
-  LinearOperator.jl    (7.4K)  - Matrix-free operator type
-  hilb.jl              (1.1K)  - Hilbert matrix generator
-  kahan.jl             (4.4K)  - Kahan matrix generator
-  make_mat.jl          (4.5K)  - Matrix generation utilities
+  LinearOperator.jl            - Matrix-free operator type
+  hilbert.jl                   - Hilbert matrix generator
+  kahan.jl                     - Kahan matrix generator
+  demo_utils.jl                - Demo utilities
 
-Comparison/Examples:
-  compare_id.jl         (18K)  - Compare ID algorithms (sketch vs qrpiv)
-
-Test Suite:
-  test1_hilbert.jl     (3.9K)  - Basic Hilbert matrix tests
-  test1_kahan.jl       (3.6K)  - Kahan matrix tests
-  test2_svd_hilbert.jl (4.2K)  - SVD on Hilbert matrix
-  test3_linop_hilbert.jl(6.8K) - LinearOperator tests with Hilbert matrix
-  test4_linop_random.jl (6.7K)  - LinearOperator tests with random matrices
-  test5_linop_fullrank.jl(9.3K) - Full-rank matrix tests
-  test5_method_comparison.jl(5.3K) - Compare T computation methods
-  test6_power.jl        (8.4K)  - Power iteration tests
-  test7_power.jl        (6.0K)  - Power iteration in svd_sketch
+Demo Suite:
+  demo01_basic.jl              - Basic ID algorithms (id_sketch, id_qrpiv)
+  demo02_svd.jl                - SVD and QR sketching
+  demo03_linop.jl              - LinearOperator abstraction
+  demo04_power.jl              - Power iteration effects
+  demo05_methods.jl            - T computation methods comparison
 
 ================================================================================
 CORE API FUNCTIONS

@@ -63,7 +63,7 @@ requires-python = ">=3.8"
 dependencies = ["numpy>=1.20", "scipy>=1.7"]
 
 [tool.setuptools]
-py-modules = ["librla", "hilb", "kahan", "make_mat"]
+py-modules = ["librla", "hilbert", "kahan"]
 ```
 
 ### Commands to Build and Distribute
@@ -106,7 +106,7 @@ cp distrib/python/LinearOperator.py your_project/  # Optional
 ```
 This file doesn't exist - remove this line since scipy provides LinearOperator.
 
-### test1_hilbert.py (line 96)
+### demo01_basic.py
 Summary output refers to `id_rrqr` but the function is actually `id_qrpiv`.
 
 ---

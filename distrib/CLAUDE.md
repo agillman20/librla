@@ -92,33 +92,30 @@ A(:, piv(k+1:end)) = A(:, piv(1:k)) * T
 A[:, piv[k+1:end]] = A[:, piv[1:k]] * T
 ```
 
-## Testing
+## Demos
 
-Each language directory contains 8 test files:
+Each language directory contains 5 demo files:
 
-| Test | Description |
+| Demo | Description |
 |------|-------------|
-| `test1_hilbert` | Hilbert matrix (ill-conditioned) |
-| `test1_kahan` | Kahan matrix |
-| `test2_svd_hilbert` | SVD on Hilbert matrices |
-| `test3_linop_hilbert` | LinearOperator with Hilbert |
-| `test4_linop_random` | LinearOperator with random matrices |
-| `test5_linop_fullrank` | Full-rank matrix tests |
-| `test5_method_comparison` | Compare T computation methods |
-| `test6_power` | Power iteration tests |
+| `demo01_basic` | Basic ID algorithms (id_sketch, id_qrpiv) |
+| `demo02_svd` | SVD and QR sketching |
+| `demo03_linop` | LinearOperator abstraction |
+| `demo04_power` | Power iteration effects |
+| `demo05_methods` | T computation methods comparison |
 
-### Running Tests
+### Running Demos
 
 ```bash
 # Python
-cd python && python test1_hilbert.py
+cd python && python demo01_basic.py
 
 # MATLAB
 cd matlab
-test1_hilbert
+demo01_basic
 
 # Julia
-cd julia && julia -e 'include("test1_hilbert.jl")'
+cd julia && julia demo01_basic.jl
 ```
 
 ## Utility Files
@@ -127,7 +124,7 @@ Each language directory includes:
 
 | File | Description |
 |------|-------------|
-| `hilb.*` | Hilbert matrix generator |
+| `hilbert.*` | Hilbert matrix generator |
 | `kahan.*` | Kahan matrix generator |
 | `make_mat.*` | Matrix generation utilities |
 | `compare_id.*` | Comparison example for ID methods |

@@ -40,7 +40,7 @@ classdef LinearOperator
 %
 % EXAMPLE:
 %   % Create operator from Hilbert matrix
-%   H = hilb(100);
+%   H = hilbert(100);
 %   matvec = @(x) H * x;
 %   rmatvec = @(x) H' * x;
 %   A = LinearOperator(matvec, rmatvec, 100, 100);  % matmat=true by default

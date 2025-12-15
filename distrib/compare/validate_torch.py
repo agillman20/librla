@@ -11,11 +11,11 @@ Tests:
 - Similar singular values
 
 Usage:
-    python validate_torch_compat.py
+    python validate_torch.py
 
 Requires:
     - NumPy, SciPy, PyTorch
-    - librla.py, torch_compat.py from ../python/
+    - torch_compat.py from ../python/
 
 Author: Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
@@ -27,7 +27,7 @@ import os
 import sys
 import numpy as np
 
-# Add parent python directory to path for imports
+# Add python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 from torch_compat import svd_lowrank, pca_lowrank

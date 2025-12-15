@@ -1,15 +1,17 @@
-function K = kahan(n, varargin)
+function K = kahan(m, n, varargin)
 % KAHAN  Generate Kahan matrix
 %
-%   K = kahan(n)
-%   K = kahan(n, theta)
-%   K = kahan(n, theta, pert)
+%   K = kahan(m)
+%   K = kahan(m, n)
+%   K = kahan(m, n, theta)
+%   K = kahan(m, n, theta, pert)
 %
 % Kahan's matrix is a classic test matrix for numerical stability.
 % It's upper triangular with controlled condition number.
 %
 % Arguments:
-%   n     - Size of the matrix (n x n)
+%   m     - Number of rows
+%   n     - Number of columns (default: m)
 %   theta - Angle parameter in radians (default: 1.2)
 %           Controls the condition number via cos(theta)
 %           Smaller theta -> better conditioned
@@ -19,7 +21,7 @@ function K = kahan(n, varargin)
 %           Setting pert = 0 gives no diagonal perturbation
 %
 % Returns:
-%   K - Kahan matrix (n x n)
+%   K - Kahan matrix (m x n)
 %
 % Matrix Structure:
 %   K(i,i) = s^(i-1) + pert*eps*(n-i+1)  for i = 1,...,n (diagonal)
@@ -73,43 +75,56 @@ if nargin < 1
     error('kahan:TooFewInputs', 'At least one input argument required');
 end
 
+% Default for n
+if nargin < 2 || isempty(n)
+    n = m;
+end
+
 % Default parameters
 theta = 1.2;
 pert = 25;
 
 % Parse optional arguments
-if nargin >= 2
+if nargin >= 3
     theta = varargin{1};
 end
-if nargin >= 3
+if nargin >= 4
     pert = varargin{2};
 end
 
 % Validate inputs
-if n < 1
-    error('kahan:InvalidInput', 'n must be positive, got %d', n);
+if m < 1 || n < 1
+    error('kahan:InvalidInput', 'Dimensions must be positive, got %d x %d', m, n);
 end
 
 % Compute sin and cos
 s = sin(theta);
 c = cos(theta);
+r = min(m, n);
 
-% Create matrix following Octave gallery('kahan') implementation:
-% K = eye(n) - c * triu(ones(n), 1)
-% K = diag(s.^[0:n-1]) * K + pert*eps*diag([n:-1:1])
+% Create rectangular Kahan matrix
+K = zeros(m, n);
 
-% Start with identity
-K = eye(n);
+% Set diagonal
+for i = 1:r
+    K(i, i) = 1.0;
+end
 
-% Subtract c * strict_upper_triangle(ones)
-% This makes all strict upper triangle elements equal to -c
-K = K - c * triu(ones(n), 1);
+% Set upper triangular part
+for i = 1:m
+    for j = i+1:n
+        K(i, j) = -c;
+    end
+end
 
-% Left-multiply by diagonal matrix diag(s^[0:n-1])
-% This scales row i by s^(i-1) (1-indexed)
-K = diag(s.^[0:n-1]) * K;
+% Scale rows by s^(i-1)
+for i = 1:m
+    K(i, :) = K(i, :) * (s^(i-1));
+end
 
-% Add diagonal perturbation: pert*eps*diag([n, n-1, ..., 1])
-K = K + pert*eps* diag([n:-1:1]);
+% Add diagonal perturbation
+for i = 1:r
+    K(i, i) = K(i, i) + pert * eps * (r - i + 1);
+end
 
 end

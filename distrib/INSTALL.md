@@ -48,7 +48,7 @@ export PYTHONPATH="/path/to/distrib/python:$PYTHONPATH"
 ```bash
 cp distrib/python/librla.py your_project/
 cp distrib/python/LinearOperator.py your_project/  # Optional
-cp distrib/python/hilb.py your_project/  # Optional utilities
+cp distrib/python/hilbert.py your_project/  # Optional utilities
 ```
 
 ### Usage
@@ -76,9 +76,8 @@ U, s, Vt = svd_sketch(A, rtol=20.0)  # Rank-20 approximation
 ### Testing Python Installation
 ```bash
 cd distrib/python
-python test1_hilbert.py
-python test2_svd_hilbert.py
-python compare_id.py
+python demo01_basic.py
+python demo02_svd.py
 ```
 
 ### Troubleshooting Python
@@ -126,7 +125,7 @@ userpath  % Shows MATLAB user path
 ```bash
 cp distrib/matlab/librla.m your_project/
 cp distrib/matlab/LinearOperator.m your_project/  # Optional
-cp distrib/matlab/hilb.m your_project/  # Optional utilities
+cp distrib/matlab/hilbert.m your_project/  # Optional utilities
 ```
 
 ### Usage
@@ -153,9 +152,8 @@ A = randn(1000, 500);
 ### Testing MATLAB Installation
 ```matlab
 cd distrib/matlab
-test1_hilbert
-test2_svd_hilbert
-compare_id
+demo01_basic
+demo02_svd
 ```
 
 ### Troubleshooting MATLAB/Octave
@@ -198,7 +196,7 @@ using librla
 ```bash
 cp distrib/julia/librla.jl your_project/
 cp distrib/julia/LinearOperator.jl your_project/  # Optional
-cp distrib/julia/hilb.jl your_project/  # Optional utilities
+cp distrib/julia/hilbert.jl your_project/  # Optional utilities
 ```
 
 ### Usage
@@ -226,9 +224,8 @@ k, piv, T = id_sketch(A, 1e-6, method="lstsq")
 ### Testing Julia Installation
 ```julia
 cd("/path/to/distrib/julia")
-include("test1_hilbert.jl")
-include("test2_svd_hilbert.jl")
-include("compare_id.jl")
+include("demo01_basic.jl")
+include("demo02_svd.jl")
 ```
 
 ### Troubleshooting Julia
@@ -306,48 +303,36 @@ Q, flag, err = orth_sketch(A_op, 20.0)
 
 **Note:** Matrix-free LinearOperators only support **rank mode** (rtol ≥ 1). Tolerance mode requires access to the full matrix.
 
-## Running All Tests
+## Running All Demos
 
 ### Python
 ```bash
 cd distrib/python
-python test1_hilbert.py
-python test1_kahan.py
-python test2_svd_hilbert.py
-python test3_linop_hilbert.py
-python test4_linop_random.py
-python test5_linop_fullrank.py
-python test5_method_comparison.py
-python test6_power.py
-python test7_power.py
+python demo01_basic.py
+python demo02_svd.py
+python demo03_linop.py
+python demo04_power.py
+python demo05_methods.py
 ```
 
 ### MATLAB/Octave
 ```matlab
 cd distrib/matlab
-test1_hilbert
-test1_kahan
-test2_svd_hilbert
-test3_linop_hilbert
-test4_linop_random
-test5_linop_fullrank
-test5_method_comparison
-test6_power
-test7_power
+demo01_basic
+demo02_svd
+demo03_linop
+demo04_power
+demo05_methods
 ```
 
 ### Julia
 ```julia
 cd("/path/to/distrib/julia")
-include("test1_hilbert.jl")
-include("test1_kahan.jl")
-include("test2_svd_hilbert.jl")
-include("test3_linop_hilbert.jl")
-include("test4_linop_random.jl")
-include("test5_linop_fullrank.jl")
-include("test5_method_comparison.jl")
-include("test6_power.jl")
-include("test7_power.jl")
+include("demo01_basic.jl")
+include("demo02_svd.jl")
+include("demo03_linop.jl")
+include("demo04_power.jl")
+include("demo05_methods.jl")
 ```
 
 ## Usage Modes

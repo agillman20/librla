@@ -98,7 +98,7 @@ class ComparisonResult:
     passed: bool
 
 
-def hilb(m, n, dtype=np.float64):
+def hilbert(m, n, dtype=np.float64):
     """Generate an mxn Hilbert matrix."""
     i = np.arange(1, m + 1, dtype=dtype).reshape(-1, 1)
     j = np.arange(1, n + 1, dtype=dtype).reshape(1, -1)
@@ -323,7 +323,7 @@ def main():
     results.append(compare_on_matrix(A2, RTOL_TIGHT, "Low-Rank Matrix (rank~15)", extra_samples, power_iter))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
-    A3 = hilb(2000, 1000, dtype=DTYPE)
+    A3 = hilbert(2000, 1000, dtype=DTYPE)
     results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (severely ill-conditioned)", extra_samples, power_iter))
 
     # Test 4: Complex matrix
@@ -357,7 +357,7 @@ def main():
     results.append(compare_on_matrix(A7, RTOL_TIGHT, "Large Low-Rank (800x500, rank~15)", extra_samples, power_iter))
 
     # Test 8: Large Hilbert matrix
-    A8 = hilb(4000, 2000, dtype=DTYPE)
+    A8 = hilbert(4000, 2000, dtype=DTYPE)
     results.append(compare_on_matrix(A8, 15, "Large Hilbert Matrix (4000x2000)", extra_samples, power_iter))
 
     # Test 9: Large complex matrix
