@@ -27,7 +27,7 @@ TARGET_RANK = 15            # Number of skeleton columns to select
 RANDOM_SEED = 42            # For reproducibility (set to None for random)
 
 # Matrix type: 'hilbert' or 'kahan'
-MATRIX_TYPE = 'kahan'
+MATRIX_TYPE = 'hilbert'
 KAHAN_THETA = 0.8           # Kahan matrix parameter (only used if MATRIX_TYPE='kahan')
 
 # =============================================================================
