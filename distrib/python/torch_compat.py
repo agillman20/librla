@@ -9,8 +9,8 @@ Usage::
 
     from torch_compat import svd_lowrank, pca_lowrank
 
-    U, S, V = svd_lowrank(A, q=10, niter=2)
-    U, S, V = pca_lowrank(A, q=10, center=True, niter=2)
+    U, s, V = svd_lowrank(A, q=10, niter=2)
+    U, s, V = pca_lowrank(A, q=10, center=True, niter=2)
 
 Note: q is the oversampled rank (sketch size), not the final rank.
 User is responsible for choosing q = k + oversampling where k is
@@ -41,8 +41,8 @@ def svd_lowrank(A, q=6, niter=2, M=None):
     -------
     U : ndarray, shape (m, q)
         Left singular vectors
-    S : ndarray, shape (q,)
-        Singular values
+    s : ndarray, shape (q,)
+        Singular values (1D array)
     V : ndarray, shape (n, q)
         Right singular vectors (not transposed)
     """
@@ -70,8 +70,8 @@ def pca_lowrank(A, q=None, center=True, niter=2):
     -------
     U : ndarray, shape (m, q)
         Left singular vectors
-    S : ndarray, shape (q,)
-        Singular values
+    s : ndarray, shape (q,)
+        Singular values (1D array)
     V : ndarray, shape (n, q)
         Right singular vectors (not transposed)
 
@@ -79,7 +79,6 @@ def pca_lowrank(A, q=None, center=True, niter=2):
     -----
     The relation to PCA:
     - V columns are principal directions
-    - S**2 / (m-1) are eigenvalues of covariance (when center=True)
     - A @ V[:, :k] projects data to first k principal components
     """
     m, n = A.shape
