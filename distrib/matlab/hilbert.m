@@ -14,28 +14,6 @@ function H = hilbert(m, n)
 % Returns:
 %   H - Hilbert matrix (m x n)
 %
-% Notes:
-%   The condition number grows exponentially with matrix size:
-%   cond(H) ~ O((1+sqrt(2))^(4n) / sqrt(n))
-%
-%   The singular values decay rapidly, making this matrix ideal
-%   for testing rank-revealing and low-rank approximation algorithms.
-%
-% Examples:
-%   % 5x5 Hilbert matrix
-%   H = hilbert(5);
-%   fprintf('Condition number: %.2e\n', cond(H));
-%
-%   % Rectangular matrix
-%   H_rect = hilbert(100, 50);
-%   fprintf('Shape: %d x %d\n', size(H_rect));
-%
-% References:
-%   [1] Nicholas J. Higham, "Accuracy and Stability of Numerical
-%       Algorithms", 2nd ed., SIAM, 2002, Chapter 28.
-%   [2] D. Hilbert, "Ein Beitrag zur Theorie des Legendre'schen
-%       Polynoms", Acta Mathematica, 18 (1894), pp. 155-159.
-%
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: TBD
 % Version: 1.0.0
