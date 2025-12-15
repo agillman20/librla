@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-validate_all.py - Master validation script for librla
+test_all.py - Master test script for librla
 
-Runs all validation tests and produces a unified summary:
-- validate_id.py    (ID implementations)
-- validate_svd.py   (SVD implementations)
-- validate_qr.py    (QR implementations)
-- validate_orth.py  (Orth implementations)
+Runs all tests and produces a unified summary:
+- test_id.py    (ID implementations)
+- test_svd.py   (SVD implementations)
+- test_qr.py    (QR implementations)
+- test_orth.py  (Orth implementations)
 
 Usage:
-    python validate_all.py
+    python test_all.py
 
 Requires:
     - NumPy, SciPy
     - librla.py, make_mat.py in Python path
-    - validate_id.py, validate_svd.py, validate_qr.py, validate_orth.py
+    - test_id.py, test_svd.py, test_qr.py, test_orth.py
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
@@ -137,18 +137,18 @@ def run_module_with_count(module_path, module_display_name):
 
 
 def main():
-    """Run all validation tests and produce summary."""
+    """Run all tests and produce summary."""
 
     print()
     print("="*70)
-    print("LIBRLA VALIDATION SUITE - Python")
+    print("LIBRLA TEST SUITE - Python")
     print("="*70)
     print()
-    print("This script runs all validation tests for librla functions:")
-    print("  - validate_id.py    (id_sketch, id_qrpiv)")
-    print("  - validate_svd.py   (svd_sketch)")
-    print("  - validate_qr.py    (qr_sketch)")
-    print("  - validate_orth.py  (orth_sketch)")
+    print("This script runs all tests for librla functions:")
+    print("  - test_id.py    (id_sketch, id_qrpiv)")
+    print("  - test_svd.py   (svd_sketch)")
+    print("  - test_qr.py    (qr_sketch)")
+    print("  - test_orth.py  (orth_sketch)")
     print()
     print(f"Python:     {sys.version.split()[0]}")
     print("="*70)
@@ -158,10 +158,10 @@ def main():
 
     # List of modules to run
     modules = [
-        ('validate_id.py', 'validate_id'),
-        ('validate_svd.py', 'validate_svd'),
-        ('validate_qr.py', 'validate_qr'),
-        ('validate_orth.py', 'validate_orth'),
+        ('test_id.py', 'test_id'),
+        ('test_svd.py', 'test_svd'),
+        ('test_qr.py', 'test_qr'),
+        ('test_orth.py', 'test_orth'),
     ]
 
     # Results tracking
@@ -220,11 +220,11 @@ def main():
     modules_total = len(results)
 
     if all_passed:
-        print(f"[PASS] All {modules_total} validation modules passed!")
+        print(f"[PASS] All {modules_total} test modules passed!")
         print("="*70)
         return 0
     else:
-        print(f"[FAIL] {modules_passed}/{modules_total} validation modules passed")
+        print(f"[FAIL] {modules_passed}/{modules_total} test modules passed")
         print()
         print("Failed modules:")
         for display_name, exit_code, elapsed, success, status in results:

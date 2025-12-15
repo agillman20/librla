@@ -1,15 +1,15 @@
-function exit_code = validate_all()
-%VALIDATE_ALL Master validation script for librla
+function exit_code = test_all()
+%VALIDATE_ALL Master test script for librla
 %
-%   Runs all validation tests and produces a unified summary:
-%   - validate_id.m    (ID implementations)
-%   - validate_svd.m   (SVD implementations)
-%   - validate_qr.m    (QR implementations)
-%   - validate_orth.m  (Orth implementations)
+%   Runs all test tests and produces a unified summary:
+%   - test_id.m    (ID implementations)
+%   - test_svd.m   (SVD implementations)
+%   - test_qr.m    (QR implementations)
+%   - test_orth.m  (Orth implementations)
 %
 %   Usage:
-%       validate_all
-%       exit_code = validate_all()
+%       test_all
+%       exit_code = test_all()
 %
 %   Returns 0 if all tests pass, 1 otherwise.
 %
@@ -21,14 +21,14 @@ function exit_code = validate_all()
 
     fprintf('\n');
     fprintf('%s\n', repmat('=', 1, 70));
-    fprintf('LIBRLA VALIDATION SUITE - MATLAB/Octave\n');
+    fprintf('LIBRLA TEST SUITE - MATLAB/Octave\n');
     fprintf('%s\n', repmat('=', 1, 70));
     fprintf('\n');
-    fprintf('This script runs all validation tests for librla functions:\n');
-    fprintf('  - validate_id.m    (id_sketch, id_qrpiv)\n');
-    fprintf('  - validate_svd.m   (svd_sketch)\n');
-    fprintf('  - validate_qr.m    (qr_sketch)\n');
-    fprintf('  - validate_orth.m  (orth_sketch)\n');
+    fprintf('This script runs all test tests for librla functions:\n');
+    fprintf('  - test_id.m    (id_sketch, id_qrpiv)\n');
+    fprintf('  - test_svd.m   (svd_sketch)\n');
+    fprintf('  - test_qr.m    (qr_sketch)\n');
+    fprintf('  - test_orth.m  (orth_sketch)\n');
     fprintf('\n');
 
     % Detect environment
@@ -39,12 +39,12 @@ function exit_code = validate_all()
     end
     fprintf('%s\n', repmat('=', 1, 70));
 
-    % List of validation modules
+    % List of test modules
     modules = {
-        'validate_id',   'validate_id';
-        'validate_svd',  'validate_svd';
-        'validate_qr',   'validate_qr';
-        'validate_orth', 'validate_orth'
+        'test_id',   'test_id';
+        'test_svd',  'test_svd';
+        'test_qr',   'test_qr';
+        'test_orth', 'test_orth'
     };
 
     num_modules = size(modules, 1);
@@ -61,7 +61,7 @@ function exit_code = validate_all()
 
         try
             t0 = tic;
-            % Call the validation function
+            % Call the test function
             module_exit_code = feval(func_name);
             elapsed = toc(t0);
             total_elapsed = total_elapsed + elapsed;
@@ -124,11 +124,11 @@ function exit_code = validate_all()
     fprintf('%s\n', repmat('=', 1, 70));
 
     if all_passed
-        fprintf('[PASS] All %d validation modules passed!\n', num_modules);
+        fprintf('[PASS] All %d test modules passed!\n', num_modules);
         fprintf('%s\n', repmat('=', 1, 70));
         exit_code = 0;
     else
-        fprintf('[FAIL] %d/%d validation modules passed\n', modules_passed, num_modules);
+        fprintf('[FAIL] %d/%d test modules passed\n', modules_passed, num_modules);
         fprintf('\n');
         fprintf('Failed modules:\n');
         for i = 1:num_modules

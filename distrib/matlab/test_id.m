@@ -1,4 +1,4 @@
-% validate_id.m - Validate libid interpolative decomposition implementations
+% test_id.m - Test libid interpolative decomposition implementations
 %
 % Compares two ID implementations from librla:
 % - id_sketch:  Randomized QR sketching (default, recommended)
@@ -11,8 +11,8 @@
 % - Rank selection behavior
 %
 % Usage:
-%     octave --no-gui --eval "validate_id"
-%     matlab -batch "validate_id"
+%     octave --no-gui --eval "test_id"
+%     matlab -batch "test_id"
 %
 % Returns 0 if all tests pass, 1 otherwise.
 %
@@ -22,7 +22,7 @@
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)
 
-function exit_code = validate_id()
+function exit_code = test_id()
     % No path additions needed - all files in same directory
 
     fprintf('\n======================================================================\n');

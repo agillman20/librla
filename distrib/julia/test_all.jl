@@ -1,15 +1,15 @@
 #!/usr/bin/env julia
 #
-# validate_all.jl - Master validation script for librla
+# test_all.jl - Master test script for librla
 #
-# Runs all validation tests and produces a unified summary:
-# - validate_id.jl    (ID implementations)
-# - validate_svd.jl   (SVD implementations)
-# - validate_qr.jl    (QR implementations)
-# - validate_orth.jl  (Orth implementations)
+# Runs all test tests and produces a unified summary:
+# - test_id.jl    (ID implementations)
+# - test_svd.jl   (SVD implementations)
+# - test_qr.jl    (QR implementations)
+# - test_orth.jl  (Orth implementations)
 #
 # Usage:
-#     julia validate_all.jl
+#     julia test_all.jl
 #
 # Returns exit code 0 if all tests pass, 1 otherwise.
 #
@@ -24,15 +24,15 @@ using Printf
 # Get the directory containing this script
 const SCRIPT_DIR = @__DIR__
 
-# Include all validation modules (JIT compiles once for all)
-include(joinpath(SCRIPT_DIR, "validate_id.jl"))
-include(joinpath(SCRIPT_DIR, "validate_svd.jl"))
-include(joinpath(SCRIPT_DIR, "validate_qr.jl"))
-include(joinpath(SCRIPT_DIR, "validate_orth.jl"))
+# Include all test modules (JIT compiles once for all)
+include(joinpath(SCRIPT_DIR, "test_id.jl"))
+include(joinpath(SCRIPT_DIR, "test_svd.jl"))
+include(joinpath(SCRIPT_DIR, "test_qr.jl"))
+include(joinpath(SCRIPT_DIR, "test_orth.jl"))
 
-function run_validation_module(validate_func::Function, display_name::String)
+function run_test_module(validate_func::Function, display_name::String)
     """
-    Run a validation module's validate() function and return (exit_code, elapsed, success).
+    Run a test module's validate() function and return (exit_code, elapsed, success).
     """
     println()
     println("="^70)
@@ -60,24 +60,24 @@ end
 function main()
     println()
     println("="^70)
-    println("LIBRLA VALIDATION SUITE - Julia")
+    println("LIBRLA TEST SUITE - Julia")
     println("="^70)
     println()
-    println("This script runs all validation tests for librla functions:")
-    println("  - validate_id.jl    (id_sketch, id_qrpiv)")
-    println("  - validate_svd.jl   (svd_sketch)")
-    println("  - validate_qr.jl    (qr_sketch)")
-    println("  - validate_orth.jl  (orth_sketch)")
+    println("This script runs all test tests for librla functions:")
+    println("  - test_id.jl    (id_sketch, id_qrpiv)")
+    println("  - test_svd.jl   (svd_sketch)")
+    println("  - test_qr.jl    (qr_sketch)")
+    println("  - test_orth.jl  (orth_sketch)")
     println()
     println("Environment: Julia ", VERSION)
     println("="^70)
 
-    # List of validation modules (validate function, display name)
+    # List of test modules (validate function, display name)
     modules = [
-        (ValidateID.validate, "validate_id"),
-        (ValidateSVD.validate, "validate_svd"),
-        (ValidateQR.validate, "validate_qr"),
-        (ValidateOrth.validate, "validate_orth"),
+        (ValidateID.validate, "test_id"),
+        (ValidateSVD.validate, "test_svd"),
+        (ValidateQR.validate, "test_qr"),
+        (ValidateOrth.validate, "test_orth"),
     ]
 
     # Results tracking: (display_name, status, elapsed, success)
@@ -85,7 +85,7 @@ function main()
     total_elapsed = 0.0
 
     for (validate_func, display_name) in modules
-        exit_code, elapsed, success = run_validation_module(validate_func, display_name)
+        exit_code, elapsed, success = run_test_module(validate_func, display_name)
         total_elapsed += elapsed
 
         if success
@@ -133,11 +133,11 @@ function main()
     num_modules = length(modules)
 
     if all_passed
-        println("[PASS] All $num_modules validation modules passed!")
+        println("[PASS] All $num_modules test modules passed!")
         println("="^70)
         return 0
     else
-        println("[FAIL] $modules_passed/$num_modules validation modules passed")
+        println("[FAIL] $modules_passed/$num_modules test modules passed")
         println()
         println("Failed modules:")
         for (display_name, status, elapsed, success) in results

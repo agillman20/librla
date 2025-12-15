@@ -1,4 +1,4 @@
-% validate_orth.m - Validate librla orthonormal basis computation
+% test_orth.m - Test librla orthonormal basis computation
 %
 % Tests orth_sketch (randomized orthonormal basis for column space):
 % - Column space accuracy (how well Q spans A's column space)
@@ -7,8 +7,8 @@
 % - Runtime
 %
 % Usage:
-%     octave --no-gui --eval "validate_orth"
-%     matlab -batch "validate_orth"
+%     octave --no-gui --eval "test_orth"
+%     matlab -batch "test_orth"
 %
 % Returns 0 if all tests pass, 1 otherwise.
 %
@@ -18,7 +18,7 @@
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)
 
-function exit_code = validate_orth()
+function exit_code = test_orth()
 
     fprintf('\n======================================================================\n');
     fprintf('ORTH_SKETCH TESTS\n');

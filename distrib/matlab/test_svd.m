@@ -1,4 +1,4 @@
-% validate_svd.m - Validate librla SVD implementations
+% test_svd.m - Test librla SVD implementations
 %
 % Compares svd_sketch (randomized) vs svd (deterministic):
 % - Accuracy (reconstruction error)
@@ -7,8 +7,8 @@
 % - Runtime
 %
 % Usage:
-%     octave --no-gui --eval "validate_svd"
-%     matlab -batch "validate_svd"
+%     octave --no-gui --eval "test_svd"
+%     matlab -batch "test_svd"
 %
 % Returns 0 if all tests pass, 1 otherwise.
 %
@@ -18,7 +18,7 @@
 % Date: TBD
 % Assisted by: Claude Code (Anthropic)
 
-function exit_code = validate_svd()
+function exit_code = test_svd()
 
     fprintf('\n======================================================================\n');
     fprintf('SVD COMPARISON\n');
