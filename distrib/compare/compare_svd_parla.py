@@ -72,7 +72,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 # Import implementations
 from librla import svd_sketch
-from make_mat import make_mat
+from test_utils import make_mat
 
 try:
     from parla.drivers.svd import svd1
