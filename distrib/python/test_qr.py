@@ -30,7 +30,7 @@ from typing import List
 
 # Import QR implementations
 from librla import qr_sketch
-from make_mat import make_mat
+from test_utils import make_mat
 
 
 @dataclass
