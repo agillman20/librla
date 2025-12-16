@@ -9,6 +9,7 @@ This demo shows how to compute truncated SVD using librla:
 Both functions use randomized sketching for efficiency on large matrices.
 
 The SVD factorizes A as: A ≈ U * diagm(s) * Vt
+The QR factorizes A as: A[:, p] ≈ Q * R
 
 Try changing the CONFIGURATION parameters below to experiment!
 
