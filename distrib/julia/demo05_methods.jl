@@ -125,7 +125,7 @@ function main()
             println("   [NOTE] Max|T| > 10 indicates potential instability")
         end
         if err > 1.0
-            println("   [NOTE] Error > 1.0: approximation worse than zero matrix")
+            println("   [NOTE] Error > 1.0: relative error exceeds 100%")
         end
     end
 

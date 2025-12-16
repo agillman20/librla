@@ -115,7 +115,7 @@ function demo05_methods()
             fprintf('   [NOTE] Max|T| > 10 indicates potential instability\n');
         end
         if err > 1.0
-            fprintf('   [NOTE] Error > 1.0: approximation worse than zero matrix\n');
+            fprintf('   [NOTE] Error > 1.0: relative error exceeds 100%%\n');
         end
     end
 

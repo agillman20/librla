@@ -8,6 +8,7 @@
 % Both functions use randomized sketching for efficiency on large matrices.
 %
 % The SVD factorizes A as: A = U * diag(s) * V'
+% The QR factorizes A as: A(:, p) ≈ Q * R
 %
 % Try changing the CONFIGURATION parameters below to experiment!
 %

@@ -117,7 +117,7 @@ def main():
         if maxT > 10.0:
             print(f"   [NOTE] Max|T| > 10 indicates potential instability")
         if err > 1.0:
-            print(f"   [NOTE] Error > 1.0: approximation worse than zero matrix")
+            print(f"   [NOTE] Error > 1.0: relative error exceeds 100%")
 
     # -------------------------------------------------------------------------
     # Summary

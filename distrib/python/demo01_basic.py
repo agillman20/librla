@@ -7,7 +7,7 @@ This demo introduces the two core ID algorithms:
   - id_qrpiv:  Deterministic ID using column-pivoted QR (exact, slower)
 
 The ID factorizes a matrix A as:
-  A[:, piv[k:]] = A[:, piv[:k]] @ T + E
+  A[:, piv[k:]] = A[:, piv[:k]] @ T
 
 where piv[:k] selects the "skeleton" columns and T is the interpolation matrix.
 
