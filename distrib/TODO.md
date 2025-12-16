@@ -90,24 +90,21 @@ twine upload --repository testpypi dist/*
 ## Documentation Issues to Fix
 
 ### FILE_MANIFEST.txt
-- File count is wrong (says 47, actual count differs)
-- CLAUDE.md not listed
+- ~~File count is wrong (says 47, actual count differs)~~ FIXED
+- ~~CLAUDE.md not listed~~ FIXED
+- ~~Test suites not listed~~ FIXED
 - Python `local/` directory should not be distributed
 
 ### README.md (line 250-251)
-```
-│   ├── LinearOperator.py  - Matrix-free operators (planned)
-```
-Should say **(via scipy)** or be removed since Python uses `scipy.sparse.linalg.LinearOperator` directly.
+~~LinearOperator.py reference~~ - Already correct (uses scipy)
 
-### INSTALL.md (line 50-51)
-```bash
-cp distrib/python/LinearOperator.py your_project/  # Optional
-```
-This file doesn't exist - remove this line since scipy provides LinearOperator.
+### INSTALL.md
+- ~~LinearOperator.py copy command~~ FIXED (removed)
+- ~~Python examples used Vt instead of Vh~~ FIXED
+- ~~method param said id_sketch only~~ FIXED (now includes id_qrpiv)
 
 ### demo01_basic.py
-Summary output refers to `id_rrqr` but the function is actually `id_qrpiv`.
+~~Summary output refers to `id_rrqr`~~ - Already fixed (uses `id_qrpiv`)
 
 ---
 

@@ -10,11 +10,11 @@ This distribution provides a unified randomized linear algebra library (librla)
 implemented in Python, MATLAB/Octave, and Julia. The library provides efficient
 sketching-based methods for low-rank matrix approximations.
 
-Total files: ~35
+Total files: ~53
 - Documentation: 5 files
-- Python files: ~10 files (26K main library)
-- MATLAB files: ~10 files (21K main library)
-- Julia files: ~10 files (21K main library)
+- Python files: ~16 files (26K main library)
+- MATLAB files: ~16 files (21K main library)
+- Julia files: ~16 files (21K main library)
 
 ================================================================================
 DOCUMENTATION
@@ -23,6 +23,8 @@ DOCUMENTATION
 README.md                (13K)  - Overview, quick start, API reference
 INSTALL.md              (5.2K)  - Installation instructions for all languages
 FILE_MANIFEST.txt       (5.4K)  - This file
+CLAUDE.md               (5.0K)  - AI assistant guidance for this repository
+TODO.md                 (4.5K)  - Development tasks and notes
 
 ================================================================================
 PYTHON IMPLEMENTATION (python/)
@@ -44,6 +46,14 @@ Demo Suite:
   demo03_linop.py              - LinearOperator abstraction
   demo04_power.py              - Power iteration effects
   demo05_methods.py            - T computation methods comparison
+
+Test Suite:
+  test_all.py                  - Run all tests
+  test_id.py                   - Interpolative decomposition tests
+  test_orth.py                 - Orthonormal basis tests
+  test_qr.py                   - QR factorization tests
+  test_svd.py                  - SVD tests
+  test_utils.py                - Test utilities (matrix generators)
 
 ================================================================================
 MATLAB/OCTAVE IMPLEMENTATION (matlab/)
@@ -67,6 +77,14 @@ Demo Suite:
   demo04_power.m               - Power iteration effects
   demo05_methods.m             - T computation methods comparison
 
+Test Suite:
+  test_all.m                   - Run all tests
+  test_id.m                    - Interpolative decomposition tests
+  test_orth.m                  - Orthonormal basis tests
+  test_qr.m                    - QR factorization tests
+  test_svd.m                   - SVD tests
+  test_utils.m                 - Test utilities (matrix generators)
+
 ================================================================================
 JULIA IMPLEMENTATION (julia/)
 ================================================================================
@@ -88,6 +106,14 @@ Demo Suite:
   demo03_linop.jl              - LinearOperator abstraction
   demo04_power.jl              - Power iteration effects
   demo05_methods.jl            - T computation methods comparison
+
+Test Suite:
+  test_all.jl                  - Run all tests
+  test_id.jl                   - Interpolative decomposition tests
+  test_orth.jl                 - Orthonormal basis tests
+  test_qr.jl                   - QR factorization tests
+  test_svd.jl                  - SVD tests
+  test_utils.jl                - Test utilities (matrix generators)
 
 ================================================================================
 CORE API FUNCTIONS
