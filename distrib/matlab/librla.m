@@ -11,7 +11,7 @@ classdef librla
 %   librla.id_qrpiv     - Interpolative decomposition via QR with pivoting
 %
 % USAGE:
-%   [Q, flag, err] = librla.orth_sketch(A, rtol_or_rank);
+%   [Q, flag, diagR] = librla.orth_sketch(A, rtol_or_rank);
 %   [Q, R, p] = librla.qr_sketch(A, rtol_or_rank);
 %   [U, s, V] = librla.svd_sketch(A, rtol_or_rank);
 %   [k, piv, T] = librla.id_sketch(A, rtol_or_rank);

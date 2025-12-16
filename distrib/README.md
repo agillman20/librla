@@ -49,7 +49,7 @@ from hilbert import hilbert
 A = hilbert(1000, 500)
 
 # Orthonormal basis with relative tolerance
-Q, flag, err = orth_sketch(A, rtol=1e-6)
+Q, flag, diagR = orth_sketch(A, rtol=1e-6)
 
 # Truncated QR factorization
 Q, R, p = qr_sketch(A, rtol=1e-6)
@@ -71,7 +71,7 @@ k, piv, T = id_sketch(A, rtol=1e-6, method='lstsq')
 A = hilbert(1000, 500);
 
 % Orthonormal basis
-[Q, flag, err] = librla.orth_sketch(A, 1e-6);
+[Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
 
 % Truncated QR factorization
 [Q, R, p] = librla.qr_sketch(A, 1e-6);
@@ -96,7 +96,7 @@ using .librla
 A = hilbert(1000, 500)
 
 # Orthonormal basis
-Q, flag, err = orth_sketch(A, 1e-6)
+Q, flag, diagR = orth_sketch(A, 1e-6)
 
 # Truncated QR factorization
 Q, R, p = qr_sketch(A, 1e-6)
@@ -119,12 +119,12 @@ Adaptively determines rank to achieve specified relative accuracy:
 
 ```python
 # Python: Adaptive rank selection to achieve 10^-6 relative accuracy
-Q, flag, err = orth_sketch(A, 1e-6)
+Q, flag, diagR = orth_sketch(A, 1e-6)
 ```
 
 ```matlab
 % MATLAB: Same behavior
-[Q, flag, err] = librla.orth_sketch(A, 1e-6);
+[Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
 ```
 
 ### Rank Mode (rtol >= 1)
@@ -133,7 +133,7 @@ Returns fixed-rank approximation:
 
 ```python
 # Python: Rank-20 approximation
-U, s, Vh = svd_sketch(A, 20.0)
+U, s, Vh = svd_sketch(A, 20)
 ```
 
 ```matlab
@@ -225,7 +225,7 @@ n = 1000
 A_op = LinearOperator(shape=(n, n), matvec=matvec, rmatvec=rmatvec, dtype=complex)
 
 # Use with librla (rank mode only for matrix-free operators)
-Q, flag, err = orth_sketch(A_op, 20.0)  # Rank-20 approximation
+Q, flag, diagR = orth_sketch(A_op, 20)  # Rank-20 approximation
 ```
 
 ### MATLAB
@@ -240,7 +240,7 @@ rmatvec_fun = @(x) ifft(x);
 A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
 
 % Use with librla
-[Q, flag, err] = librla.orth_sketch(A_op, 20);
+[Q, flag, diagR] = librla.orth_sketch(A_op, 20);
 ```
 
 ### Julia
@@ -257,7 +257,7 @@ rmatvec_fun(x) = ifft(x)
 A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n; dtype=ComplexF64)
 
 # Use with librla
-Q, flag, err = orth_sketch(A_op, 20.0)
+Q, flag, diagR = orth_sketch(A_op, 20)
 ```
 
 **Note:** Matrix-free LinearOperators only support **rank mode** (rtol >= 1).

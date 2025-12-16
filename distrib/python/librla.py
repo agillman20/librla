@@ -13,7 +13,7 @@ Deterministic:
 
 Usage::
 
-    Q, flag, err = orth_sketch(A, rtol)
+    Q, flag, diagR = orth_sketch(A, rtol)
     Q, R, p = qr_sketch(A, rtol)
     U, s, Vh = svd_sketch(A, rtol)
     k, piv, T = id_sketch(A, rtol)
