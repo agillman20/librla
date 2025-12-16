@@ -19,7 +19,7 @@ Requires:
 
 Author: Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
-Version: 1.0.0
+Version: 0.1.0
 Assisted by: Claude Code (Anthropic)
 """
 

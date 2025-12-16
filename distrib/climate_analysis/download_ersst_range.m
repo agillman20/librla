@@ -7,7 +7,7 @@ function all_files = download_ersst_range(start_year, end_year, BASE_URL, DATA_D
     %
     % Author: Adrianna Gillman, Zydrunas Gimbutas
     % SPDX-License-Identifier: TBD
-    % Version: 1.0.0
+    % Version: 0.1.0
     % Date: TBD
     % Assisted by: Claude Code (Anthropic)
 
