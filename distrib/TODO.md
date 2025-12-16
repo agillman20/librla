@@ -102,9 +102,3 @@ Use MATLAB's `'like'` syntax: `zeros(m, n, 'like', R)` which preserves:
 ### Priority
 Low - current code works correctly for real matrices. Mainly improves correctness for complex matrix inputs and future-proofs the implementation.
 
----
-
-## Cleanup
-
-- Remove `distrib/python/venv/` directory (virtual environment)
-- Add `venv/` and `__pycache__/` to `.gitignore`
