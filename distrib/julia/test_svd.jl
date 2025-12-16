@@ -86,7 +86,7 @@ function compare_on_matrix(A::Matrix{T}, rtol_or_rank::Float64, name::String) wh
 
     k_sketch = length(s_sketch)
 
-    # Reconstruction error (Vt is already transposed in Julia)
+    # Reconstruction error (Vt is already conjugate-transposed in Julia)
     A_recon_sketch = U_sketch * Diagonal(s_sketch) * Vt_sketch
     err_sketch = norm(A - A_recon_sketch) / normA
 

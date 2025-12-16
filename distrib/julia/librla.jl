@@ -83,7 +83,7 @@ The algorithm has two modes:
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
 - `block_size`: Initial number of random test vectors (default: 42)
 - `power_iter`: Number of power iterations to improve accuracy (default: 0)
-  Setting power_iter=1 or 2 can significantly improve results for matrices
+  Setting power_iter=1 or 2 can improve results for matrices
   with slowly decaying singular values
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
@@ -302,7 +302,7 @@ much smaller than min(m,n).
 # Returns
 - `U`: Left singular vectors (m×k), orthonormal columns
 - `s`: Singular values (length k), sorted descending
-- `Vt`: Right singular vectors transposed (k×n), orthonormal rows
+- `Vt`: Right singular vectors conjugate-transposed (k×n), orthonormal rows
   The decomposition satisfies A ≈ U*diagm(s)*Vt
 """
 function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)

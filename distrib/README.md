@@ -191,14 +191,14 @@ Randomized sketching algorithms have inherent variance in reconstruction error. 
 
 This variance is expected for randomized algorithms and does not indicate a bug.
 
-For ill-conditioned matrices (e.g., Hilbert matrices), use **power iterations** to improve accuracy:
+For matrices with slowly decaying singular values (small spectral gap), use **power iterations** to improve accuracy:
 
 ```python
-# Use power_iter=2 for ill-conditioned matrices
+# Use power_iter=2 for matrices with slowly decaying singular values
 U, s, Vh = svd_sketch(A, 20, power_iter=2)
 ```
 
-With `power_iter=2`, randomized methods achieve near-optimal accuracy even for severely ill-conditioned matrices.
+With `power_iter=2`, randomized methods achieve improved accuracy for matrices with small spectral gaps.
 
 ## LinearOperator Usage
 
@@ -300,7 +300,6 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 ```
 distrib/
 ├── README.md              # This file
-├── INSTALL.md             # Installation instructions
 ├── FILE_MANIFEST.txt      # Complete file listing
 ├── python/
 │   ├── librla.py          # Main library
@@ -334,27 +333,81 @@ distrib/
 
 ## Installation
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions.
+### Python
 
-Quick summary:
+**Requirements:** Python 3.8+, NumPy >= 1.20, SciPy >= 1.7
 
+**Option 1: Add to Python path (recommended for testing)**
 ```python
-# Python
 import sys
 sys.path.append('/path/to/distrib/python')
 from librla import id_sketch, svd_sketch
 ```
 
+**Option 2: Add to PYTHONPATH environment variable**
+```bash
+export PYTHONPATH="/path/to/distrib/python:$PYTHONPATH"
+```
+
+**Option 3: Copy files to your project**
+```bash
+cp distrib/python/librla.py your_project/
+cp distrib/python/hilbert.py your_project/  # Optional utilities
+```
+
+**Troubleshooting:**
+- `ImportError: No module named 'librla'` - Verify path is correct and use absolute paths
+- `ImportError: No module named 'numpy'` - Run `pip install numpy scipy`
+
+### MATLAB/Octave
+
+**Requirements:** MATLAB R2018a+ or Octave 6.0+
+
+**Option 1: Temporary path (session only)**
 ```matlab
-% MATLAB
 addpath('/path/to/distrib/matlab');
 ```
 
+**Option 2: Permanent path** - Add to `startup.m` (MATLAB) or `~/.octaverc` (Octave):
+```matlab
+addpath('/path/to/distrib/matlab');
+```
+
+**Option 3: Copy files to your project**
+```bash
+cp distrib/matlab/librla.m your_project/
+cp distrib/matlab/LinearOperator.m your_project/  # Optional
+```
+
+**Troubleshooting:**
+- `Undefined function 'librla'` - Run `which librla` to check path; verify `addpath()` was called
+- Octave 5.x may not fully support all features; upgrade to 6.0+
+
+### Julia
+
+**Requirements:** Julia 1.6+, LinearAlgebra (standard library)
+
+**Option 1: Include in your project (recommended)**
 ```julia
-# Julia
 include("/path/to/distrib/julia/librla.jl")
 using .librla
 ```
+
+**Option 2: Add to LOAD_PATH**
+```julia
+push!(LOAD_PATH, "/path/to/distrib/julia")
+using librla
+```
+
+**Option 3: Copy files to your project**
+```bash
+cp distrib/julia/librla.jl your_project/
+cp distrib/julia/LinearOperator.jl your_project/  # Optional
+```
+
+**Troubleshooting:**
+- `UndefVarError: librla not defined` - Ensure you called `using .librla` (note the dot prefix)
+- Verify the path to `librla.jl` in the `include()` statement
 
 ## Demos
 

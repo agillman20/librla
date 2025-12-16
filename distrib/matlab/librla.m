@@ -56,7 +56,7 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   rtol       - Relative tolerance (< 1) or target rank (>= 1)
 %   block_size - Initial number of random test vectors (default: 42)
 %   power_iter - Number of power iterations to improve accuracy (default: 0)
-%                Setting power_iter=1 or 2 can significantly improve results for
+%                Setting power_iter=1 or 2 can improve results for
 %                matrices with slowly decaying singular values
 %   rng        - Random number generator state or seed (default: [] uses current state)
 %                Can be a seed (integer) or rng state struct from rng()
