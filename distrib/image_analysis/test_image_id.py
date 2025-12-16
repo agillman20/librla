@@ -28,7 +28,7 @@ See also: librla.id_sketch, librla.svd_sketch, librla.qr_sketch
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: TBD
-Version: 1.0.0
+Version: 0.1.0
 Date: TBD
 Assisted by: Claude Code (Anthropic)
 """
