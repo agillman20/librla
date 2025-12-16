@@ -69,7 +69,7 @@ A = np.random.randn(1000, 500)
 k, piv, T = id_sketch(A, rtol=1e-6)
 
 # Rank mode: fixed-rank approximation
-U, s, Vh = svd_sketch(A, rtol=20.0)  # Rank-20 approximation
+U, s, Vh = svd_sketch(A, 20)  # Rank-20 approximation
 ```
 
 ### Testing Python Installation
@@ -211,7 +211,7 @@ A = randn(1000, 500)
 k, piv, T = id_sketch(A, 1e-6)
 
 # Rank mode: fixed-rank approximation
-U, s, Vh = svd_sketch(A, 20.0)  # Rank-20 approximation
+U, s, Vh = svd_sketch(A, 20)  # Rank-20 approximation
 
 # With optional parameters
 Q, R, p = qr_sketch(A, 1e-6, power_iter=2, block_size=50)
@@ -268,7 +268,7 @@ n = 1000
 A_op = ScipyLinOp(shape=(n, n), matvec=matvec, rmatvec=rmatvec)
 
 # Use with librla (rank mode only for matrix-free)
-Q, flag, err = orth_sketch(A_op, 20.0)
+Q, flag, diagR = orth_sketch(A_op, 20)
 ```
 
 ### MATLAB - Using LinearOperator class
@@ -281,7 +281,7 @@ rmatvec_fun = @(x) ifft(x);
 A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
 
 % Use with librla (rank mode only for matrix-free)
-[Q, flag, err] = librla.orth_sketch(A_op, 20);
+[Q, flag, diagR] = librla.orth_sketch(A_op, 20);
 ```
 
 ### Julia - Using LinearOperator type
@@ -297,7 +297,7 @@ rmatvec_fun(x) = ifft(x)
 A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n, dtype=ComplexF64)
 
 # Use with librla (rank mode only for matrix-free)
-Q, flag, err = orth_sketch(A_op, 20.0)
+Q, flag, diagR = orth_sketch(A_op, 20)
 ```
 
 **Note:** Matrix-free LinearOperators only support **rank mode** (rtol ≥ 1). Tolerance mode requires access to the full matrix.
@@ -341,17 +341,17 @@ Automatically determines rank to achieve specified relative accuracy:
 
 ```python
 # Python
-Q, flag, err = orth_sketch(A, 1e-6)  # Adaptive rank to achieve 10^-6 accuracy
+Q, flag, diagR = orth_sketch(A, 1e-6)  # Adaptive rank to achieve 10^-6 accuracy
 ```
 
 ```matlab
 % MATLAB
-[Q, flag, err] = librla.orth_sketch(A, 1e-6);
+[Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
 ```
 
 ```julia
 # Julia
-Q, flag, err = orth_sketch(A, 1e-6)
+Q, flag, diagR = orth_sketch(A, 1e-6)
 ```
 
 ### Rank Mode (rtol ≥ 1)
@@ -359,7 +359,7 @@ Returns fixed-rank approximation:
 
 ```python
 # Python
-U, s, Vh = svd_sketch(A, 20.0)  # Rank-20 SVD
+U, s, Vh = svd_sketch(A, 20)  # Rank-20 SVD
 ```
 
 ```matlab
@@ -369,7 +369,7 @@ U, s, Vh = svd_sketch(A, 20.0)  # Rank-20 SVD
 
 ```julia
 # Julia
-U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 SVD
+U, s, Vt = svd_sketch(A, 20)  # Rank-20 SVD
 ```
 
 ## Optional Parameters
