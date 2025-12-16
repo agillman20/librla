@@ -47,7 +47,6 @@ export PYTHONPATH="/path/to/distrib/python:$PYTHONPATH"
 **Option 3: Copy files to your project**
 ```bash
 cp distrib/python/librla.py your_project/
-cp distrib/python/LinearOperator.py your_project/  # Optional
 cp distrib/python/hilbert.py your_project/  # Optional utilities
 ```
 
@@ -70,7 +69,7 @@ A = np.random.randn(1000, 500)
 k, piv, T = id_sketch(A, rtol=1e-6)
 
 # Rank mode: fixed-rank approximation
-U, s, Vt = svd_sketch(A, rtol=20.0)  # Rank-20 approximation
+U, s, Vh = svd_sketch(A, rtol=20.0)  # Rank-20 approximation
 ```
 
 ### Testing Python Installation
@@ -212,7 +211,7 @@ A = randn(1000, 500)
 k, piv, T = id_sketch(A, 1e-6)
 
 # Rank mode: fixed-rank approximation
-U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 approximation
+U, s, Vh = svd_sketch(A, 20.0)  # Rank-20 approximation
 
 # With optional parameters
 Q, R, p = qr_sketch(A, 1e-6, power_iter=2, block_size=50)
@@ -360,7 +359,7 @@ Returns fixed-rank approximation:
 
 ```python
 # Python
-U, s, Vt = svd_sketch(A, 20.0)  # Rank-20 SVD
+U, s, Vh = svd_sketch(A, 20.0)  # Rank-20 SVD
 ```
 
 ```matlab
@@ -381,7 +380,7 @@ All functions support these optional parameters:
 - **`power_iter`** (default: 0) - Number of power iterations for accuracy
 - **`extra_samples`** (default: 12) - Oversampling for rank mode
 
-For `id_sketch` only:
+For `id_sketch` and `id_qrpiv`:
 - **`method`** (default: 'fast') - T computation method: 'fast', 'svd', or 'lstsq'
 
 ### Python
