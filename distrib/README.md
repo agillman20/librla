@@ -153,7 +153,7 @@ The `svd_sketch` function returns slightly different formats across languages:
 | MATLAB | `U, s, V` | `A approx U * diag(s) * V'` |
 | Julia | `U, s, Vt` | `A approx U * diagm(s) * Vt` |
 
-Python and Julia return V transposed/adjoint; MATLAB returns V (requiring explicit transpose in reconstruction).
+Python and Julia return V transposed/adjoint; MATLAB returns V (requiring explicit transpose/adjoint in reconstruction).
 
 ### Indexing
 
@@ -167,7 +167,6 @@ Python and Julia return V transposed/adjoint; MATLAB returns V (requiring explic
 - Uses random test matrix multiplication for fast column space approximation
 - Geometric block growth for adaptive rank determination in tolerance mode
 - Optional power iterations for improved accuracy (`power_iter` parameter)
-- Typically 2-5x faster than deterministic methods
 - Stochastic (results vary slightly between runs)
 
 ### Deterministic QR Pivoting (id_qrpiv)
@@ -197,8 +196,6 @@ For matrices with slowly decaying singular values (small spectral gap), use **po
 # Use power_iter=2 for matrices with slowly decaying singular values
 U, s, Vh = svd_sketch(A, 20, power_iter=2)
 ```
-
-With `power_iter=2`, randomized methods achieve improved accuracy for matrices with small spectral gaps.
 
 ## LinearOperator Usage
 
@@ -450,7 +447,7 @@ For the mathematical foundations and algorithms, see:
 
 ## License
 
-See LICENSE file in the parent repository.
+See COPYING file in the parent repository.
 
 ## Contact
 
