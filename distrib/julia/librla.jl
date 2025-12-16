@@ -34,7 +34,7 @@ Adrianna Gillman, Zydrunas Gimbutas
 BSD-3-Clause
 
 # Version
-1.0.0
+0.1.0
 
 # Date
 TBD
@@ -755,14 +755,14 @@ function _compute_T_lstsq(A, R, piv, k)
         skeleton_cols = zeros(eltype(R), m, k)
         for j = 1:k
             e_j = zeros(eltype(R), n)
-            e_j[piv[j]] = 1.0
+            e_j[piv[j]] = one(eltype(R))
             skeleton_cols[:, j] = _matvec(A, e_j)
         end
 
         remaining_cols = zeros(eltype(R), m, n - k)
         for j = 1:(n - k)
             e_j = zeros(eltype(R), n)
-            e_j[piv[k + j]] = 1.0
+            e_j[piv[k + j]] = one(eltype(R))
             remaining_cols[:, j] = _matvec(A, e_j)
         end
 
@@ -807,7 +807,7 @@ function _compute_T_svd(R, k, rtol_for_svd)
     if !any(keep)
         T = zeros(eltype(R), size(R12)...)
     else
-        inv_s = 1.0 ./ s[keep]
+        inv_s = one(eltype(R)) ./ s[keep]
         T = Vh[keep, :]' * Diagonal(inv_s) * (U[:, keep]' * R12)
     end
 
