@@ -23,7 +23,7 @@ All three language implementations expose the same five core functions:
 ### Two Operating Modes
 
 - **Tolerance mode** (rtol < 1): Adaptive rank selection to achieve specified accuracy
-- **Rank mode** (rtol >= 1): Fixed-rank approximation
+- **Rank mode** (rtol >= 1): Fixed-rank approximation (specify rank as integer)
 
 ### LinearOperator Abstraction
 
@@ -65,6 +65,13 @@ Matrix-free operators only support rank mode (rtol >= 1).
 
 ## API Differences Between Languages
 
+### orth_sketch Return Values
+
+All languages return `Q, flag, diagR`:
+- `Q`: Orthonormal basis matrix
+- `flag`: Exit status (0=success, 1=early termination)
+- `diagR`: Diagonal of R from pivoted QR (column norms)
+
 ### svd_sketch Return Values
 
 | Language | Returns | Reconstruction |
@@ -92,17 +99,41 @@ A(:, piv(k+1:end)) = A(:, piv(1:k)) * T
 A[:, piv[k+1:end]] = A[:, piv[1:k]] * T
 ```
 
-## Demos
+## File Organization
 
-Each language directory contains 5 demo files:
+Each language directory contains:
 
-| Demo | Description |
+### Main Library
+| File | Description |
 |------|-------------|
-| `demo01_basic` | Basic ID algorithms (id_sketch, id_qrpiv) |
-| `demo02_svd` | SVD and QR sketching |
-| `demo03_linop` | LinearOperator abstraction |
-| `demo04_power` | Power iteration effects |
-| `demo05_methods` | T computation methods comparison |
+| `librla.*` | Core randomized linear algebra routines |
+| `LinearOperator.*` | Matrix-free operator class (MATLAB/Julia only) |
+
+### Utilities
+| File | Description |
+|------|-------------|
+| `hilbert.*` | Hilbert matrix generator |
+| `kahan.*` | Kahan matrix generator |
+| `demo_utils.*` | Demo utilities |
+| `test_utils.*` | Test utilities (matrix generators, helpers) |
+
+### Demo Suite
+| File | Description |
+|------|-------------|
+| `demo01_basic.*` | Basic ID algorithms (id_sketch, id_qrpiv) |
+| `demo02_svd.*` | SVD and QR sketching |
+| `demo03_linop.*` | LinearOperator abstraction |
+| `demo04_power.*` | Power iteration effects |
+| `demo05_methods.*` | T computation methods comparison |
+
+### Test Suite
+| File | Description |
+|------|-------------|
+| `test_all.*` | Run all tests |
+| `test_id.*` | Interpolative decomposition tests |
+| `test_orth.*` | Orthonormal basis tests |
+| `test_qr.*` | QR factorization tests |
+| `test_svd.*` | SVD tests |
 
 ### Running Demos
 
@@ -118,17 +149,6 @@ demo01_basic
 cd julia && julia demo01_basic.jl
 ```
 
-## Utility Files
-
-Each language directory includes:
-
-| File | Description |
-|------|-------------|
-| `hilbert.*` | Hilbert matrix generator |
-| `kahan.*` | Kahan matrix generator |
-| `make_mat.*` | Matrix generation utilities |
-| `compare_id.*` | Comparison example for ID methods |
-
 ## Key Algorithmic Features
 
 ### id_sketch Method Options
@@ -138,7 +158,7 @@ The `method` parameter controls T matrix computation:
 | Method | Description |
 |--------|-------------|
 | `'fast'` | Triangular solve (default, fastest) |
-| `'svd'` | SVD-based pseudoinverse (stable for ill-conditioned) |
+| `'svd'` | SVD-based pseudoinverse |
 | `'lstsq'` | Least squares from original A (most accurate, slowest) |
 
 ### Optional Parameters
@@ -161,16 +181,19 @@ When making changes:
 4. Ensure documentation stays synchronized in README.md and INSTALL.md
 5. Preserve the svd_sketch return convention (Python/Julia: transposed V; MATLAB: non-transposed V)
 
-## File Organization
+## Directory Structure
 
 ```
 distrib/
-├── README.md           # Main documentation
-├── INSTALL.md          # Installation instructions
-├── CLAUDE.md           # This file
-├── TODO.md             # Development tasks
-├── FILE_MANIFEST.txt   # File listing
-├── python/             # Python implementation
-├── matlab/             # MATLAB/Octave implementation
-└── julia/              # Julia implementation
+├── README.md              # Main documentation
+├── INSTALL.md             # Installation instructions
+├── CLAUDE.md              # This file
+├── TODO.md                # Development tasks
+├── FILE_MANIFEST.txt      # File listing
+├── python/                # Python implementation
+├── matlab/                # MATLAB/Octave implementation
+├── julia/                 # Julia implementation
+├── compare/               # Comparison scripts with other libraries
+├── climate_analysis/      # Climate data analysis examples
+└── image_analysis/        # Image processing examples
 ```

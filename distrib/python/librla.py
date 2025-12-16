@@ -369,7 +369,7 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     method : str, optional
         Method for computing T matrix (default: 'fast')
         - 'fast': Triangular solve R11 \\ R12 (fastest)
-        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
+        - 'svd': SVD-based pseudoinverse
         - 'lstsq': Least-squares from original A (most accurate, slowest)
     rng : Generator, optional
         Random number generator (default: None uses numpy default)
@@ -447,7 +447,7 @@ def id_qrpiv(A, rtol, *, method='fast'):
     method : str, optional
         Method for computing T matrix (default: 'fast')
         - 'fast': Triangular solve R11 \\ R12 (fastest)
-        - 'svd': SVD-based pseudoinverse (stable for ill-conditioned)
+        - 'svd': SVD-based pseudoinverse
         - 'lstsq': Least-squares from original A (most accurate, slowest)
 
     Returns
