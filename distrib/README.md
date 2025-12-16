@@ -300,7 +300,6 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 ```
 distrib/
 ├── README.md              # This file
-├── FILE_MANIFEST.txt      # Complete file listing
 ├── python/
 │   ├── librla.py          # Main library
 │   ├── hilbert.py         # Hilbert matrix generator

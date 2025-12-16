@@ -188,7 +188,6 @@ distrib/
 ├── README.md              # Main documentation (includes installation)
 ├── CLAUDE.md              # This file
 ├── TODO.md                # Development tasks
-├── FILE_MANIFEST.txt      # File listing
 ├── python/                # Python implementation
 ├── matlab/                # MATLAB/Octave implementation
 ├── julia/                 # Julia implementation
