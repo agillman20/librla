@@ -411,7 +411,7 @@ This function uses qr_sketch() to identify the column permutation.
 - `extra_samples`: Oversampling for rank mode (default: 12)
 - `method`: Method for computing T matrix (default: "fast")
   - "fast": Triangular solve R11 \\ R12 (fastest)
-  - "svd": SVD-based pseudoinverse (stable for ill-conditioned)
+  - "svd": SVD-based pseudoinverse
   - "lstsq": Least-squares from original A (most accurate, slowest)
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
@@ -481,7 +481,7 @@ id_sketch.
 - `rtol`: Tolerance (< 1) or rank (>= 1)
 - `method`: Method for computing T matrix (default: "fast")
   - "fast": Triangular solve R11 \\ R12 (fastest)
-  - "svd": SVD-based pseudoinverse (stable for ill-conditioned)
+  - "svd": SVD-based pseudoinverse
   - "lstsq": Least-squares from original A (most accurate, slowest)
 
 # Returns

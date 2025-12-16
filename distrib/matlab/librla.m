@@ -419,7 +419,7 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
 %   extra_samples - Oversampling for rank mode (default: 12)
 %   method        - Method for computing T matrix (default: 'fast')
 %            'fast'  - Triangular solve R11 \ R12 (fastest)
-%            'svd'   - SVD-based pseudoinverse (stable for ill-conditioned)
+%            'svd'   - SVD-based pseudoinverse
 %            'lstsq' - Least-squares from original A (most accurate, slowest)
 %   rng           - Random number generator state or seed (default: [] uses current state)
 %
@@ -500,7 +500,7 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 %   rtol   - Tolerance (< 1) or rank (>= 1)
 %   method - T computation method: 'fast', 'svd', 'lstsq' (default: 'fast')
 %            'fast'  - Triangular solve R11 \ R12 (fastest)
-%            'svd'   - SVD-based pseudoinverse (stable for ill-conditioned)
+%            'svd'   - SVD-based pseudoinverse
 %            'lstsq' - Least-squares from original A (most accurate, slowest)
 %
 % Output Arguments:

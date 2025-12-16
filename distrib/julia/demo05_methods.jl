@@ -7,7 +7,7 @@ matrix T in the ID factorization: A[:, piv[k+1:end]] = A[:, piv[1:k]] * T
 
 Methods:
   - "fast":   Triangular solve (fastest, may have large T entries)
-  - "svd":    SVD-based pseudoinverse (stable for ill-conditioned cases)
+  - "svd":    SVD-based pseudoinverse
   - "lstsq":  Least squares from original A (most accurate, slowest)
 
 The choice of method affects:

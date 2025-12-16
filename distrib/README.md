@@ -33,7 +33,7 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 | Method | Description |
 |--------|-------------|
 | `'fast'` | Triangular solve (fastest, default) |
-| `'svd'` | SVD-based pseudoinverse (stable for ill-conditioned matrices) |
+| `'svd'` | SVD-based pseudoinverse |
 | `'lstsq'` | Least-squares from original A (most accurate, slowest) |
 
 ## Quick Start
