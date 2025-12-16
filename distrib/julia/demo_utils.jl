@@ -146,7 +146,7 @@ end
 
 Compute relative SVD reconstruction error.
 
-Note: Julia convention - Vt is transposed (like Python).
+Note: Julia convention - Vt is conjugate-transposed (like Python's Vh).
 """
 function svd_error(A::AbstractMatrix, U::AbstractMatrix, s::AbstractVector, Vt::AbstractMatrix)
     A_approx = U * Diagonal(s) * Vt

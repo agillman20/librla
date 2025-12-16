@@ -67,7 +67,7 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         Initial number of random test vectors (default: 42)
     power_iter : int, optional
         Number of power iterations to improve accuracy (default: 0).
-        Setting power_iter=1 or 2 can significantly improve results for
+        Setting power_iter=1 or 2 can improve results for
         matrices with slowly decaying singular values.
     rng : Generator, optional
         Random number generator (default: None uses numpy default)

@@ -11,7 +11,7 @@ implemented in Python, MATLAB/Octave, and Julia. The library provides efficient
 sketching-based methods for low-rank matrix approximations.
 
 Total files: ~53
-- Documentation: 5 files
+- Documentation: 4 files
 - Python files: ~16 files (26K main library)
 - MATLAB files: ~16 files (21K main library)
 - Julia files: ~16 files (21K main library)
@@ -20,8 +20,7 @@ Total files: ~53
 DOCUMENTATION
 ================================================================================
 
-README.md                (13K)  - Overview, quick start, API reference
-INSTALL.md              (5.2K)  - Installation instructions for all languages
+README.md                (18K)  - Overview, installation, quick start, API reference
 FILE_MANIFEST.txt       (5.4K)  - This file
 CLAUDE.md               (5.0K)  - AI assistant guidance for this repository
 TODO.md                 (4.5K)  - Development tasks and notes

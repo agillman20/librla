@@ -178,15 +178,14 @@ When making changes:
 1. Maintain API consistency across all three languages
 2. Keep function signatures equivalent (accounting for language idioms)
 3. Update tests in all three languages when adding features
-4. Ensure documentation stays synchronized in README.md and INSTALL.md
+4. Ensure documentation stays synchronized in README.md
 5. Preserve the svd_sketch return convention (Python/Julia: transposed V; MATLAB: non-transposed V)
 
 ## Directory Structure
 
 ```
 distrib/
-├── README.md              # Main documentation
-├── INSTALL.md             # Installation instructions
+├── README.md              # Main documentation (includes installation)
 ├── CLAUDE.md              # This file
 ├── TODO.md                # Development tasks
 ├── FILE_MANIFEST.txt      # File listing
