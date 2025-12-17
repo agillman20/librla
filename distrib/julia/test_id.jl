@@ -65,7 +65,7 @@ function hilb_matrix(m::Int, n::Int)
 end
 
 
-function compare_on_matrix(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
+function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
     """
     Compare ID implementations on a single matrix with verbose output.
 
@@ -323,28 +323,28 @@ function test()
     # Test 1: Random matrix (well-conditioned)
     Random.seed!(42)
     A1 = randn(500, 300)
-    push!(results, compare_on_matrix(A1, 20.0, "Random Matrix (well-conditioned)"))
+    push!(results, run_test_case(A1, 20.0, "Random Matrix (well-conditioned)"))
 
     # Test 2: Low-rank matrix
     U = randn(400, 15)
     V = randn(250, 15)
     A2 = U * V' + 1e-10 * randn(400, 250)
-    push!(results, compare_on_matrix(A2, 1e-8, "Low-Rank Matrix (rank~15)"))
+    push!(results, run_test_case(A2, 1e-8, "Low-Rank Matrix (rank~15)"))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
     A3 = hilb_matrix(2000, 1000)
-    push!(results, compare_on_matrix(A3, 15.0, "Hilbert Matrix (severely ill-conditioned)"))
+    push!(results, run_test_case(A3, 15.0, "Hilbert Matrix (severely ill-conditioned)"))
 
     # Test 4: Complex matrix
     A4 = randn(300, 200) + im * randn(300, 200)
-    push!(results, compare_on_matrix(A4, 25.0, "Complex Matrix"))
+    push!(results, run_test_case(A4, 25.0, "Complex Matrix"))
 
     # Test 5: Decaying spectrum (tolerance mode)
     A5 = randn(400, 300)
     U5, S5, V5 = svd(A5)
     s5 = 1.0 ./ (1:300)  # decaying: 1/k
     A5 = U5 * Diagonal(s5) * V5'
-    push!(results, compare_on_matrix(A5, 1e-3, "Decaying Spectrum (1/k)"))
+    push!(results, run_test_case(A5, 1e-3, "Decaying Spectrum (1/k)"))
 
     # -------------------------------------------------------------------------
     # LARGE MATRIX TESTS (2x SCALE)
@@ -356,28 +356,28 @@ function test()
 
     # Test 6: Large random matrix
     A6 = randn(1000, 600)
-    push!(results, compare_on_matrix(A6, 20.0, "Large Random Matrix (1000x600)"))
+    push!(results, run_test_case(A6, 20.0, "Large Random Matrix (1000x600)"))
 
     # Test 7: Large low-rank matrix
     U7 = randn(800, 15)
     V7 = randn(500, 15)
     A7 = U7 * V7' + 1e-10 * randn(800, 500)
-    push!(results, compare_on_matrix(A7, 1e-8, "Large Low-Rank (800x500, rank~15)"))
+    push!(results, run_test_case(A7, 1e-8, "Large Low-Rank (800x500, rank~15)"))
 
     # Test 8: Large Hilbert matrix
     A8 = hilb_matrix(4000, 2000)
-    push!(results, compare_on_matrix(A8, 15.0, "Large Hilbert Matrix (4000x2000)"))
+    push!(results, run_test_case(A8, 15.0, "Large Hilbert Matrix (4000x2000)"))
 
     # Test 9: Large complex matrix
     A9 = randn(600, 400) + im * randn(600, 400)
-    push!(results, compare_on_matrix(A9, 25.0, "Large Complex Matrix (600x400)"))
+    push!(results, run_test_case(A9, 25.0, "Large Complex Matrix (600x400)"))
 
     # Test 10: Large decaying spectrum
     A10 = randn(800, 600)
     U10, S10, V10 = svd(A10)
     s10 = 1.0 ./ (1:600)  # Fast decay: 1/k
     A10 = U10 * Diagonal(s10) * V10'
-    push!(results, compare_on_matrix(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)"))
+    push!(results, run_test_case(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)"))
 
     # -------------------------------------------------------------------------
     # SLOW DECAYING SPECTRUM TESTS
@@ -392,42 +392,42 @@ function test()
     U11, S11, V11 = svd(A11)
     s11 = 1.0 ./ sqrt.(1:300)  # Slow decay: 1/sqrt(k)
     A11 = U11 * Diagonal(s11) * V11'
-    push!(results, compare_on_matrix(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)"))
+    push!(results, run_test_case(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)"))
 
     # Test 12: Slow decay - sqrt (large)
     A12 = randn(800, 600)
     U12, S12, V12 = svd(A12)
     s12 = 1.0 ./ sqrt.(1:600)  # Slow decay: 1/sqrt(k)
     A12 = U12 * Diagonal(s12) * V12'
-    push!(results, compare_on_matrix(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)"))
+    push!(results, run_test_case(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)"))
 
     # Test 13: Slow decay - polynomial (small)
     A13 = randn(400, 300)
     U13, S13, V13 = svd(A13)
     s13 = 1.0 ./ ((1:300) .^ 0.7)  # Polynomial: 1/k^0.7
     A13 = U13 * Diagonal(s13) * V13'
-    push!(results, compare_on_matrix(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)"))
+    push!(results, run_test_case(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)"))
 
     # Test 14: Slow decay - polynomial (large)
     A14 = randn(800, 600)
     U14, S14, V14 = svd(A14)
     s14 = 1.0 ./ ((1:600) .^ 0.7)  # Polynomial: 1/k^0.7
     A14 = U14 * Diagonal(s14) * V14'
-    push!(results, compare_on_matrix(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)"))
+    push!(results, run_test_case(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)"))
 
     # Test 15: Slow decay - exponential (small)
     A15 = randn(400, 300)
     U15, S15, V15 = svd(A15)
     s15 = exp.(-(1:300) / 100.0)  # Exponential: exp(-k/100)
     A15 = U15 * Diagonal(s15) * V15'
-    push!(results, compare_on_matrix(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)"))
+    push!(results, run_test_case(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)"))
 
     # Test 16: Slow decay - exponential (large)
     A16 = randn(800, 600)
     U16, S16, V16 = svd(A16)
     s16 = exp.(-(1:600) / 150.0)  # Exponential: exp(-k/150)
     A16 = U16 * Diagonal(s16) * V16'
-    push!(results, compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
+    push!(results, run_test_case(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
 
     # -------------------------------------------------------------------------
     # STRUCTURED MATRICES FROM MAKE_MAT
@@ -439,15 +439,15 @@ function test()
 
     # Test 22: Gaussian Exponential Decay Matrix
     A22 = make_mat(500, 500, "gaussexp")
-    push!(results, compare_on_matrix(A22, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)"))
+    push!(results, run_test_case(A22, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)"))
 
     # Test 23: Gaussian Mixture Model Matrix
     A23 = make_mat(400, 400, "gmm")
-    push!(results, compare_on_matrix(A23, 1e-3, "GMM (Gaussian Mixture Model, 400x400)"))
+    push!(results, run_test_case(A23, 1e-3, "GMM (Gaussian Mixture Model, 400x400)"))
 
     # Test 24: Sparse Neural Network Matrix
     A24 = make_mat(300, 300, "snn")
-    push!(results, compare_on_matrix(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
+    push!(results, run_test_case(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
 
     # =========================================================================
     # Summary

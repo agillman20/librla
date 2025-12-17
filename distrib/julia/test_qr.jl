@@ -58,7 +58,7 @@ function hilb_matrix(m::Int, n::Int)
 end
 
 
-function compare_on_matrix(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
+function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
     """Compare QR implementations on a single matrix."""
 
     println("\n", "="^70)
@@ -278,24 +278,24 @@ function test()
 
     Random.seed!(42)
     A1 = randn(500, 300)
-    push!(results, compare_on_matrix(A1, 20.0, "Random Matrix (well-conditioned)"))
+    push!(results, run_test_case(A1, 20.0, "Random Matrix (well-conditioned)"))
 
     U = randn(400, 15)
     V = randn(250, 15)
     A2 = U * V' + 1e-10 * randn(400, 250)
-    push!(results, compare_on_matrix(A2, 1e-8, "Low-Rank Matrix (rank~15)"))
+    push!(results, run_test_case(A2, 1e-8, "Low-Rank Matrix (rank~15)"))
 
     A3 = hilb_matrix(2000, 1000)
-    push!(results, compare_on_matrix(A3, 15.0, "Hilbert Matrix (severely ill-conditioned)"))
+    push!(results, run_test_case(A3, 15.0, "Hilbert Matrix (severely ill-conditioned)"))
 
     A4 = randn(300, 200) + im * randn(300, 200)
-    push!(results, compare_on_matrix(A4, 25.0, "Complex Matrix"))
+    push!(results, run_test_case(A4, 25.0, "Complex Matrix"))
 
     A5 = randn(400, 300)
     F5 = svd(A5)
     s5 = 1.0 ./ (1:300)
     A5 = F5.U * Diagonal(s5) * F5.Vt
-    push!(results, compare_on_matrix(A5, 1e-3, "Decaying Spectrum (1/k)"))
+    push!(results, run_test_case(A5, 1e-3, "Decaying Spectrum (1/k)"))
 
     # -------------------------------------------------------------------------
     # LARGE MATRIX TESTS (2x SCALE)
@@ -306,24 +306,24 @@ function test()
     println("="^70)
 
     A6 = randn(1000, 600)
-    push!(results, compare_on_matrix(A6, 20.0, "Large Random Matrix (1000x600)"))
+    push!(results, run_test_case(A6, 20.0, "Large Random Matrix (1000x600)"))
 
     U7 = randn(800, 15)
     V7 = randn(500, 15)
     A7 = U7 * V7' + 1e-10 * randn(800, 500)
-    push!(results, compare_on_matrix(A7, 1e-8, "Large Low-Rank (800x500, rank~15)"))
+    push!(results, run_test_case(A7, 1e-8, "Large Low-Rank (800x500, rank~15)"))
 
     A8 = hilb_matrix(4000, 2000)
-    push!(results, compare_on_matrix(A8, 15.0, "Large Hilbert Matrix (4000x2000)"))
+    push!(results, run_test_case(A8, 15.0, "Large Hilbert Matrix (4000x2000)"))
 
     A9 = randn(600, 400) + im * randn(600, 400)
-    push!(results, compare_on_matrix(A9, 25.0, "Large Complex Matrix (600x400)"))
+    push!(results, run_test_case(A9, 25.0, "Large Complex Matrix (600x400)"))
 
     A10 = randn(800, 600)
     F10 = svd(A10)
     s10 = 1.0 ./ (1:600)
     A10 = F10.U * Diagonal(s10) * F10.Vt
-    push!(results, compare_on_matrix(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)"))
+    push!(results, run_test_case(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)"))
 
     # -------------------------------------------------------------------------
     # SLOW DECAYING SPECTRUM TESTS
@@ -337,37 +337,37 @@ function test()
     F11 = svd(A11)
     s11 = 1.0 ./ sqrt.(1:300)
     A11 = F11.U * Diagonal(s11) * F11.Vt
-    push!(results, compare_on_matrix(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)"))
+    push!(results, run_test_case(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)"))
 
     A12 = randn(800, 600)
     F12 = svd(A12)
     s12 = 1.0 ./ sqrt.(1:600)
     A12 = F12.U * Diagonal(s12) * F12.Vt
-    push!(results, compare_on_matrix(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)"))
+    push!(results, run_test_case(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)"))
 
     A13 = randn(400, 300)
     F13 = svd(A13)
     s13 = 1.0 ./ ((1:300) .^ 0.7)
     A13 = F13.U * Diagonal(s13) * F13.Vt
-    push!(results, compare_on_matrix(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)"))
+    push!(results, run_test_case(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)"))
 
     A14 = randn(800, 600)
     F14 = svd(A14)
     s14 = 1.0 ./ ((1:600) .^ 0.7)
     A14 = F14.U * Diagonal(s14) * F14.Vt
-    push!(results, compare_on_matrix(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)"))
+    push!(results, run_test_case(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)"))
 
     A15 = randn(400, 300)
     F15 = svd(A15)
     s15 = exp.(-(1:300) / 100.0)
     A15 = F15.U * Diagonal(s15) * F15.Vt
-    push!(results, compare_on_matrix(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)"))
+    push!(results, run_test_case(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)"))
 
     A16 = randn(800, 600)
     F16 = svd(A16)
     s16 = exp.(-(1:600) / 150.0)
     A16 = F16.U * Diagonal(s16) * F16.Vt
-    push!(results, compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
+    push!(results, run_test_case(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)"))
 
     # -------------------------------------------------------------------------
     # STRUCTURED MATRICES FROM MAKE_MAT
@@ -378,13 +378,13 @@ function test()
     println("="^70)
 
     A22 = make_mat(500, 500, "gaussexp")
-    push!(results, compare_on_matrix(A22, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)"))
+    push!(results, run_test_case(A22, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)"))
 
     A23 = make_mat(400, 400, "gmm")
-    push!(results, compare_on_matrix(A23, 1e-3, "GMM (Gaussian Mixture Model, 400x400)"))
+    push!(results, run_test_case(A23, 1e-3, "GMM (Gaussian Mixture Model, 400x400)"))
 
     A24 = make_mat(300, 300, "snn")
-    push!(results, compare_on_matrix(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
+    push!(results, run_test_case(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
 
     # Summary
     print_summary(results)

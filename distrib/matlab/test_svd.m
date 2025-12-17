@@ -46,28 +46,28 @@ function exit_code = test_svd()
     % Test 1: Random matrix (well-conditioned)
     rng(42);
     A1 = randn(500, 300);
-    results = compare_on_matrix(A1, 20, 'Random Matrix (well-conditioned)');
+    results = run_test_case(A1, 20, 'Random Matrix (well-conditioned)');
 
     % Test 2: Low-rank matrix
     U = randn(400, 15);
     V = randn(250, 15);
     A2 = U * V' + 1e-10 * randn(400, 250);
-    results(end+1) = compare_on_matrix(A2, 1e-8, 'Low-Rank Matrix (rank~15)');
+    results(end+1) = run_test_case(A2, 1e-8, 'Low-Rank Matrix (rank~15)');
 
     % Test 3: Hilbert matrix (extremely ill-conditioned)
     A3 = hilbert(2000, 1000);
-    results(end+1) = compare_on_matrix(A3, 15, 'Hilbert Matrix (severely ill-conditioned)');
+    results(end+1) = run_test_case(A3, 15, 'Hilbert Matrix (severely ill-conditioned)');
 
     % Test 4: Complex matrix
     A4 = randn(300, 200) + 1i * randn(300, 200);
-    results(end+1) = compare_on_matrix(A4, 25, 'Complex Matrix');
+    results(end+1) = run_test_case(A4, 25, 'Complex Matrix');
 
     % Test 5: Decaying spectrum (tolerance mode)
     A5 = randn(400, 300);
     [U5, ~, V5] = svd(A5, 'econ');
     s5 = 1.0 ./ (1:300)';
     A5 = U5 * diag(s5) * V5';
-    results(end+1) = compare_on_matrix(A5, 1e-3, 'Decaying Spectrum (1/k)');
+    results(end+1) = run_test_case(A5, 1e-3, 'Decaying Spectrum (1/k)');
 
     % -------------------------------------------------------------------------
     % LARGE MATRIX TESTS (2x SCALE)
@@ -79,28 +79,28 @@ function exit_code = test_svd()
 
     % Test 6: Large random matrix
     A6 = randn(1000, 600);
-    results(end+1) = compare_on_matrix(A6, 20, 'Large Random Matrix (1000x600)');
+    results(end+1) = run_test_case(A6, 20, 'Large Random Matrix (1000x600)');
 
     % Test 7: Large low-rank matrix
     U7 = randn(800, 15);
     V7 = randn(500, 15);
     A7 = U7 * V7' + 1e-10 * randn(800, 500);
-    results(end+1) = compare_on_matrix(A7, 1e-8, 'Large Low-Rank (800x500, rank~15)');
+    results(end+1) = run_test_case(A7, 1e-8, 'Large Low-Rank (800x500, rank~15)');
 
     % Test 8: Large Hilbert matrix
     A8 = hilbert(4000, 2000);
-    results(end+1) = compare_on_matrix(A8, 15, 'Large Hilbert Matrix (4000x2000)');
+    results(end+1) = run_test_case(A8, 15, 'Large Hilbert Matrix (4000x2000)');
 
     % Test 9: Large complex matrix
     A9 = randn(600, 400) + 1i * randn(600, 400);
-    results(end+1) = compare_on_matrix(A9, 25, 'Large Complex Matrix (600x400)');
+    results(end+1) = run_test_case(A9, 25, 'Large Complex Matrix (600x400)');
 
     % Test 10: Large decaying spectrum
     A10 = randn(800, 600);
     [U10, ~, V10] = svd(A10, 'econ');
     s10 = 1.0 ./ (1:600)';
     A10 = U10 * diag(s10) * V10';
-    results(end+1) = compare_on_matrix(A10, 1e-3, 'Large Decaying Spectrum (1/k, 800x600)');
+    results(end+1) = run_test_case(A10, 1e-3, 'Large Decaying Spectrum (1/k, 800x600)');
 
     % -------------------------------------------------------------------------
     % SLOW DECAYING SPECTRUM TESTS
@@ -115,42 +115,42 @@ function exit_code = test_svd()
     [U11, ~, V11] = svd(A11, 'econ');
     s11 = 1.0 ./ sqrt(1:300)';
     A11 = U11 * diag(s11) * V11';
-    results(end+1) = compare_on_matrix(A11, 1e-3, 'Slow Decay - Sqrt (1/sqrtk, 400x300)');
+    results(end+1) = run_test_case(A11, 1e-3, 'Slow Decay - Sqrt (1/sqrtk, 400x300)');
 
     % Test 12: Slow decay - sqrt (large)
     A12 = randn(800, 600);
     [U12, ~, V12] = svd(A12, 'econ');
     s12 = 1.0 ./ sqrt(1:600)';
     A12 = U12 * diag(s12) * V12';
-    results(end+1) = compare_on_matrix(A12, 1e-3, 'Slow Decay - Sqrt (1/sqrtk, 800x600)');
+    results(end+1) = run_test_case(A12, 1e-3, 'Slow Decay - Sqrt (1/sqrtk, 800x600)');
 
     % Test 13: Slow decay - polynomial (small)
     A13 = randn(400, 300);
     [U13, ~, V13] = svd(A13, 'econ');
     s13 = 1.0 ./ ((1:300)' .^ 0.7);
     A13 = U13 * diag(s13) * V13';
-    results(end+1) = compare_on_matrix(A13, 1e-3, 'Slow Decay - Polynomial (1/k^0.7, 400x300)');
+    results(end+1) = run_test_case(A13, 1e-3, 'Slow Decay - Polynomial (1/k^0.7, 400x300)');
 
     % Test 14: Slow decay - polynomial (large)
     A14 = randn(800, 600);
     [U14, ~, V14] = svd(A14, 'econ');
     s14 = 1.0 ./ ((1:600)' .^ 0.7);
     A14 = U14 * diag(s14) * V14';
-    results(end+1) = compare_on_matrix(A14, 1e-3, 'Slow Decay - Polynomial (1/k^0.7, 800x600)');
+    results(end+1) = run_test_case(A14, 1e-3, 'Slow Decay - Polynomial (1/k^0.7, 800x600)');
 
     % Test 15: Slow decay - exponential (small)
     A15 = randn(400, 300);
     [U15, ~, V15] = svd(A15, 'econ');
     s15 = exp(-(1:300)' / 100.0);
     A15 = U15 * diag(s15) * V15';
-    results(end+1) = compare_on_matrix(A15, 1e-3, 'Slow Decay - Exponential (exp(-k/100), 400x300)');
+    results(end+1) = run_test_case(A15, 1e-3, 'Slow Decay - Exponential (exp(-k/100), 400x300)');
 
     % Test 16: Slow decay - exponential (large)
     A16 = randn(800, 600);
     [U16, ~, V16] = svd(A16, 'econ');
     s16 = exp(-(1:600)' / 150.0);
     A16 = U16 * diag(s16) * V16';
-    results(end+1) = compare_on_matrix(A16, 1e-3, 'Slow Decay - Exponential (exp(-k/150), 800x600)');
+    results(end+1) = run_test_case(A16, 1e-3, 'Slow Decay - Exponential (exp(-k/150), 800x600)');
 
     % -------------------------------------------------------------------------
     % STRUCTURED MATRICES FROM MAKE_MAT
@@ -162,15 +162,15 @@ function exit_code = test_svd()
 
     % Test 22: Gaussian Exponential Decay Matrix
     A22 = test_utils.make_mat(500, 500, 'gaussexp');
-    results(end+1) = compare_on_matrix(A22, 1e-3, 'Gaussexp (Gaussian Exponential Decay, 500x500)');
+    results(end+1) = run_test_case(A22, 1e-3, 'Gaussexp (Gaussian Exponential Decay, 500x500)');
 
     % Test 23: Gaussian Mixture Model Matrix
     A23 = test_utils.make_mat(400, 400, 'gmm');
-    results(end+1) = compare_on_matrix(A23, 1e-3, 'GMM (Gaussian Mixture Model, 400x400)');
+    results(end+1) = run_test_case(A23, 1e-3, 'GMM (Gaussian Mixture Model, 400x400)');
 
     % Test 24: Sparse Neural Network Matrix
     A24 = test_utils.make_mat(300, 300, 'snn');
-    results(end+1) = compare_on_matrix(A24, 1e-3, 'SNN (Sparse Neural Network, 300x300)');
+    results(end+1) = run_test_case(A24, 1e-3, 'SNN (Sparse Neural Network, 300x300)');
 
     % =========================================================================
     % Summary
@@ -196,7 +196,7 @@ function exit_code = test_svd()
 end
 
 
-function result = compare_on_matrix(A, rtol_or_rank, name)
+function result = run_test_case(A, rtol_or_rank, name)
     % Compare SVD implementations on a single matrix.
 
     fprintf('\n======================================================================\n');
