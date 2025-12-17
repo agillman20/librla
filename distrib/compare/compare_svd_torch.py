@@ -40,8 +40,8 @@ import argparse
 import os
 import sys
 
-# Get number of CPU cores for default thread count
-NUM_CPUS = os.cpu_count() or 1
+# Get number of CPU cores for default thread count (physical cores only)
+NUM_CPUS = (os.cpu_count() or 2) // 2
 
 # Parse arguments BEFORE any numeric library imports
 # Threading env vars must be set before numpy/scipy/torch are imported
