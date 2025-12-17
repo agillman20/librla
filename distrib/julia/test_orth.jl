@@ -433,5 +433,5 @@ end # module TestOrth
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(TestOrth.validate())
+    exit(TestOrth.test())
 end

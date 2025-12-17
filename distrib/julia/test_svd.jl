@@ -424,5 +424,5 @@ end # module TestSVD
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(TestSVD.validate())
+    exit(TestSVD.test())
 end

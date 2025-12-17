@@ -411,5 +411,5 @@ end # module TestQR
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(TestQR.validate())
+    exit(TestQR.test())
 end
