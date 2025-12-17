@@ -593,6 +593,9 @@ def main():
     print(f"  CUDA:       {'Available (' + torch.cuda.get_device_name(0) + ')' if cuda_available else 'Not available'}")
     print(f"  Mode:       {'CUDA' if args.cuda else 'CPU'}")
 
+    print("\nThread configuration details:")
+    print(torch.__config__.parallel_info())
+
     # Check CUDA availability if --cuda flag is set
     if args.cuda and not cuda_available:
         print("\nERROR: --cuda flag specified but CUDA is not available.")
