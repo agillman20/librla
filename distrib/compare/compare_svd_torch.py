@@ -99,9 +99,11 @@ from test_utils import make_mat
 try:
     import torch
     TORCH_AVAILABLE = True
-    # Also set torch threads explicitly for Intel MKL compatibility
+    # Set torch threads explicitly for Intel MKL compatibility
     # This ensures torch respects our thread setting even if MKL ignores env vars
     torch.set_num_threads(args.threads)
+    # Also set inter-op threads to avoid nested parallelism (thread explosion)
+    torch.set_num_interop_threads(args.threads)
 except ImportError:
     TORCH_AVAILABLE = False
     print("WARNING: PyTorch not installed. Run: pip install torch")
