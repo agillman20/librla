@@ -124,6 +124,7 @@ n_ocean = sum(ocean_mask(:));
 
 fprintf('\n  Ocean points: %d / %d (%.1f%%)\n', n_ocean, n_lon * n_lat, ...
         100*n_ocean/(n_lon*n_lat));
+fprintf('  Area weighting: None (unweighted EOF analysis)\n');
 
 % Reshape to 2D matrix: ocean_points x time
 SST_matrix = zeros(n_ocean, n_time, 'single');
@@ -175,6 +176,9 @@ end
 n90 = find(cumulative_var >= 0.90, 1);
 n95 = find(cumulative_var >= 0.95, 1);
 fprintf('\n  Modes for 90%%: %d, 95%%: %d\n', n90, n95);
+
+% North's rule of thumb for mode separability
+test_sst_utils.print_north_test(s_full, n_time, 10);
 
 % ========================================================================
 % Reshape EOFs back to spatial maps
@@ -374,6 +378,9 @@ fprintf('  EOF Analysis:\n');
 fprintf('    EOF1 variance: %.1f%% (mean pattern)\n', 100*var_explained(1));
 fprintf('    EOF5 variance: %.1f%% (ENSO)\n', 100*var_explained(5));
 fprintf('    Modes for 90%% variance: %d\n', n90);
+separable = test_sst_utils.north_test(s_full, n_time);
+n_well_separated = sum(separable(1:10));
+fprintf('    Well-separated modes (North''s rule): %d/10\n', n_well_separated);
 fprintf('\n');
 fprintf('  Randomized SVD accuracy:\n');
 rel_err = norm(s - s_full(1:n_modes)) / norm(s_full(1:n_modes));

@@ -50,6 +50,7 @@ import matplotlib.pyplot as plt
 # Add parent directory to path for librla
 sys.path.insert(0, str(Path(__file__).parent.parent / "python"))
 import librla
+from test_sst_utils import north_test, print_north_test
 
 # ========================================================================
 # Load SST data
@@ -139,6 +140,7 @@ ocean_mask = ~np.any(np.isnan(SST), axis=2)
 n_ocean = np.sum(ocean_mask)
 
 print(f"\n  Ocean points: {n_ocean} / {n_lon * n_lat} ({100*n_ocean/(n_lon*n_lat):.1f}%)")
+print(f"  Area weighting: None (unweighted EOF analysis)")
 
 # Reshape to 2D matrix: ocean_points × time
 # Each column is one month's SST field (ocean points only)
@@ -187,6 +189,9 @@ for i in range(min(10, n_modes)):
 n90 = np.argmax(cumulative_var >= 0.90) + 1
 n95 = np.argmax(cumulative_var >= 0.95) + 1
 print(f"\n  Modes for 90%: {n90}, 95%: {n95}")
+
+# North's rule of thumb for mode separability
+print_north_test(s_full, n_samples=n_time, n_modes=10)
 
 # ========================================================================
 # Reshape EOFs back to spatial maps
@@ -374,6 +379,9 @@ print("  EOF Analysis:")
 print(f"    EOF1 variance: {100*var_explained[0]:.1f}% (mean pattern)")
 print(f"    EOF5 variance: {100*var_explained[4]:.1f}% (ENSO)")
 print(f"    Modes for 90% variance: {n90}")
+separable = north_test(s_full, n_samples=n_time)
+n_well_separated = np.sum(separable[:10])
+print(f"    Well-separated modes (North's rule): {n_well_separated}/10")
 print()
 print("  Randomized SVD accuracy:")
 rel_err = norm(s - s_full[:n_modes]) / norm(s_full[:n_modes])
