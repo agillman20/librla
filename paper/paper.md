@@ -52,6 +52,10 @@ While the algorithm used in 'librla' is built in a similar manner to the randomi
 
 While there is a large amount of research activity in the field of randomized linear algebra, there is not an easy to use and stable factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in an unnecessarily slow code.  The area of fast direct solvers for integral equations is an example of why 'librla' is useful.  For sometime, developers of fast direct solvers using Matlab have been using a Fortran package [@Tygert:2008] based on [@Liberty:2007] via a specialized wrapper.  The need of this wrapper has slowed the design and use of these solvers.  
 
+There are two available related routines available in widely avaible Python packages.  They are Pytorch's 'svd_lowrank' and Scipy's 'id_decomp' found in the 'scipy.linalg.interpolative' library.  Codes allowing the user compare the performance are avialble in the *compare* folder of the repository.  The results show that the performance of 'liblra' is comparable to that of the Pytorch svd and is faster than the interpolatory decomposition 'id_decomp'.  The library 'librla' is the only package that provides the user the option of three different factorizations.  The factozation speeds are all comparable to Pytorch's 'svd_lowrank'.  
+
+
+
 # Mathematics
 
 The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
@@ -86,6 +90,17 @@ if isempty(diagR) || diagR(1) == 0
     ELSE Print "odd";
   ENDIF;
 END.
+
+
+# Demo codes
+
+The file named *demo* located in each of the language files provides a collection of codes that demonstrate how to call the factorizations in 'librla' with the different options.  These 'demo_' codes are designed to aid users.   The codes in the *demo* directory named 'test_' validate that the codes are working correctly.  The code 'test_all' test all the factorization techniques while the other test codes are written to test one factorization technique.  
+
+# Examples from the literature
+
+To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems found in recent papers.  The problems investigated are using low rank factorizations for image compression and data compression [@Tropp:2019]. 
+
+For the image compression 
 
 
 # Acknowledgements
