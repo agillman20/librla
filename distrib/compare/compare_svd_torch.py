@@ -134,7 +134,7 @@ def hilbert(m, n, dtype=np.float64):
     return 1.0 / (i + j - 1)
 
 
-def compare_on_matrix(A, rank, name, device='cpu', power_iter=0, extra_samples=12):
+def run_test_case(A, rank, name, device='cpu', power_iter=0, extra_samples=12):
     """
     Compare SVD implementations on a single matrix.
 
@@ -341,24 +341,24 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     # Test 1: Random matrix (well-conditioned)
     np.random.seed(42)
     A1 = np.random.randn(500, 300).astype(DTYPE)
-    results.append(compare_on_matrix(A1, 20, "Random Matrix (well-conditioned)", device, power_iter, extra_samples))
+    results.append(run_test_case(A1, 20, "Random Matrix (well-conditioned)", device, power_iter, extra_samples))
 
     # Test 2: Low-rank matrix
     U = np.random.randn(400, 15).astype(DTYPE)
     V = np.random.randn(250, 15).astype(DTYPE)
     A2 = (U @ V.T + EPS * np.random.randn(400, 250)).astype(DTYPE)
-    results.append(compare_on_matrix(A2, 15, "Low-Rank Matrix (rank~15)", device, power_iter, extra_samples))
+    results.append(run_test_case(A2, 15, "Low-Rank Matrix (rank~15)", device, power_iter, extra_samples))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
     A3 = hilbert(2000, 1000, dtype=DTYPE)
-    results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (ill-conditioned)", device, power_iter, extra_samples))
+    results.append(run_test_case(A3, 15, "Hilbert Matrix (ill-conditioned)", device, power_iter, extra_samples))
 
     # Test 4: Decaying spectrum
     A4 = np.random.randn(400, 300).astype(DTYPE)
     U4, S4, Vh4 = np.linalg.svd(A4, full_matrices=False)
     s4 = (1.0 / np.arange(1, 301)).astype(DTYPE)
     A4 = (U4 @ np.diag(s4) @ Vh4).astype(DTYPE)
-    results.append(compare_on_matrix(A4, 50, "Decaying Spectrum (1/k)", device, power_iter, extra_samples))
+    results.append(run_test_case(A4, 50, "Decaying Spectrum (1/k)", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # LARGE MATRIX TESTS (2x larger)
@@ -370,24 +370,24 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
 
     # Test 5: Large random matrix
     A5 = np.random.randn(1000, 600).astype(DTYPE)
-    results.append(compare_on_matrix(A5, 20, "Large Random Matrix (1000x600)", device, power_iter, extra_samples))
+    results.append(run_test_case(A5, 20, "Large Random Matrix (1000x600)", device, power_iter, extra_samples))
 
     # Test 6: Large low-rank matrix
     U6 = np.random.randn(800, 15).astype(DTYPE)
     V6 = np.random.randn(500, 15).astype(DTYPE)
     A6 = (U6 @ V6.T + EPS * np.random.randn(800, 500)).astype(DTYPE)
-    results.append(compare_on_matrix(A6, 15, "Large Low-Rank (800x500, rank~15)", device, power_iter, extra_samples))
+    results.append(run_test_case(A6, 15, "Large Low-Rank (800x500, rank~15)", device, power_iter, extra_samples))
 
     # Test 7: Large Hilbert matrix
     A7 = hilbert(4000, 2000, dtype=DTYPE)
-    results.append(compare_on_matrix(A7, 15, "Large Hilbert Matrix (4000x2000)", device, power_iter, extra_samples))
+    results.append(run_test_case(A7, 15, "Large Hilbert Matrix (4000x2000)", device, power_iter, extra_samples))
 
     # Test 8: Large decaying spectrum
     A8 = np.random.randn(800, 600).astype(DTYPE)
     U8, S8, Vh8 = np.linalg.svd(A8, full_matrices=False)
     s8 = (1.0 / np.arange(1, 601)).astype(DTYPE)
     A8 = (U8 @ np.diag(s8) @ Vh8).astype(DTYPE)
-    results.append(compare_on_matrix(A8, 50, "Large Decaying Spectrum (1/k, 800x600)", device, power_iter, extra_samples))
+    results.append(run_test_case(A8, 50, "Large Decaying Spectrum (1/k, 800x600)", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # SLOW DECAYING SPECTRUM TESTS
@@ -402,21 +402,21 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
     U9, S9, Vh9 = np.linalg.svd(A9, full_matrices=False)
     s9 = (1.0 / np.sqrt(np.arange(1, 301))).astype(DTYPE)
     A9 = (U9 @ np.diag(s9) @ Vh9).astype(DTYPE)
-    results.append(compare_on_matrix(A9, 50, "Slow Decay - Sqrt (1/sqrtk)", device, power_iter, extra_samples))
+    results.append(run_test_case(A9, 50, "Slow Decay - Sqrt (1/sqrtk)", device, power_iter, extra_samples))
 
     # Test 10: Slow decay - polynomial
     A10 = np.random.randn(400, 300).astype(DTYPE)
     U10, S10, Vh10 = np.linalg.svd(A10, full_matrices=False)
     s10 = (1.0 / (np.arange(1, 301) ** 0.7)).astype(DTYPE)
     A10 = (U10 @ np.diag(s10) @ Vh10).astype(DTYPE)
-    results.append(compare_on_matrix(A10, 50, "Slow Decay - Polynomial (1/k^0.7)", device, power_iter, extra_samples))
+    results.append(run_test_case(A10, 50, "Slow Decay - Polynomial (1/k^0.7)", device, power_iter, extra_samples))
 
     # Test 11: Slow decay - exponential
     A11 = np.random.randn(400, 300).astype(DTYPE)
     U11, S11, Vh11 = np.linalg.svd(A11, full_matrices=False)
     s11 = np.exp(-np.arange(1, 301) / 100.0).astype(DTYPE)
     A11 = (U11 @ np.diag(s11) @ Vh11).astype(DTYPE)
-    results.append(compare_on_matrix(A11, 50, "Slow Decay - Exponential (exp(-k/100))", device, power_iter, extra_samples))
+    results.append(run_test_case(A11, 50, "Slow Decay - Exponential (exp(-k/100))", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # MAKE_MAT MATRIX TESTS (structured matrices from paper)
@@ -428,15 +428,15 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
 
     # Test 12: Gaussian Exponential Decay Matrix
     A12 = make_mat(500, 500, 'gaussexp').astype(DTYPE)
-    results.append(compare_on_matrix(A12, 50, "Gaussexp (Gaussian Exponential Decay)", device, power_iter, extra_samples))
+    results.append(run_test_case(A12, 50, "Gaussexp (Gaussian Exponential Decay)", device, power_iter, extra_samples))
 
     # Test 13: Gaussian Mixture Model Matrix
     A13 = make_mat(400, 400, 'gmm').astype(DTYPE)
-    results.append(compare_on_matrix(A13, 50, "GMM (Gaussian Mixture Model)", device, power_iter, extra_samples))
+    results.append(run_test_case(A13, 50, "GMM (Gaussian Mixture Model)", device, power_iter, extra_samples))
 
     # Test 14: Sparse Neural Network Matrix
     A14 = make_mat(300, 300, 'snn').astype(DTYPE)
-    results.append(compare_on_matrix(A14, 50, "SNN (Sparse Neural Network)", device, power_iter, extra_samples))
+    results.append(run_test_case(A14, 50, "SNN (Sparse Neural Network)", device, power_iter, extra_samples))
 
     # -------------------------------------------------------------------------
     # COMPLEX MATRIX TESTS
@@ -448,29 +448,29 @@ def run_test_suite(device='cpu', power_iter=0, extra_samples=12):
 
     # Test 15: Complex random matrix
     A15 = (np.random.randn(500, 300) + 1j * np.random.randn(500, 300)).astype(CDTYPE)
-    results.append(compare_on_matrix(A15, 20, "Complex Random Matrix", device, power_iter, extra_samples))
+    results.append(run_test_case(A15, 20, "Complex Random Matrix", device, power_iter, extra_samples))
 
     # Test 16: Complex low-rank matrix
     U16 = (np.random.randn(400, 15) + 1j * np.random.randn(400, 15)).astype(CDTYPE)
     V16 = (np.random.randn(250, 15) + 1j * np.random.randn(250, 15)).astype(CDTYPE)
     A16 = U16 @ V16.conj().T + EPS * (np.random.randn(400, 250) + 1j * np.random.randn(400, 250)).astype(CDTYPE)
-    results.append(compare_on_matrix(A16, 15, "Complex Low-Rank (rank~15)", device, power_iter, extra_samples))
+    results.append(run_test_case(A16, 15, "Complex Low-Rank (rank~15)", device, power_iter, extra_samples))
 
     # Test 17: Complex decaying spectrum
     A17 = (np.random.randn(400, 300) + 1j * np.random.randn(400, 300)).astype(CDTYPE)
     U17, S17, Vh17 = np.linalg.svd(A17, full_matrices=False)
     s17 = (1.0 / np.arange(1, 301)).astype(DTYPE)
     A17 = (U17 @ np.diag(s17) @ Vh17).astype(CDTYPE)
-    results.append(compare_on_matrix(A17, 50, "Complex Decaying Spectrum (1/k)", device, power_iter, extra_samples))
+    results.append(run_test_case(A17, 50, "Complex Decaying Spectrum (1/k)", device, power_iter, extra_samples))
 
     # Test 18: Complex Hermitian-like matrix (A @ A.H is Hermitian)
     B18 = (np.random.randn(300, 150) + 1j * np.random.randn(300, 150)).astype(CDTYPE)
     A18 = B18 @ B18.conj().T  # Hermitian positive semi-definite
-    results.append(compare_on_matrix(A18, 30, "Complex Hermitian (B @ B^H)", device, power_iter, extra_samples))
+    results.append(run_test_case(A18, 30, "Complex Hermitian (B @ B^H)", device, power_iter, extra_samples))
 
     # Test 19: Large complex matrix
     A19 = (np.random.randn(800, 500) + 1j * np.random.randn(800, 500)).astype(CDTYPE)
-    results.append(compare_on_matrix(A19, 20, "Large Complex Random (800x500)", device, power_iter, extra_samples))
+    results.append(run_test_case(A19, 20, "Large Complex Random (800x500)", device, power_iter, extra_samples))
 
     return results
 
