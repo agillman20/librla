@@ -232,53 +232,63 @@ end
 function print_summary(results::Vector{ComparisonResult})
     """Print comprehensive summary of all test results."""
     println()
-    println("="^70)
-    println("SUMMARY")
-    println("="^70)
+    println("="^80)
+    println("TEST SUMMARY - ", length(results), " tests completed")
+    println("="^80)
 
-    total_count = length(results)
     passed_count = sum([r.passed for r in results])
+    total_count = length(results)
+    pass_rate = 100.0 * passed_count / total_count
 
-    println("\nTests: ", passed_count, "/", total_count, " passed")
+    println()
+    @printf("Pass Rate: %d/%d (%.1f%%)\n", passed_count, total_count, pass_rate)
 
-    # Timing statistics
-    t_sketch_all = [r.t_sketch for r in results]
-    t_rrqr_all = [r.t_rrqr for r in results]
-
-    println("\nTiming Statistics:")
-    @printf("  id_sketch:   mean=%.3fs, min=%.3fs, max=%.3fs\n",
-            mean(t_sketch_all), minimum(t_sketch_all), maximum(t_sketch_all))
-    @printf("  id_qrpiv:     mean=%.3fs, min=%.3fs, max=%.3fs\n",
-            mean(t_rrqr_all), minimum(t_rrqr_all), maximum(t_rrqr_all))
-
-    # Speedup calculation
-    speedups = t_rrqr_all ./ t_sketch_all
-    println("\nSpeedup (rrqr time / sketch time):")
-    @printf("  mean=%.2fx, min=%.2fx, max=%.2fx\n",
-            mean(speedups), minimum(speedups), maximum(speedups))
-    if mean(speedups) > 1
-        @printf("  -> sketch is %.2fx faster on average\n", mean(speedups))
+    if passed_count == total_count
+        println("[PASS] All tests PASSED")
     else
-        @printf("  -> sketch is %.2fx slower on average\n", 1/mean(speedups))
+        println("[WARNING] Some tests FAILED")
+        for r in results
+            if !r.passed
+                println("  [FAIL] ", r.name)
+            end
+        end
     end
 
-    # Error statistics
-    err_sketch_all = [r.err_sketch for r in results]
-    err_rrqr_all = [r.err_rrqr for r in results]
+    # Performance summary
+    println()
+    println("="^80)
+    println("Performance Summary")
+    println("="^80)
 
-    println("\nReconstruction Error Statistics:")
-    @printf("  id_sketch:   mean=%.3e, max=%.3e\n", mean(err_sketch_all), maximum(err_sketch_all))
-    @printf("  id_qrpiv:     mean=%.3e, max=%.3e\n", mean(err_rrqr_all), maximum(err_rrqr_all))
+    avg_time_sketch = mean([r.t_sketch for r in results])
+    avg_time_rrqr = mean([r.t_rrqr for r in results])
 
-    # Conditioning statistics
-    maxT_sketch_all = [r.maxT_sketch for r in results]
-    maxT_rrqr_all = [r.maxT_rrqr for r in results]
+    println()
+    @printf("%-28s %-12s %-15s\n", "Method", "Avg Time", "vs RRQR")
+    println("-"^80)
+    @printf("%-28s %8.4fs    %6.1fx\n", "id_sketch (randomized)", avg_time_sketch, avg_time_rrqr/avg_time_sketch)
+    @printf("%-28s %8.4fs    %6.1fx -\n", "id_qrpiv (deterministic)", avg_time_rrqr, 1.0)
 
-    println("\nConditioning Statistics (max|T|):")
-    @printf("  id_sketch:   mean=%.3e, min=%.3e, max=%.3e\n", mean(maxT_sketch_all), minimum(maxT_sketch_all), maximum(maxT_sketch_all))
-    @printf("  id_qrpiv:     mean=%.3e, min=%.3e, max=%.3e\n", mean(maxT_rrqr_all), minimum(maxT_rrqr_all), maximum(maxT_rrqr_all))
+    # Accuracy summary
+    println("\nReconstruction Error Summary:")
+    println("-"^80)
+    avg_err_sketch = mean([r.err_sketch for r in results])
+    max_err_sketch = maximum([r.err_sketch for r in results])
+    avg_err_rrqr = mean([r.err_rrqr for r in results])
+    max_err_rrqr = maximum([r.err_rrqr for r in results])
+    @printf("  id_sketch:    mean=%.3e, max=%.3e\n", avg_err_sketch, max_err_sketch)
+    @printf("  id_qrpiv:     mean=%.3e, max=%.3e\n", avg_err_rrqr, max_err_rrqr)
 
-    println("="^70)
+    # Conditioning summary
+    println("\nConditioning Summary (max|T|):")
+    println("-"^80)
+    max_maxT_sketch = maximum([r.maxT_sketch for r in results])
+    max_maxT_rrqr = maximum([r.maxT_rrqr for r in results])
+    @printf("  id_sketch:    max=%.3e\n", max_maxT_sketch)
+    @printf("  id_qrpiv:     max=%.3e\n", max_maxT_rrqr)
+
+    println()
+    println("="^80)
 end
 
 
@@ -475,7 +485,6 @@ end
 end # module TestID
 
 
-# Run validate function if this script is executed directly
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(TestID.validate())
+    exit(TestID.test())
 end
