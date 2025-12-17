@@ -15,11 +15,11 @@ Compares on metrics:
 - Runtime
 
 Usage:
-    python compare_svd_torch.py [--threads N] [--precision {double,single}] [--cuda] [--extra-samples N] [--power-iter N]
+    python compare_svd_torch.py [--torch-threads N] [--precision {double,single}] [--cuda] [--extra-samples N] [--power-iter N]
 
 Options:
-    --threads N        Number of threads (default: number of CPU cores)
-                       Sets threading for both numpy/scipy (MKL/OpenBLAS) and torch
+    --torch-threads N  Number of torch threads (default: 1)
+                       Sets threading for torch
     --precision        Floating-point precision: double (default) or single
     --cuda             Run CUDA tests (default: CPU tests only)
     --extra-samples N  Number of extra samples for oversampling (default: 12)
@@ -40,14 +40,12 @@ import argparse
 import os
 import sys
 
-# Get number of CPU cores for default thread count (physical cores only)
-NUM_CPUS = (os.cpu_count() or 2) // 2
 
 # Parse arguments BEFORE any numeric library imports
 # Threading env vars must be set before numpy/scipy/torch are imported
 parser = argparse.ArgumentParser(description='Compare librla svd_sketch vs torch.svd_lowrank')
-parser.add_argument('--threads', type=int, default=NUM_CPUS,
-                    help=f'Number of threads (default: {NUM_CPUS})')
+parser.add_argument('--torch-threads', type=int, default=1,
+                    help=f'Number of torch threads (default: 1)')
 parser.add_argument('--precision', choices=['double', 'single'], default='double',
                     help='Floating-point precision (default: double)')
 parser.add_argument('--cuda', action='store_true',
@@ -60,14 +58,6 @@ parser.add_argument('--verbose', action='store_true',
                     help='Show detailed results table (default: summary only)')
 args = parser.parse_args()
 
-# Set all threading environment variables BEFORE importing numpy/scipy/torch
-# This ensures consistent threading across all libraries
-thread_str = str(args.threads)
-os.environ['OMP_NUM_THREADS'] = thread_str
-os.environ['MKL_NUM_THREADS'] = thread_str
-os.environ['OPENBLAS_NUM_THREADS'] = thread_str
-os.environ['VECLIB_MAXIMUM_THREADS'] = thread_str  # macOS Accelerate
-os.environ['NUMEXPR_NUM_THREADS'] = thread_str
 
 # Now import numeric libraries
 import numpy as np
@@ -99,11 +89,11 @@ from test_utils import make_mat
 try:
     import torch
     TORCH_AVAILABLE = True
-    # Set torch threads explicitly for Intel MKL compatibility
-    # This ensures torch respects our thread setting even if MKL ignores env vars
-    torch.set_num_threads(args.threads)
+    # Set torch threads explicitly
+    # This ensures torch respects our thread setting
+    torch.set_num_threads(args.torch_threads)
     # Also set inter-op threads to avoid nested parallelism (thread explosion)
-    torch.set_num_interop_threads(args.threads)
+    torch.set_num_interop_threads(args.torch_threads)
 except ImportError:
     TORCH_AVAILABLE = False
     print("WARNING: PyTorch not installed. Run: pip install torch")
