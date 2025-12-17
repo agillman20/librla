@@ -594,8 +594,16 @@ function omega = uniform_omega(n, block_size, is_complex, dtype_str, rng_param)
   end
 end
 
-function omega = gaussian_omega(n, block_size, is_complex, dtype_str)
+function omega = gaussian_omega(n, block_size, is_complex, dtype_str, rng_param)
 % GAUSSIAN_OMEGA - Generate Gaussian test matrix
+  % Set rng state if provided
+  if ~isempty(rng_param)
+      if isstruct(rng_param)
+          rng(rng_param);
+      else
+          rng(rng_param);
+      end
+  end
   if is_complex
       omega = randn(n, block_size, dtype_str) + 1i * randn(n, block_size, dtype_str);
   else
