@@ -154,7 +154,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
         # Check tolerance
         diagR = abs.(diag(R))
         if isempty(diagR) || diagR[1] == 0
-            d = 0.0
+            d = zero(eltype(diagR)) 
         else
             d = diagR[end] / diagR[1]
         end
