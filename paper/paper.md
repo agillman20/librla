@@ -102,7 +102,7 @@ To illustrate the ability of the library handle problems of interest, the techni
 
 The image compression example produces 6 images illustrated in figure 
 
-![Caption A](image_orig.png) ![Caption B](image_id.png)
+![Original image.\label{fig:image_orig}](image_orig.png){width="4cm"} ![Image with ID rank 120 compression .\label{fig:image_id}](image_id.png)
 
 
 # Acknowledgements
