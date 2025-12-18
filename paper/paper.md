@@ -102,26 +102,8 @@ To illustrate the ability of the library handle problems of interest, the techni
 
 The image compression example produces 6 images illustrated in figure 
 
+![Caption A](image_orig.pdf) ![Caption B](image_id.pdf)
 
-``` {=tex}
-\begin{figure}[h]
-    \centering
-    \begin{subfigure}{.5\textwidth}
-        \centering
-        % Replace image1 with your actual image path
-        \includegraphics[width=.8\linewidth]{image_orig.pdf}
-        \caption{Subfigure A}
-        \label{fig:sub1}
-    \end{subfigure}%
-    \begin{subfigure}{.5\textwidth}
-        \centering
-        \includegraphics[width=.8\linewidth]{image_id.pdf}
-        \caption{Subfigure B}
-        \label{fig:sub2}
-    \end{subfigure}
-    \caption{A figure with two subfigures}
-    \label{fig:main}
-\end{figure}
 
 # Acknowledgements
 
