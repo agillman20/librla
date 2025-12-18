@@ -154,7 +154,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
         # Check tolerance
         diagR = abs.(diag(R))
         if isempty(diagR) || diagR[1] == 0
-            d = 0.0
+            d = zero(eltype(diagR)) 
         else
             d = diagR[end] / diagR[1]
         end
@@ -222,7 +222,7 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
 
     # Compute sketch: in rank mode, request all oversampled columns
     # for better accuracy (truncate to kmax after QR)
-    orth_rtol = rank_mode ? block_size : rtol
+    orth_rtol = rank_mode ? convert(typeof(rtol), block_size) : rtol
     Qs, flag, _ = orth_sketch(A, orth_rtol; block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = size(Qs, 2)
@@ -312,7 +312,7 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
 
     # Handle wide matrices via transpose
     if m < n
-        Vt_tmp, s, Ut_tmp = svd_sketch(A', rtol; block_size=block_size,
+        Vt_tmp, s, Ut_tmp = svd_sketch(copy(A'), rtol; block_size=block_size,
                                      power_iter=power_iter, extra_samples=extra_samples, rng=rng)
         U = Ut_tmp'
         Vt = Vt_tmp'
@@ -331,7 +331,7 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
 
     # Compute sketch: in rank mode, request all oversampled columns
     # to get more accurate singular values (truncate to kmax after SVD)
-    orth_rtol = rank_mode ? block_size : rtol
+    orth_rtol = rank_mode ? convert(typeof(rtol), block_size) : rtol
     Qs, flag, _ = orth_sketch(A, orth_rtol; block_size=block_size, power_iter=power_iter, rng=rng)
 
     k = size(Qs, 2)
@@ -438,7 +438,7 @@ function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, metho
     m, n = size(A)
     if rtol >= 1
         # Rank mode: minimal filtering (only exact zeros)
-        rtol_for_svd = 0
+        rtol_for_svd = zero(typeof(rtol))
     else
         # Tolerance mode: use the provided tolerance
         rtol_for_svd = rtol
@@ -515,7 +515,7 @@ function id_qrpiv(A, rtol; method="fast")
     # Determine rank
     if rank_mode
         rank = min(kmax, min(m, n))
-        rtol_for_svd = 0  # Minimal filtering in rank mode
+        rtol_for_svd = zero(typeof(rtol))  # Minimal filtering in rank mode
     else
         rank = _rank_from_diag(diag(R), rtol)
         rtol_for_svd = rtol

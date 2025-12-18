@@ -51,6 +51,10 @@ using Printf
 include(joinpath(@__DIR__, "..", "julia", "librla.jl"))
 using .librla
 
+# Include local utilities
+include(joinpath(@__DIR__, "test_sst_utils.jl"))
+using .TestSstUtils
+
 # ========================================================================
 # Load SST data
 # ========================================================================
@@ -164,6 +168,7 @@ ocean_mask = .!any(isnan.(SST_anom), dims=3)[:, :, 1]
 n_ocean = sum(ocean_mask)
 
 println("\n  Ocean points: $n_ocean / $(n_lon * n_lat) ($(round(100*n_ocean/(n_lon*n_lat), digits=1))%)")
+println("  Area weighting: None (unweighted EOF analysis)")
 
 # Reshape to 2D matrix: ocean_points × time
 # Each column is one month's anomaly field (ocean points only)
@@ -216,6 +221,9 @@ end
 n90 = findfirst(cumulative_var .>= 0.90)
 n95 = findfirst(cumulative_var .>= 0.95)
 println("\n  Modes for 90%: $n90, 95%: $n95")
+
+# North's rule of thumb for mode separability
+print_north_test(σ_full, n_time, n_modes=10)
 
 # ========================================================================
 # Reshape EOFs back to spatial maps
@@ -398,6 +406,9 @@ println("  EOF Analysis:")
 println("    EOF1 variance: $(round(100*var_explained[1], digits=1))% (trend/mean)")
 println("    EOF2 variance: $(round(100*var_explained[2], digits=1))% (ENSO)")
 println("    Modes for 90% variance: $n90")
+separable = north_test(σ_full, n_time)
+n_well_separated = sum(separable[1:10])
+println("    Well-separated modes (North's rule): $n_well_separated/10")
 println("")
 println("  Randomized SVD accuracy:")
 rel_err = norm(σ - σ_full[1:n_modes]) / norm(σ_full[1:n_modes])

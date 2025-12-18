@@ -105,7 +105,7 @@ def hilbert(m, n, dtype=np.float64):
     return 1.0 / (i + j - 1)
 
 
-def compare_on_matrix(A, rtol_or_rank, name, extra_samples=12, power_iter=0):
+def run_test_case(A, rtol_or_rank, name, extra_samples=12, power_iter=0):
     """
     Compare ID implementations on a single matrix.
 
@@ -314,29 +314,29 @@ def main():
     # Test 1: Random matrix (well-conditioned)
     np.random.seed(42)
     A1 = np.random.randn(500, 300).astype(DTYPE)
-    results.append(compare_on_matrix(A1, 20, "Random Matrix (well-conditioned)", extra_samples, power_iter))
+    results.append(run_test_case(A1, 20, "Random Matrix (well-conditioned)", extra_samples, power_iter))
 
     # Test 2: Low-rank matrix
     U = np.random.randn(400, 15).astype(DTYPE)
     V = np.random.randn(250, 15).astype(DTYPE)
     A2 = (U @ V.T + EPS * np.random.randn(400, 250)).astype(DTYPE)
-    results.append(compare_on_matrix(A2, RTOL_TIGHT, "Low-Rank Matrix (rank~15)", extra_samples, power_iter))
+    results.append(run_test_case(A2, RTOL_TIGHT, "Low-Rank Matrix (rank~15)", extra_samples, power_iter))
 
     # Test 3: Hilbert matrix (extremely ill-conditioned)
     A3 = hilbert(2000, 1000, dtype=DTYPE)
-    results.append(compare_on_matrix(A3, 15, "Hilbert Matrix (severely ill-conditioned)", extra_samples, power_iter))
+    results.append(run_test_case(A3, 15, "Hilbert Matrix (severely ill-conditioned)", extra_samples, power_iter))
 
     # Test 4: Complex matrix
     CDTYPE = np.complex128 if DTYPE == np.float64 else np.complex64
     A4 = (np.random.randn(300, 200) + 1j * np.random.randn(300, 200)).astype(CDTYPE)
-    results.append(compare_on_matrix(A4, 25, "Complex Matrix", extra_samples, power_iter))
+    results.append(run_test_case(A4, 25, "Complex Matrix", extra_samples, power_iter))
 
     # Test 5: Decaying spectrum (tolerance mode)
     A5 = np.random.randn(400, 300).astype(DTYPE)
     U5, S5, Vh5 = np.linalg.svd(A5, full_matrices=False)
     s5 = (1.0 / np.arange(1, 301)).astype(DTYPE)
     A5 = (U5 @ np.diag(s5) @ Vh5).astype(DTYPE)
-    results.append(compare_on_matrix(A5, 1e-3, "Decaying Spectrum (1/k)", extra_samples, power_iter))
+    results.append(run_test_case(A5, 1e-3, "Decaying Spectrum (1/k)", extra_samples, power_iter))
 
     # -------------------------------------------------------------------------
     # LARGE MATRIX TESTS (2x larger)
@@ -348,28 +348,28 @@ def main():
 
     # Test 6: Large random matrix
     A6 = np.random.randn(1000, 600).astype(DTYPE)
-    results.append(compare_on_matrix(A6, 20, "Large Random Matrix (1000x600)", extra_samples, power_iter))
+    results.append(run_test_case(A6, 20, "Large Random Matrix (1000x600)", extra_samples, power_iter))
 
     # Test 7: Large low-rank matrix
     U7 = np.random.randn(800, 15).astype(DTYPE)
     V7 = np.random.randn(500, 15).astype(DTYPE)
     A7 = (U7 @ V7.T + EPS * np.random.randn(800, 500)).astype(DTYPE)
-    results.append(compare_on_matrix(A7, RTOL_TIGHT, "Large Low-Rank (800x500, rank~15)", extra_samples, power_iter))
+    results.append(run_test_case(A7, RTOL_TIGHT, "Large Low-Rank (800x500, rank~15)", extra_samples, power_iter))
 
     # Test 8: Large Hilbert matrix
     A8 = hilbert(4000, 2000, dtype=DTYPE)
-    results.append(compare_on_matrix(A8, 15, "Large Hilbert Matrix (4000x2000)", extra_samples, power_iter))
+    results.append(run_test_case(A8, 15, "Large Hilbert Matrix (4000x2000)", extra_samples, power_iter))
 
     # Test 9: Large complex matrix
     A9 = (np.random.randn(600, 400) + 1j * np.random.randn(600, 400)).astype(CDTYPE)
-    results.append(compare_on_matrix(A9, 25, "Large Complex Matrix (600x400)", extra_samples, power_iter))
+    results.append(run_test_case(A9, 25, "Large Complex Matrix (600x400)", extra_samples, power_iter))
 
     # Test 10: Large decaying spectrum
     A10 = np.random.randn(800, 600).astype(DTYPE)
     U10, S10, Vh10 = np.linalg.svd(A10, full_matrices=False)
     s10 = (1.0 / np.arange(1, 601)).astype(DTYPE)
     A10 = (U10 @ np.diag(s10) @ Vh10).astype(DTYPE)
-    results.append(compare_on_matrix(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)", extra_samples, power_iter))
+    results.append(run_test_case(A10, 1e-3, "Large Decaying Spectrum (1/k, 800x600)", extra_samples, power_iter))
 
     # -------------------------------------------------------------------------
     # SLOW DECAYING SPECTRUM TESTS
@@ -384,42 +384,42 @@ def main():
     U11, S11, Vh11 = np.linalg.svd(A11, full_matrices=False)
     s11 = (1.0 / np.sqrt(np.arange(1, 301))).astype(DTYPE)
     A11 = (U11 @ np.diag(s11) @ Vh11).astype(DTYPE)
-    results.append(compare_on_matrix(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)", extra_samples, power_iter))
+    results.append(run_test_case(A11, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 400x300)", extra_samples, power_iter))
 
     # Test 12: Slow decay - sqrt (large)
     A12 = np.random.randn(800, 600).astype(DTYPE)
     U12, S12, Vh12 = np.linalg.svd(A12, full_matrices=False)
     s12 = (1.0 / np.sqrt(np.arange(1, 601))).astype(DTYPE)
     A12 = (U12 @ np.diag(s12) @ Vh12).astype(DTYPE)
-    results.append(compare_on_matrix(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)", extra_samples, power_iter))
+    results.append(run_test_case(A12, 1e-3, "Slow Decay - Sqrt (1/sqrtk, 800x600)", extra_samples, power_iter))
 
     # Test 13: Slow decay - polynomial (small)
     A13 = np.random.randn(400, 300).astype(DTYPE)
     U13, S13, Vh13 = np.linalg.svd(A13, full_matrices=False)
     s13 = (1.0 / (np.arange(1, 301) ** 0.7)).astype(DTYPE)
     A13 = (U13 @ np.diag(s13) @ Vh13).astype(DTYPE)
-    results.append(compare_on_matrix(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)", extra_samples, power_iter))
+    results.append(run_test_case(A13, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 400x300)", extra_samples, power_iter))
 
     # Test 14: Slow decay - polynomial (large)
     A14 = np.random.randn(800, 600).astype(DTYPE)
     U14, S14, Vh14 = np.linalg.svd(A14, full_matrices=False)
     s14 = (1.0 / (np.arange(1, 601) ** 0.7)).astype(DTYPE)
     A14 = (U14 @ np.diag(s14) @ Vh14).astype(DTYPE)
-    results.append(compare_on_matrix(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)", extra_samples, power_iter))
+    results.append(run_test_case(A14, 1e-3, "Slow Decay - Polynomial (1/k^0.7, 800x600)", extra_samples, power_iter))
 
     # Test 15: Slow decay - exponential (small)
     A15 = np.random.randn(400, 300).astype(DTYPE)
     U15, S15, Vh15 = np.linalg.svd(A15, full_matrices=False)
     s15 = np.exp(-np.arange(1, 301) / 100.0).astype(DTYPE)
     A15 = (U15 @ np.diag(s15) @ Vh15).astype(DTYPE)
-    results.append(compare_on_matrix(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)", extra_samples, power_iter))
+    results.append(run_test_case(A15, 1e-3, "Slow Decay - Exponential (exp(-k/100), 400x300)", extra_samples, power_iter))
 
     # Test 16: Slow decay - exponential (large)
     A16 = np.random.randn(800, 600).astype(DTYPE)
     U16, S16, Vh16 = np.linalg.svd(A16, full_matrices=False)
     s16 = np.exp(-np.arange(1, 601) / 150.0).astype(DTYPE)
     A16 = (U16 @ np.diag(s16) @ Vh16).astype(DTYPE)
-    results.append(compare_on_matrix(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)", extra_samples, power_iter))
+    results.append(run_test_case(A16, 1e-3, "Slow Decay - Exponential (exp(-k/150), 800x600)", extra_samples, power_iter))
 
     # -------------------------------------------------------------------------
     # MAKE_MAT MATRIX TESTS (structured matrices from paper)
@@ -431,15 +431,15 @@ def main():
 
     # Test 17: Gaussian Exponential Decay Matrix
     A17 = make_mat(500, 500, 'gaussexp').astype(DTYPE)
-    results.append(compare_on_matrix(A17, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)", extra_samples, power_iter))
+    results.append(run_test_case(A17, 1e-3, "Gaussexp (Gaussian Exponential Decay, 500x500)", extra_samples, power_iter))
 
     # Test 18: Gaussian Mixture Model Matrix
     A18 = make_mat(400, 400, 'gmm').astype(DTYPE)
-    results.append(compare_on_matrix(A18, 1e-3, "GMM (Gaussian Mixture Model, 400x400)", extra_samples, power_iter))
+    results.append(run_test_case(A18, 1e-3, "GMM (Gaussian Mixture Model, 400x400)", extra_samples, power_iter))
 
     # Test 19: Sparse Neural Network Matrix
     A19 = make_mat(300, 300, 'snn').astype(DTYPE)
-    results.append(compare_on_matrix(A19, 1e-3, "SNN (Sparse Neural Network, 300x300)", extra_samples, power_iter))
+    results.append(run_test_case(A19, 1e-3, "SNN (Sparse Neural Network, 300x300)", extra_samples, power_iter))
 
     # =========================================================================
     # PRINT SUMMARY
