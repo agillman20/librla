@@ -102,7 +102,7 @@ To illustrate the ability of the library handle problems of interest, the techni
 
 The image compression example produces 6 images illustrated in figure 
 
-![Caption A](image_orig.pdf) ![Caption B](image_id.pdf)
+![Caption A](image_orig.png) ![Caption B](image_id.png)
 
 
 # Acknowledgements
