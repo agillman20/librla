@@ -1,3 +1,10 @@
+```markdown
+---
+header-includes:
+  - \usepackage{caption}
+  - \usepackage{subcaption}
+---
+% Remainder of your document content
 ---
 title: 'librla: A library of randomized linear algebra routines'
 tags:
@@ -100,8 +107,28 @@ The file named *demo* located in each of the language files provides a collectio
 
 To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems found in recent papers.  The problems investigated are using low rank factorizations for image compression and data compression [@Tropp:2019]. 
 
-For the image compression 
+The image compression example produces 6 images illustrated in figure 
 
+
+``` {=tex}
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        % Replace image1 with your actual image path
+        \includegraphics[width=.8\linewidth]{image_orig.pdf}
+        \caption{Subfigure A}
+        \label{fig:sub1}
+    \end{subfigure}%
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=.8\linewidth]{image_id.pdf}
+        \caption{Subfigure B}
+        \label{fig:sub2}
+    \end{subfigure}
+    \caption{A figure with two subfigures}
+    \label{fig:main}
+\end{figure}
 
 # Acknowledgements
 
