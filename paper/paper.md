@@ -1,10 +1,3 @@
-```markdown
----
-header-includes:
-  - \usepackage{caption}
-  - \usepackage{subcaption}
----
-% Remainder of your document content
 ---
 title: 'librla: A library of randomized linear algebra routines'
 tags:
