@@ -100,9 +100,10 @@ The file named *demo* located in each of the language files provides a collectio
 
 To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems found in recent papers.  The problems investigated are using low rank factorizations for image compression and data compression [@Tropp:2019]. 
 
-The image compression example produces 6 images illustrated in figure 
+The image compression example produces 6 images illustrated below.  The first row illustrates the original image and the rank 120 approximation using both the SVD and the interpolatory docomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improvied by b
 
-![Original image.\label{fig:image_orig}](image_orig.png){width="4cm"} ![Image with ID rank 120 compression .\label{fig:image_id}](image_id.png)
+![Original image.\label{fig:image_orig}](imageEX.png)
+
 
 
 # Acknowledgements
