@@ -104,6 +104,11 @@ The image compression example produces 6 images illustrated below.  The first ro
 
 ![Original image.\label{fig:image_orig}](imageEX.png)
 
+<figure>
+    <img src="imageEX.png"
+         alt="test">
+    <figcaption>\label{fig:image_orig}Image processing experiment illustrating a use of randomized low rank factorizations .</figcaption>
+</figure>
 
 
 # Acknowledgements
