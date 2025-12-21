@@ -100,15 +100,17 @@ The file named *demo* located in each of the language files provides a collectio
 
 To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems found in recent papers.  The problems investigated are using low rank factorizations for image compression and data compression [@Tropp:2019]. 
 
-The image compression example produces 6 images illustrated below.  The first row illustrates the original image and the rank 120 approximation using both the SVD and the interpolatory docomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improvied by b
+The image compression example produces 6 images is illustrated in Figure \cite{fig:image_orig}.  The first row illustrates (a) the original image and the rank 120 approximation using both (b) the SVD and (c) the interpolatory docomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improvied by b
 
-![Original image.\label{fig:image_orig}](imageEX.png)
+![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png){width=100%}
 
-<figure>
-    <img src="imageEX.png"
-         alt="test">
-    <figcaption>\label{fig:image_orig}Image processing experiment illustrating a use of randomized low rank factorizations .</figcaption>
-</figure>
+
+Figures \cite{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the 
+
+![Illustration of the approximation using the randomized SVD to approximate the data from [@Tropp:2019]] \label{fig:climate_SVD}](Randomized_SVD.png){width=100%}
+
+![Illustration of singular values and the approximate singular values resulting from the randomized SVD of a data matrix from [@Tropp:2019] ] \label{fig:climate_singular}](Singular_Values.png){width=100%}
+
 
 
 # Acknowledgements
