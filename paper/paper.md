@@ -107,9 +107,9 @@ The image compression example produces 6 images is illustrated in Figure \cite{f
 
 Figures \cite{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the 
 
-![Illustration of the approximation using the randomized SVD to approximate the data from [@Tropp:2019]] \label{fig:climate_SVD}](Randomized_SVD.png){width=100%}
+![Illustration of the approximation using the randomized SVD to approximate the data from [@Tropp:2019]  \label{fig:climate_SVD}](Randomized_SVD.png){width=100%}
 
-![Illustration of singular values and the approximate singular values resulting from the randomized SVD of a data matrix from [@Tropp:2019] ] \label{fig:climate_singular}](Singular_Values.png){width=100%}
+![Illustration of singular values and the approximate singular values resulting from the randomized SVD of a data matrix from [@Tropp:2019]  \label{fig:climate_singular}](Singular_Values.png){width=100%}
 
 
 
