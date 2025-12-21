@@ -44,15 +44,15 @@ function K = kahan(m, n, varargin)
 %   fprintf('Condition number: %.2e\n', cond(K));
 %
 %   % Well-conditioned version (small theta)
-%   K_good = kahan(10, 0.5);
+%   K_good = kahan(10, 10, 0.5);
 %   fprintf('Condition (theta=0.5): %.2e\n', cond(K_good));
 %
 %   % Ill-conditioned version (large theta)
-%   K_bad = kahan(10, 1.5);
+%   K_bad = kahan(10, 10, 1.5);
 %   fprintf('Condition (theta=1.5): %.2e\n', cond(K_bad));
 %
 %   % Diagonal matrix (no perturbation)
-%   K_diag = kahan(5, 1.2, 0.0);
+%   K_diag = kahan(5, 5, 1.2, 0.0);
 %   fprintf('Purely diagonal: %d\n', isequal(K_diag, triu(K_diag, 0)));
 %
 % References:
