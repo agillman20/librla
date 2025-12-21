@@ -753,7 +753,7 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   if ~any(keep)
       T = zeros(size(R12), class(R));
   else
-      inv_s = 1.0 ./ s(keep);
+      inv_s = 1 ./ s(keep);
       T = Vh(:, keep) * diag(inv_s) * (U(:, keep)' * R12);
   end
 end
