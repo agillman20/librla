@@ -58,38 +58,11 @@ There are two available related routines available in widely avaible Python pack
 
 # Mathematics
 
-The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented here. 
+The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented in Figure \ref{fig:algorithm}. Roughly speaking, the 'orth_sketch'
 
-## Pseudocode
 
-**Input:** the operator $\bf{A}$ of size $m\times n$, stopping tolerance $rtol$
+![Pseudocode for algorithm that approximates the orthogonal range of an operator ${\bf A}$. \label{fig:algorithm}](algorithm.png){width=100%}
 
-**Output:** an orthonormal matrix $\bf{Q}$ of size ($m \times k$) spanning approximate range of $\bf{A}$, a vector $\bf{diagR}$ containing the diagonal elements from a pivoted QR factorization which can be used to create rough error estimates
-
-**Blocking loop**
-
-Let '$\Omega$' denote a random matrix of size $n\times 42$.
-Set $y = \bf{A} \bf{\Omega}.
-Define $\bf{Q}\bf{R}$ to be the matrices that result from the QR factorization of $y$.
-
-% Check tolerance
-diagR = abs(diag(R));
-if isempty(diagR) || diagR(1) == 0
-          d = 0.0;
-      else
-          d = diagR(end) / diagR(1);
-      end
-      if d <= rtol
-          flag = 0;
-          return;
-      end
-
-  var num = number;
-  IF (num % 2 === 0)
-    THEN Print "even";
-    ELSE Print "odd";
-  ENDIF;
-END.
 
 
 # Demo codes
@@ -100,12 +73,12 @@ The file named *demo* located in each of the language files provides a collectio
 
 To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems found in recent papers.  The problems investigated are using low rank factorizations for image compression and data compression [@Tropp:2019]. 
 
-The image compression example produces 6 images is illustrated in Figure \cite{fig:image_orig}.  The first row illustrates (a) the original image and the rank 120 approximation using both (b) the SVD and (c) the interpolatory docomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improvied by b
+The image compression example produces 6 images is illustrated in Figure \ref{fig:image_orig}.  The first row illustrates (a) the original image and the rank 120 approximation using both (b) the SVD and (c) the interpolatory docomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improvied by b
 
 ![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png){width=100%}
 
 
-Figures \cite{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the 
+Figures \ref{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the 
 
 ![Illustration of the approximation using the randomized SVD to approximate the data from [@Tropp:2019]  \label{fig:climate_SVD}](Randomized_SVD.png){width=100%}
 
