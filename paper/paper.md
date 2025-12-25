@@ -61,10 +61,10 @@ The algorithm that serves as the foundations of 'librla' is called 'orth_sketch'
 ![Pseudocode for algorithm that approximates the orthogonal range of an operator ${\bf A}$. \label{fig:algorithm}](algorithm.png){width=100%}
 
 
-While ${\bf Q} is a sampling of the range, it is not necessarily the size of the final factorization.  The matrix ${\bf Q}$ is fed into the final factorization technique the produces the desired low rank factorization.  These techniques are constructed ina manner similar to [@Halko:2011].  The factorizations behave as follows when factorizing a linear operator ${\bf A} of size $m\times n$.
+While ${\bf Q}$ is a sampling of the range, it is not necessarily the size of the final factorization.  The matrix ${\bf Q}$ is fed into the final factorization technique the produces the desired low rank factorization.  These techniques are constructed ina manner similar to [@Halko:2011].  The factorizations behave as follows when factorizing a linear operator ${\bf A}$ of size $m\times n$.
 
 \begin{itemize}
-\item['qr_sketch'] The subroutine returns two matrices: ${\bf Q} and ${\bf R}, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
+\item['qr_sketch'] The subroutine returns two matrices: ${\bf Q} and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
 $${\bf{A}}(:,p) \sim {\bf QR}.$$
 
@@ -82,6 +82,7 @@ $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
 To recover an approximation of the full matrix, first build an $k \times n$ matrix ${\bf W}$ where 
 ${\bf W}(:,{\bf piv}(1:k)) = {\bf I}_k$ where ${\bf I}_k$  is an identity matrix of size $k$.  Then set 
 ${\bf W}(:,{\bf piv}(k+1:end)) = {\bf T}$.  The result is that 
+
 $${\bf A} \sim {\bf A}(:, {\bf piv}(1:k)) {\bf W}.$$
 
 
