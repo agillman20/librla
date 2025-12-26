@@ -43,12 +43,16 @@ Python and MATLAB require are initializing the computing environment.
 
 In Python, run:
 
+```bash
 setup-venv.sh
+```
+
 
 In MATLAB, run:
 
+```bash
 startup.m
-
+```
 
 ### Example Python run sequence 
 
