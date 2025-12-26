@@ -54,21 +54,21 @@ startup.m
 
 In a terminal, type the following commands:
 
-\texttt{
+```bash
 ./setup-venv.sh 
 python3 download_images.py 
 python3 test_image.py
-}
+```
 
 ### Example MATLAB run sequence
 
 In the MATLAB command line, type the following:
 
-\texttt{
+```bash
 startup
 download_images
 test_image
-}
+```
 
 ## Requirements
 
