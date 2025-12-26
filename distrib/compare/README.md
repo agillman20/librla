@@ -1,6 +1,6 @@
 # compare/ - External Library Comparisons
 
-This directory contains scripts to compare librla's Python implementations against external libraries.
+This directory contains scripts to compare librla's Python implementations against two existing Python libraries: SciPy and PyTorch.   These  libraries were chosen because they are maintained and widely available.
 
 ## Usage
 
