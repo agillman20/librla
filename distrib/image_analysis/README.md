@@ -1,6 +1,7 @@
 # Image Analysis Examples
 
-Low-rank image compression using randomized SVD and interpolative decomposition.
+These examples illustrate the use of low-rank image compression via the randomized SVD, QR factorization, and interpolative decomposition.
+The examples also highlight the impact of oversampling and using a few power iterations.  
 
 ## Scripts
 
@@ -37,6 +38,37 @@ Download sample images:
 ```bash
 python download_images.py   # or .m / .jl
 ```
+
+Python and MATLAB require are initializing the computing environment.
+
+In Python, run:
+
+setup-venv.sh
+
+In MATLAB, run:
+
+startup.m
+
+
+### Example Python run sequence 
+
+In a terminal, type the following commands:
+
+\texttt{
+./setup-venv.sh 
+python3 download_images.py 
+python3 test_image.py
+}
+
+### Example MATLAB run sequence
+
+In the MATLAB command line, type the following:
+
+\texttt{
+startup
+download_images
+test_image
+}
 
 ## Requirements
 
