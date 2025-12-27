@@ -115,4 +115,8 @@ Figures \ref{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experi
 
 The work by A. Gillman was supported by the National Science Foundation (DMS-2110886), and a Knut and Alice Wallenberg Foundation Grant. Part of this work was carried out while A. Gillman was in residence at Institut Mittag-Leffler in Djursholm, Sweden in autumn 2025, supported by the Swedish Research Council under grant no. 2021-06594.
 
+Contributions by staff of NIST, an agency of the U.S. Government, are not subject to copyright within the United States.
+
+Certain commercial materials and equipment are identified in this paper to foster understanding. Such identification does not imply recommendation or endorsement by NIST, nor does it imply that the materials or equipment identified is necessarily the best available for the purpose.
+
 # References
