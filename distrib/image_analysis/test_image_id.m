@@ -39,8 +39,8 @@ if exist('OCTAVE_VERSION', 'builtin')
     pkg load image
 end
 
-%%image_file = 'pexels-flickr-149387.jpg';
-image_file = 'pexels-anniroenkae-4793404.jpg';
+image_file = 'pexels-flickr-149387.jpg';
+%%image_file = 'pexels-anniroenkae-4793404.jpg';
 A = imread(image_file);
 
 %%A = permute(A, [2 1 3]);
@@ -53,7 +53,7 @@ imagesc(A)
 axis image
 title('Original (RGB)')
 
-k = 60*2;
+k = 60*2/2/2;
 use_single = true;  % set to true for single precision
 
 if use_single
