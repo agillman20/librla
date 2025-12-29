@@ -58,10 +58,41 @@ Currently, there are two available related routines available in widely availabl
 The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented in Figure \ref{fig:algorithm}. Roughly speaking, 'orth_sketch' randomly samples the range of a linear operator ${\bf A}$ and creates an orthogonal basis for the range.  The range is sampled in blocks that are multiples of *42* and a QR factorization is performed.  The user is able to change the sizes of the blocks sampled.  Once the ratio of diagonal entries of the upper triangular ${\bf R}$ matrix is less than the stopping tolerance 'rtol', the matrix ${\bf Q}$ is returned.
 
 
-![Pseudocode for algorithm that approximates the orthogonal range of an operator ${\bf A}$. \label{fig:algorithm}](algorithm.png){width=100%}
-
-
 While ${\bf Q}$ is a sampling of the range, it is not necessarily the size of the final factorization.  The matrix ${\bf Q}$ is fed into the final factorization technique the produces the desired low rank factorization.  These techniques are constructed in a manner similar to [@Halko:2011].  The factorizations behave as follows when factorizing a linear operator ${\bf A}$ of size $m\times n$.
+
+
+## Pseudocode for 'orth_sketch'
+
+```
+function orth_sketch(A, rtol, block_size, power_iter):
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol (tolerance or rank), block_size, power_iter
+    Output: Q (orthonormal basis), flag, diagR
+
+    if rtol ≥ 1:  # Rank mode
+        k_max = floor(rtol)
+        Ω = random_matrix(n, block_size)        # Uniform[-1,1]
+        Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
+        Y = A Ω
+        Q, R, _ = qr_pivoted(Y)
+        return Q[:, 1:k_max], 0, |diag(R)|
+
+    # Tolerance mode (rtol < 1): adaptive rank
+    while true:
+        Ω = random_matrix(n, block_size)
+        Ω = power_iteration(A, Ω, power_iter)
+        Y = A Ω
+        Q, R, _ = qr_pivoted(Y)
+
+        diagR = |diag(R)|
+        if diagR[end] / diagR[1] ≤ rtol:
+            return Q, 0, diagR
+
+        block_size = min(4 × block_size, min(m, n))
+        if block_size ≥ min(m, n):
+            return empty(m, 0), 1, []  # Early termination
+```
+
+### Actions of the different factorization options
 
 \begin{itemize}
 \item {\bf 'qr\_sketch'} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
