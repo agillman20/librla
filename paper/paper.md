@@ -55,13 +55,14 @@ Currently, there are two available related routines available in widely availabl
 
 # Mathematics
 
-The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The algorithm was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007]. Once this basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented in Figure \ref{fig:algorithm}. Roughly speaking, 'orth_sketch' randomly samples the range of a linear operator ${\bf A}$ and creates an orthogonal basis for the range.  The range is sampled in blocks that are multiples of *42* and a QR factorization is performed.  The user is able to change the sizes of the blocks sampled.  Once the ratio of diagonal entries of the upper triangular ${\bf R}$ matrix is less than the stopping tolerance 'rtol', the matrix ${\bf Q}$ is returned.
+The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The user specified tolerance portion of the package was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007].  The user specified rank portion of the package was influenced by the 'svd_lowrank' in Pytorch.  Once the orthogonal basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented in the following subsection. Pseudocodes for all of the factorizations is provides in the 'PSEUDOCODE.md' file found in the *distrib* folder.  
+
+Users call the desired factorization subroutine with a linear operator ${\bf A}$ of size $m\times n$, a desired rank and stopping condition ${ rtol}$.  The user has the option to use power iteration and specify the number of iterations to accelerate convergence. Users are also provided the option to add oversampling and specify the number of vector for the oversampling.   These optional parameters are used to update data that is fed into the subroutine that is the workhorse of the 'librla' package called 'orth_sketch'.   Roughly speaking, given a linear operator ${\bf A}$, desired rank or stopping condition $rtol$ and specified $block\_size$, 'orth_sketch' randomly samples the range of ${\bf A}$ to create an orthogonal basis for the range.  The range is sampled by applying ${\bf A}$ to a matrix ${\bf \Omega}$ of size $m \times block\_size$ columns whose entries are uniformly sampled from $[-1,1]$.   In the tolerance option, the $block\_size$ can be increased to make sure the range is sufficiently sampled.  The orthogonal basis is formed by taking a pivoted QR factorization of the ${\bf A \ \Omega}$.  The magnitude of the diagonal entries of ${\bf R}$ are stored in a vector ${\bf diagR}$ and are used in the stopping criterion for the tolerance option of the factorization.  'orth_sketch' returns ${\bf Q}$ or a submatrix of ${\bf Q}$, ${\bf diagR}$ and an error flag to the factorization routine that called it.
+The matrix ${\bf Q}$ is then used to create the desired factorization.
 
 
-While ${\bf Q}$ is a sampling of the range, it is not necessarily the size of the final factorization.  The matrix ${\bf Q}$ is fed into the final factorization technique the produces the desired low rank factorization.  These techniques are constructed in a manner similar to [@Halko:2011].  The factorizations behave as follows when factorizing a linear operator ${\bf A}$ of size $m\times n$.
+## Pseudocode for the 'orth_sketch' algorithm
 
-
-## Pseudocode for 'orth_sketch'
 
 ```
 function orth_sketch(A, rtol, block_size, power_iter):
@@ -92,20 +93,23 @@ function orth_sketch(A, rtol, block_size, power_iter):
             return empty(m, 0), 1, []  # Early termination
 ```
 
-### Actions of the different factorization options
+## The different factorization options
+
+There are three different factorization options.  This section provides details on what the different factorizations acomplish.  The demo section that follows explains where to look in look the library for demonstartions for calling the avaiable factorizations.  The factorization options are:
+
 
 \begin{itemize}
-\item {\bf 'qr\_sketch'} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
+\item {QR factorization via \bf 'qr\_sketch'} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
-$${\bf{A}}(:,p) \sim {\bf QR}.$$
+$${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
 
 
-\item {\bf 'svd\_sketch'} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
+\item {SVD via \bf 'svd\_sketch'} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
 
 $$ {\bf A}  \sim  {\bf U}{\tt diag}({\bf s}){\bf V}^{*}.$$
 
 
-\item {\bf 'id\_sketch'} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item {Interpolatory factorization via \bf 'id\_sketch'} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
@@ -131,7 +135,7 @@ To illustrate the ability of the library handle problems of interest, the techni
 
 The image compression example produces 6 images is illustrated in Figure \ref{fig:image_orig}.  The first row illustrates (a) the original image and the rank 120 approximation using both (b) the SVD and (c) the interpolatory decomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improved by the oversampling and the power iteration.
 
-![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png){width=100%}
+![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png)
 
 
 Figures \ref{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the ability of 'svd\_sketch' to capture the singular values of a matrix.
