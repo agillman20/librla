@@ -8,7 +8,7 @@ Approximate orthonormal basis for column space via randomized sketching.
 
 ```
 function orth_sketch(A, rtol, block_size, power_iter):
-    Input: A ∈ ℝ^{m×n}, rtol (tolerance or rank), block_size, power_iter
+    Input: A ∈ ℝ^{m×n},\C rtol (tolerance or rank), block_size, power_iter
     Output: Q (orthonormal basis), flag, diagR
 
     if rtol ≥ 1:  # Rank mode
