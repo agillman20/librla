@@ -37,19 +37,17 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 - 'svd_sketch': Randomized Singular Value Decomposition (SVD)
 - 'id_sketch': Interpolatory Decomposition via randomized sampling.
 
-The user has the choice of specifying a tolerance or a desired rank.  The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, 'librla' requires both the ability to apply both the matrix and its transpose via a subroutine.  
+The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, 'librla' requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
-For each method, the user has the option to change the block size for the sampling and to use the power iteration.  The default settings are block sizes that are multiples of 42 and the power iteration option turned off.
-
-
-While the algorithm used in 'librla' is built in a similar manner to the randomized methods in  [@Halko:2011,@Liberty:2007], there is a large collection of related work [@Duersch:2020,@Mahoney:2009,@MEIER:2024,@Martinsson:2019,@Sorensen:2016,@Gu:1996].
+While the tolerance mode of the algorithm used in 'librla' is built in a similar manner to the randomized methods in  [@Halko:2011,@Liberty:2007], there is a large collection of related work [@Duersch:2020,@Mahoney:2009,@MEIER:2024,@Martinsson:2019,@Sorensen:2016,@Gu:1996].
+The user specified rank algorithm in 'librla' is built in a similar manner to the 'svd_lowrank' routine in Pytorch.
 
 
 # Statement of need
 
 While there is a large amount of research activity in the field of randomized linear algebra, there is not an easy to use and stable factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in an unnecessarily slow code.  The research area of fast direct solvers provides an example of the need of 'librla'.  For some time, the development and use of fast direct solvers in Matlab required a specialized wrapper on the Fortran package [@Tygert:2008] which is based on [@Liberty:2007].  The lack of portability of the wrapper has slowed the design and use of these solvers.
 
-Currently, there are two available related routines available in widely available Python packages.  They are Pytorch's 'svd_lowrank' and Scipy's 'id_decomp' found in the 'scipy.linalg.interpolative' library.  Codes allowing the user compare the performance are available in the *compare* folder of the repository.  The results show that the performance of 'librla' is comparable to that of the Pytorch svd and is faster than the interpolatory decomposition 'id_decomp'.  The library 'librla' is the only package that provides the user the option of three different factorizations.  The factorization speeds are all comparable to Pytorch's 'svd_lowrank'.
+Currently, there are two available related routines available in widely available, maintained Python packages.  They are Pytorch's 'svd_lowrank' and Scipy's 'id_decomp' found in the 'scipy.linalg.interpolative' library.  Codes allowing the user compare the performance are available in the *compare* folder of the repository.  The results show that the performance of 'librla' is comparable to that of the Pytorch svd and is faster than the interpolatory decomposition 'id_decomp'.  The library 'librla' is the only package that provides the user the option of three different factorizations.  The factorization speeds of all the methods are comparable to Pytorch's 'svd_lowrank'.
 
 
 
@@ -131,18 +129,20 @@ The file named *demo* located in each of the language files provides a collectio
 
 # Examples from the literature
 
-To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems.  The first problem is an image compression problem similar to examples that are commonly found in the literature.  The second problem is a data compression problem taken directly from [@Tropp:2019].
+To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems.  The first problem is a data compression problem taken directly from [@Tropp:2019].  The second problem is an image compression problem from [@Duersch:2020].   Examples similar to this are found throughout the randomized linear algebra literature.  
 
-The image compression example produces 6 images is illustrated in Figure \ref{fig:image_orig}.  The first row illustrates (a) the original image and the rank 120 approximation using both (b) the SVD and (c) the interpolatory decomposition.  Note that while the rank of the approximations are the same, the interpolatory decomposition has smearing in the image.  The second row illustrates the approximations from using the three different rank 120 factorizations with oversampling and two iterations of the power method.  The approximations are improved by the oversampling and the power iteration.
+
+
+Figure \ref{fig:climate_singular} illustrates the performance of the randomized SVD for a data matrix take from an experiment in [@Tropp:2019]. The results were generated by running the \texttt{test_sst_mode} code in the *climage_analysis* folder with different variations of the option settings.  The specific options used are (a) none, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples and two power iterations.  The extra samples alone do not help the randomized SVD much.  The power iteration is more helpful.  The combination of the two options provides the best approximations of the singular values.   
+
+
+![Illustration of the exact singular values vs approximate singular values via the (a) randomized SVD, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples with 2 power iterations.  The matrix is taken from [@Tropp:2019]  \label{fig:climate_singular}](svdAll.png)
+
+
+The image compression example \texttt{test_image_id} code in the *image_analysis* folder produces 6 images.  Figure \ref{fig:image_orig} illustrates 5 of them: (a) the original imate and rank 30 approximations of the image using (b) the randomized SVD, (c) the interpolatory decomposition, (c) the randomized SVD with 15 extra samples and 2 power iterations and (d) the interpolatory decomposition with 15 extra samples and 2 power iterations.  While the rank of the approximations is the same, the SVD produces an image with less smearing.  This is more evident in the examples with oversampling and power iterations  
+
 
 ![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png)
-
-
-Figures \ref{fig:climate_SVD} and \ref{fig:climate_singular} replicate an experiment from [@Tropp:2019].  Figure \ref{fig:climate_SVD} illustrates the approximations generated using the randomized SVD.  Figure \ref{fig:climate_singular} illustrates the ability of 'svd\_sketch' to capture the singular values of a matrix.
-
-![Illustration of the approximation using the randomized SVD to approximate the data from [@Tropp:2019]  \label{fig:climate_SVD}](Randomized_SVD.png){width=100%}
-
-![Illustration of singular values and the approximate singular values resulting from the randomized SVD of a data matrix from [@Tropp:2019]  \label{fig:climate_singular}](Singular_Values.png)
 
 
 
