@@ -33,9 +33,9 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 
 \texttt{librla} includes the following options all of which can be used for both real and complex matrices: 
 
-- \texttt{qr_sketch}: Randomized QR factorization.
-- \texttt{svd_sketch}: Randomized Singular Value Decomposition (SVD)
-- \texttt{id_sketch}: Interpolatory Decomposition via randomized sampling.
+- \texttt{qr\_sketch}: Randomized QR factorization.
+- \texttt{svd\_sketch}: Randomized Singular Value Decomposition (SVD)
+- \texttt{id\_sketch}: Interpolatory Decomposition via randomized sampling.
 
 The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, \texttt{librla} requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
@@ -97,17 +97,17 @@ There are three different factorization options.  This section provides details 
 
 
 \begin{itemize}
-\item {QR factorization via \bf 'qr\_sketch'} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
+\item {QR factorization via \bf \texttt{qr\_sketch}} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
 $${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
 
 
-\item {SVD via \bf 'svd\_sketch'} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
+\item {SVD via \bf \texttt{svd\_sketch}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
 
 $$ {\bf A}  \sim  {\bf U}{\tt diag}({\bf s}){\bf V}^{*}.$$
 
 
-\item {Interpolatory factorization via \bf 'id\_sketch'} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item {Interpolatory factorization via \bf \texttt{id\_sketch}} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
@@ -125,12 +125,11 @@ $${\bf A} \sim {\bf A}(:, {\bf piv}(1:k)) {\bf W}.$$
 
 # Demo codes
 
-The file named *demo* located in each of the language files provides a collection of codes that demonstrate how to call the factorizations in 'librla' with the different options.  These 'demo_' codes are designed to aid users.   The codes in the *demo* directory named 'test_' validate that the codes are working correctly.  The code 'test_all' tests all the factorization techniques while the other test codes are written to test one factorization technique.
+The file named *demo* located in each of the language files provides a collection of codes that demonstrate how to call the factorizations in 'librla' with the different options.  These \texttt{demo\_} codes are designed to aid users.   The codes in the *demo* directory named \texttt{test\_} validate that the codes are working correctly.  The code \texttt{test\_all} tests all the factorization techniques while the other test codes are written to test one factorization technique.
 
 # Examples from the literature
 
 To illustrate the ability of the library handle problems of interest, the techniques are applied to two problems.  The first problem is a data compression problem taken directly from [@Tropp:2019].  The second problem is an image compression problem from [@Duersch:2020].   Examples similar to this are found throughout the randomized linear algebra literature.  
-
 
 
 Figure \ref{fig:climate_singular} illustrates the performance of the randomized SVD for a data matrix take from an experiment in [@Tropp:2019]. The results were generated by running the \texttt{test\_sst\_mode} code in the *climage_analysis* folder with different variations of the option settings.  The specific options used are (a) none, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples and two power iterations.  The extra samples alone do not help the randomized SVD much.  The power iteration is more helpful.  The combination of the two options provides the best approximations of the singular values.   
