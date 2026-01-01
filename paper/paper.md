@@ -39,7 +39,7 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 
 The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, \texttt{librla} requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
-While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in  [@Halko:2011,@Liberty:2007], there is a large collection of related work [@Duersch:2020,@Mahoney:2009,@MEIER:2024,@Martinsson:2019,@Sorensen:2016,@Gu:1996].
+While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011],[@Liberty:2007], there is a large collection of related work:  [@Duersch:2020],[@Mahoney:2009],[@MEIER:2024], [@Martinsson:2019], [@Sorensen:2016], [@Gu:1996].
 The user specified rank algorithm in 'librla' is built in a similar manner to the 'svd_lowrank' routine in Pytorch.
 
 
@@ -64,7 +64,8 @@ The matrix ${\bf Q}$ is then used to create the desired factorization.
 
 ```
 function orth_sketch(A, rtol, block_size, power_iter):
-    Input: A (a real or complex matrix of size {m×n}) , rtol (tolerance or rank), block_size (size of sample block), power_iter(number of power iterations to be used)
+    Input: A (a real or complex matrix of size {m×n}) , rtol (tolerance or rank), 
+             block_size (size of sample block), power_iter (number of power iterations to be used)
     Output: Q (orthonormal basis), flag, diagR
 
     if rtol ≥ 1:  # Rank mode
@@ -97,17 +98,17 @@ There are three different factorization options.  This section provides details 
 
 
 \begin{itemize}
-\item {QR factorization via \bf \texttt{qr\_sketch}} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
+\item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
 $${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
 
 
-\item {SVD via \bf \texttt{svd\_sketch}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
+\item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and is contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
 
 $$ {\bf A}  \sim  {\bf U}{\tt diag}({\bf s}){\bf V}^{*}.$$
 
 
-\item {Interpolatory factorization via \bf \texttt{id\_sketch}} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns $k$ the number of skeleton columns, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
