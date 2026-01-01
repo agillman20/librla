@@ -29,42 +29,42 @@ bibliography: paper.bib
 
 # Summary
 
-Randomized linear algebra algorithms have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, randomized linear algebra provides useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].  'librla' provides low rank QR factorizations, SVDs and interpolatory decompositions written natively in Python, Julia and Matlab.  The algorithms randomly sample the range of the matrix or operator in a similar manner to '[@Halko:2011]'. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible.  'librla' is designed for small to mid-range sized matrices (i.e. up to roughly 10,000 in size depending on computing resources).  'librla' is not intended for matrices that are larger or need to be read from disk.
+Randomized linear algebra algorithms have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, randomized linear algebra provides useful tools for solving total least squares problems, rank deficient least squares problem, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].  \texttt{librla} provides low rank QR factorizations, SVDs and interpolatory decompositions written natively in Python, Julia and Matlab.  The algorithms randomly sample the range of the matrix or operator in a similar manner to '[@Halko:2011]'. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible.  \texttt{librla} is designed for small to mid-range sized matrices (i.e. up to roughly 10,000 in size depending on computing resources).  \texttt{librla} is not intended for matrices that are larger or need to be read from disk.
 
-'librla' includes the following options all of which can be used for both real and complex matrices: 
+\texttt{librla} includes the following options all of which can be used for both real and complex matrices: 
 
-- 'qr_sketch': Randomized QR factorization.
-- 'svd_sketch': Randomized Singular Value Decomposition (SVD)
-- 'id_sketch': Interpolatory Decomposition via randomized sampling.
+- \texttt{qr_sketch}: Randomized QR factorization.
+- \texttt{svd_sketch}: Randomized Singular Value Decomposition (SVD)
+- \texttt{id_sketch}: Interpolatory Decomposition via randomized sampling.
 
-The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, 'librla' requires both the ability to apply both the matrix and its transpose via a subroutine.  
+The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, \texttt{librla} requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
-While the tolerance mode of the algorithm used in 'librla' is built in a similar manner to the randomized methods in  [@Halko:2011,@Liberty:2007], there is a large collection of related work [@Duersch:2020,@Mahoney:2009,@MEIER:2024,@Martinsson:2019,@Sorensen:2016,@Gu:1996].
+While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in  [@Halko:2011,@Liberty:2007], there is a large collection of related work [@Duersch:2020,@Mahoney:2009,@MEIER:2024,@Martinsson:2019,@Sorensen:2016,@Gu:1996].
 The user specified rank algorithm in 'librla' is built in a similar manner to the 'svd_lowrank' routine in Pytorch.
 
 
 # Statement of need
 
-While there is a large amount of research activity in the field of randomized linear algebra, there is not an easy to use and stable factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in an unnecessarily slow code.  The research area of fast direct solvers provides an example of the need of 'librla'.  For some time, the development and use of fast direct solvers in Matlab required a specialized wrapper on the Fortran package [@Tygert:2008] which is based on [@Liberty:2007].  The lack of portability of the wrapper has slowed the design and use of these solvers.
+While there is a large amount of research activity in the field of randomized linear algebra, there is not an easy to use and stable factorization library available.  The need is even greater for those using high level languages where standard coding techniques can result in an unnecessarily slow code.  The research area of fast direct solvers provides an example of the need of \texttt{librla}.  For some time, the development and use of fast direct solvers in Matlab required a specialized wrapper on the Fortran package [@Tygert:2008] which is based on [@Liberty:2007].  The lack of portability of the wrapper has slowed the design and use of these solvers.
 
-Currently, there are two available related routines available in widely available, maintained Python packages.  They are Pytorch's 'svd_lowrank' and Scipy's 'id_decomp' found in the 'scipy.linalg.interpolative' library.  Codes allowing the user compare the performance are available in the *compare* folder of the repository.  The results show that the performance of 'librla' is comparable to that of the Pytorch svd and is faster than the interpolatory decomposition 'id_decomp'.  The library 'librla' is the only package that provides the user the option of three different factorizations.  The factorization speeds of all the methods are comparable to Pytorch's 'svd_lowrank'.
+Currently, there are two available related routines available in widely available, maintained Python packages.  They are Pytorch's \texttt{svd\_lowrank} and Scipy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user compare the performance are available in the *compare* folder of the repository.  The results show that the performance of 'librla' is comparable to that of the Pytorch svd and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all the methods are comparable to Pytorch's \texttt{svd\_lowrank}.
 
 
 
 # Mathematics
 
-The algorithm that serves as the foundations of 'librla' is called 'orth_sketch' . It creates an orthogonal basis of the range of the operator of interest.  The user specified tolerance portion of the package was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007].  The user specified rank portion of the package was influenced by the 'svd_lowrank' in Pytorch.  Once the orthogonal basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of 'orth_sketch' is presented in the following subsection. Pseudocodes for all of the factorizations are provided in the 'PSEUDOCODE.md' file found in the *distrib* folder.  
+The algorithm that serves as the foundations of \texttt{librla} is called \texttt{orth\_sketch} . It creates an orthogonal basis of the range of the operator of interest.  The user specified tolerance portion of the package was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007].  The user specified rank portion of the package was influenced by the \texttt{svd\_lowrank} in Pytorch.  Once the orthogonal basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of \texttt{orth\_sketch} is presented in the following subsection. Pseudocodes for all of the factorizations are provided in the \texttt{PSEUDOCODE.md} file found in the *distrib* folder.  
 
-Users call the desired factorization subroutine with a linear operator ${\bf A}$ of size $m\times n$, a desired rank and stopping condition ${ rtol}$.  The user has the option to use power iteration and specify the number of iterations to accelerate convergence. Users are also provided the option to add oversampling and specify the number of vector for the oversampling.   These optional parameters are used to update data that is fed into the subroutine that is the workhorse of the 'librla' package called 'orth_sketch'.   Roughly speaking, given a linear operator ${\bf A}$, desired rank or stopping condition $rtol$ and specified $block\_size$, 'orth_sketch' randomly samples the range of ${\bf A}$ to create an orthogonal basis for the range.  The range is sampled by applying ${\bf A}$ to a matrix ${\bf \Omega}$ of size $m \times block\_size$ columns whose entries are uniformly sampled from $[-1,1]$.   In the tolerance option, the $block\_size$ can be increased to make sure the range is sufficiently sampled.  The orthogonal basis is formed by taking a pivoted QR factorization of the ${\bf A \ \Omega}$.  The magnitude of the diagonal entries of ${\bf R}$ are stored in a vector ${\bf diagR}$ and are used in the stopping criterion for the tolerance option of the factorization.  'orth_sketch' returns ${\bf Q}$ or a submatrix of ${\bf Q}$, ${\bf diagR}$ and an error flag to the factorization routine that called it.
+Users call the desired factorization subroutine with a linear operator ${\bf A}$ of size $m\times n$, a desired rank and stopping condition ${rtol}$.  The user has the option to use power iteration and specify the number of iterations to accelerate convergence. Users are also provided the option to add oversampling and specify the number of vector for the oversampling.   These optional parameters are used to update data that is fed into the subroutine that is the workhorse of the \texttt{librla} package called \texttt{orth\_sketch}.   Roughly speaking, given a linear operator ${\bf A}$, desired rank or stopping condition $rtol$ and specified $block\_size$, \texttt{orth\_sketch} randomly samples the range of ${\bf A}$ to create an orthogonal basis for the range.  The range is sampled by applying ${\bf A}$ to a matrix ${\bf \Omega}$ of size $m \times block\_size$ columns whose entries are uniformly sampled from $[-1,1]$.   In the tolerance option, the $block\_size$ can be increased to make sure the range is sufficiently sampled.  The orthogonal basis is formed by taking a pivoted QR factorization of the ${\bf A \ \Omega}$.  The magnitude of the diagonal entries of ${\bf R}$ are stored in a vector ${\bf diagR}$ and are used in the stopping criterion for the tolerance option of the factorization.  \texttt{orth\_sketch} returns ${\bf Q}$ or a submatrix of ${\bf Q}$, ${\bf diagR}$ and an error flag to the factorization routine that called it.
 The matrix ${\bf Q}$ is then used to create the desired factorization.
 
 
-## Pseudocode for the 'orth_sketch' algorithm
+## Pseudocode for the \texttt{orth\_sketch} algorithm
 
 
 ```
 function orth_sketch(A, rtol, block_size, power_iter):
-    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol (tolerance or rank), block_size, power_iter
+    Input: A (a real or complex matrix of size {m×n}) , rtol (tolerance or rank), block_size (size of sample block), power_iter(number of power iterations to be used)
     Output: Q (orthonormal basis), flag, diagR
 
     if rtol ≥ 1:  # Rank mode
@@ -136,13 +136,13 @@ To illustrate the ability of the library handle problems of interest, the techni
 Figure \ref{fig:climate_singular} illustrates the performance of the randomized SVD for a data matrix take from an experiment in [@Tropp:2019]. The results were generated by running the \texttt{test\_sst\_mode} code in the *climage_analysis* folder with different variations of the option settings.  The specific options used are (a) none, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples and two power iterations.  The extra samples alone do not help the randomized SVD much.  The power iteration is more helpful.  The combination of the two options provides the best approximations of the singular values.   
 
 
-![Illustration of the exact singular values vs approximate singular values via the (a) randomized SVD, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples with 2 power iterations.  The matrix is taken from [@Tropp:2019]  \label{fig:climate_singular}](svdAll.png)
+![Illustration of the exact singular values vs approximate singular values via the (a) randomized SVD, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples with 2 power iterations.  The matrix is taken from [@Tropp:2019]  \label{fig:climate_singular}](svdAll.png){width = 100%}
 
 
 The image compression example \texttt{test\_image\_id} code in the *image_analysis* folder produces 6 images.  Figure \ref{fig:image_orig} illustrates 5 of them: (a) the original imate and rank 30 approximations of the image using (b) the randomized SVD, (c) the interpolatory decomposition, (c) the randomized SVD with 15 extra samples and 2 power iterations and (d) the interpolatory decomposition with 15 extra samples and 2 power iterations.  While the rank of the approximations is the same, the SVD produces an image with less smearing.  This is more evident in the examples with oversampling and power iterations.
 
 
-![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png)
+![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png){width=100%}
 
 
 
