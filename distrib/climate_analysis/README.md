@@ -77,6 +77,8 @@ Each mode reduces the approximation residual:
 
 ## Output
 
+The plots on the right illustrate the different modes.  The routines plot the approximation of these modes generated when using the randomized SVD. The approximate singular values are also plotted. 
+
 ![SST Anomalies EOF](sst_anomaly.png)
 *EOF analysis of SST anomalies showing warming trend (EOF1) and ENSO (EOF2)*
 
