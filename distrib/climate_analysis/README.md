@@ -4,10 +4,14 @@ The examples illustrate the use of randomized linear algebra for data sets.  The
 
 ## References
 
-- [Tropp, Yurtsever, Udell, Cevher. "Streaming Low-Rank Matrix Approximation with an Application to Scientific Simulation." SIAM Journal on Scientific Computing, 2019.]{https://epubs.siam.org/doi/abs/10.1137/18M1201068}
+- [Tropp, Yurtsever, Udell, Cevher. "Streaming Low-Rank Matrix Approximation with an Application to Scientific Simulation." SIAM Journal on Scientific Computing, 2019.](https://epubs.siam.org/doi/abs/10.1137/18M1201068)
 - [SketchySVD (IPAM)](https://helper.ipam.ucla.edu/publications/glws3/glws3_15459.pdf)
 - [Video Lecture](https://www.youtube.com/watch?v=3P6_zk6FbmE)
 
+
+## Overview
+
+In order to run the examples in this folder, the data must be downloaded.  The next section explains who to do that.   Once the file is downloaded, the user can run either of the analysis scripts.  The modes that are listed in the *Analysis Scripts* section below are related to the singular vectors of the data matrix in order of their magnitude.  The accuracy of the singular values is directly correlated to the accuracy of the modes.  The user can mimic the experiments illustrated in the JOSS paper by changing the number of extra samples and power iterations used in the randomized SVD.  
 
 ## Data
 
