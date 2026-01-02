@@ -452,6 +452,15 @@ Tests for validating that the algorithms are working are:
 | test_orth | Validates the orthogonal sketch |
 | test_all | runs all the test listed above |
 
+## Additional resources
+
+Additional resources provided for users are:
+
+- The folder '/distrib/compare' provides codes that compare 'librla' with other randomized liner algebra packages.
+- The folder '/distrib/image_analysis' provides codes that illustrate the use of the different randomized methods for image compression.  
+- The folder '/distrib/climate_analysis' provides codes that illustrate the use of randomized methods for data compression.
+
+The folders contain documentation.  The last two folders illustrate the use of 'librla' for common applications of interest.  The examples considered are taken from the randomized linear algebra literature.
 
 ## References
 
