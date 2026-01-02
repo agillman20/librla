@@ -1,11 +1,13 @@
 # Climate Analysis Examples
 
-EOF/SVD analysis of NOAA Sea Surface Temperature (SST) data using randomized SVD.
+The examples illustrate the use of randomized linear algebra for data sets.  The particular example is EOF/SVD analysis of NOAA Sea Surface Temperature (SST) data. The example was taken from the Tropp, et al. paper mentioned below.  This example useful for learning about the impact of oversampling and power iterations on the randomized linear algebra performance. 
 
 ## References
 
+- [Tropp, Yurtsever, Udell, Cevher. "Streaming Low-Rank Matrix Approximation with an Application to Scientific Simulation." SIAM Journal on Scientific Computing, 2019.]{https://epubs.siam.org/doi/abs/10.1137/18M1201068}
 - [SketchySVD (IPAM)](https://helper.ipam.ucla.edu/publications/glws3/glws3_15459.pdf)
 - [Video Lecture](https://www.youtube.com/watch?v=3P6_zk6FbmE)
+
 
 ## Data
 
