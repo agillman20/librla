@@ -1,6 +1,6 @@
 # librla - Randomized Linear Algebra Library
 
-A unified, multi-language library implementing randomized algorithms for low-rank matrix approximations. Provides efficient sketching-based methods for large-scale matrix decompositions with consistent APIs across Python, MATLAB/Octave, and Julia.
+A unified, multi-language library implementing randomized algorithms for low-rank matrix approximations of both real and complex matrices. The library provides efficient sketching-based methods for large-scale matrix decompositions with consistent APIs across Python, MATLAB/Octave, and Julia.
 
 ## Features
 
@@ -437,6 +437,18 @@ The demo suite provides examples for:
 | demo03_linop | LinearOperator abstraction |
 | demo04_power | Power iteration effects |
 | demo05_methods | T computation methods comparison |
+
+## Test
+
+Tests for validating that the algorithms are working are:
+
+| Test | Description |
+|------|-------------|
+| test_id | Validates Interpolatory decomposition | 
+| test_svd | Validates the SVD| 
+| test_qr | Validates the randomized QR |
+| test_orth | Validates the orthogonal sketch |
+| test_all | runs all the test listed above |
 
 ## References
 
