@@ -8,7 +8,7 @@ Approximate orthonormal basis for column space via randomized sketching.
 
 ```
 function orth_sketch(A, rtol, block_size, power_iter):
-    Input: A ∈ ℝ^{m×n}, rtol (tolerance or rank), block_size, power_iter
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol (tolerance or rank), block_size, power_iter
     Output: Q (orthonormal basis), flag, diagR
 
     if rtol ≥ 1:  # Rank mode
@@ -41,7 +41,7 @@ Truncated QR factorization with column pivoting.
 
 ```
 function qr_sketch(A, rtol, block_size, power_iter, extra_samples):
-    Input: A ∈ ℝ^{m×n}, rtol, block_size, power_iter, extra_samples
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol, block_size, power_iter, extra_samples
     Output: Q, R, p  such that A[:, p] ≈ Q R
 
     if rtol ≥ 1:  # Rank mode
@@ -75,7 +75,7 @@ Truncated SVD via randomized sketching.
 
 ```
 function svd_sketch(A, rtol, block_size, power_iter, extra_samples):
-    Input: A ∈ ℝ^{m×n}, rtol, block_size, power_iter, extra_samples
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol, block_size, power_iter, extra_samples
     Output: U, s, V^H  such that A ≈ U diag(s) V^H
 
     if m < n:  # Handle wide matrices via transpose
@@ -113,7 +113,7 @@ Interpolative decomposition via randomized sketching.
 
 ```
 function id_sketch(A, rtol, block_size, power_iter, extra_samples, method):
-    Input: A ∈ ℝ^{m×n}, rtol, method ∈ {'fast', 'svd', 'lstsq'}
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol, method ∈ {'fast', 'svd', 'lstsq'}
     Output: k, piv, T  such that A[:, piv[k+1:end]] ≈ A[:, piv[1:k]] T
 
     # Step 1: Get column permutation via QR sketch
@@ -145,7 +145,7 @@ Interpolative decomposition via deterministic QR (no randomization).
 
 ```
 function id_qrpiv(A, rtol, method):
-    Input: A ∈ ℝ^{m×n}, rtol, method ∈ {'fast', 'svd', 'lstsq'}
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol, method ∈ {'fast', 'svd', 'lstsq'}
     Output: k, piv, T  such that A[:, piv[k+1:end]] ≈ A[:, piv[1:k]] T
 
     # Step 1: Full QR with column pivoting (LAPACK geqp3)
@@ -171,7 +171,7 @@ function id_qrpiv(A, rtol, method):
 
 ```
 function power_iteration(A, Ω, p):
-    Input: A ∈ ℝ^{m×n}, Ω ∈ ℝ^{n×k}, p (number of iterations)
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, Ω ∈ ℝ^{n×k}, p (number of iterations)
     Output: Ω after p iterations of subspace iteration
 
     for i = 1 to p:
