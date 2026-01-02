@@ -40,6 +40,8 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 
 ### Python
 
+For Python, it is often a good idea to run in a virtual environment.  A script named 'setup-venv.sh' is available for users.  To utilize it, run the shell script in the terminal.  To end the virtual environment, type 'deactivate' in the terminal.
+
 ```python
 import numpy as np
 from librla import orth_sketch, qr_sketch, svd_sketch, id_sketch
@@ -438,7 +440,7 @@ The demo suite provides examples for:
 | demo04_power | Power iteration effects |
 | demo05_methods | T computation methods comparison |
 
-## Test
+## Tests
 
 Tests for validating that the algorithms are working are:
 
@@ -449,6 +451,7 @@ Tests for validating that the algorithms are working are:
 | test_qr | Validates the randomized QR |
 | test_orth | Validates the orthogonal sketch |
 | test_all | runs all the test listed above |
+
 
 ## References
 
