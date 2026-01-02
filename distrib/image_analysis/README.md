@@ -2,6 +2,7 @@
 
 These examples illustrate the use of low-rank image compression via the randomized SVD, QR factorization, and interpolative decomposition.
 The examples also highlight the impact of oversampling and using a few power iterations.  
+They also illustrate that while the error in the approximation can be of the same order, the different factorization techniques can provide very different quality of approximations to the eye.
 
 ## Scripts
 
