@@ -18,7 +18,7 @@ Requires:
     - torch_compat.py from ../python/
 
 Author: Zydrunas Gimbutas
-SPDX-License-Identifier: TBD
+SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
 Version: 0.1.0
 Assisted by: Claude Code (Anthropic)
 """
