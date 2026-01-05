@@ -298,8 +298,8 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 ## File Structure
 
 ```
+README.md                  # This file
 distrib/
-├── README.md              # This file
 ├── CLAUDE.md              # AI assistant instructions
 ├── python/
 │   ├── librla.py          # Main library
