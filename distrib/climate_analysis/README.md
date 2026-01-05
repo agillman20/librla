@@ -34,16 +34,6 @@ Applies SVD to raw SST values. Dominant modes:
 | EOF2-4 | ~1% | Seasonal variations |
 | EOF5 | <0.1% | ENSO signal |
 
-### test_sst_anomaly (SST Anomalies)
-
-Applies SVD to SST anomalies (deviation from monthly climatology). Dominant modes:
-
-| Mode | Variance | Description |
-|------|----------|-------------|
-| EOF1 | 18.6% | Long-term trend (global warming signal) |
-| EOF2 | 12.6% | ENSO (El Niño-Southern Oscillation) |
-| EOF3 | 4.8% | PDO (Pacific Decadal Oscillation) |
-
 ## Sign Convention
 
 EOF signs are arbitrary in SVD. We use a reconstruction-based convention:
@@ -78,9 +68,6 @@ Each mode reduces the approximation residual:
 ## Output
 
 The plots on the right illustrate the different modes.  The routines plot the approximation of these modes generated when using the randomized SVD. The approximate singular values are also plotted. 
-
-![SST Anomalies EOF](sst_anomaly.png)
-*EOF analysis of SST anomalies showing warming trend (EOF1) and ENSO (EOF2)*
 
 ![Raw SST EOF](sst_modes.png)
 *EOF analysis of raw SST showing mean pattern (EOF1) and seasonal cycles (EOF2-4)*

@@ -1,10 +1,17 @@
 # compare/ - External Library Comparisons
 
-This directory contains scripts to compare librla's Python implementations against two existing Python libraries: SciPy and PyTorch. These libraries were chosen because they are maintained and widely available.
+This directory contains scripts to compare librla implementations against external libraries in Python.
+
+## Available Comparisons
+
+| Script | Language | Comparison |
+|--------|----------|------------|
+| `compare_id_scipy.py` | Python | librla vs SciPy (ID) |
+| `compare_svd_torch.py` | Python | librla vs PyTorch (SVD) |
 
 ## Usage
 
-### Setup
+### Python Setup
 
 ```bash
 # Create virtual environment with dependencies

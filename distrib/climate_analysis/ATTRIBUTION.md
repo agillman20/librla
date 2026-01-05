@@ -11,7 +11,7 @@ to ensure proper attribution for the climate analysis examples.
 - Most similar code uses `wget` or xarray OPeNDAP, not Python `requests`
 - No GitHub repositories found with similar `download_ersst_year()` / `download_ersst_range()` function structure
 
-## test_sst_anomaly.jl / test_sst_modes.jl / .py / .m
+## test_sst_modes.jl / .py / .m
 
 **Finding:** The *methodology* (EOF/SVD on SST) is a **well-established climate analysis technique**. Several similar implementations exist:
 
