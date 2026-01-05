@@ -45,7 +45,7 @@ For Python, it is often a good idea to run in a virtual environment.  A script n
 ```python
 import numpy as np
 from librla import orth_sketch, qr_sketch, svd_sketch, id_sketch
-from hilbert import hilbert
+from demo_utils import hilbert
 
 # Create a test matrix (Hilbert matrix is ill-conditioned)
 A = hilbert(1000, 500)
@@ -92,6 +92,7 @@ A = hilbert(1000, 500);
 
 ```julia
 include("librla.jl")
+include("demo_utils.jl")
 using .librla
 
 # Create a test matrix
@@ -299,26 +300,30 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 ```
 distrib/
 ├── README.md              # This file
+├── CLAUDE.md              # AI assistant instructions
 ├── python/
 │   ├── librla.py          # Main library
-│   ├── hilbert.py         # Hilbert matrix generator
-│   ├── kahan.py           # Kahan matrix generator
-│   ├── demo_utils.py      # Demo utilities
-│   └── demo*.py           # Demo suite
+│   ├── demo_utils.py      # Demo utilities (includes hilbert matrix)
+│   ├── test_utils.py      # Test utilities
+│   ├── demo*.py           # Demo suite (demo01-demo05)
+│   └── test*.py           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
 ├── matlab/
 │   ├── librla.m           # Main library
 │   ├── LinearOperator.m   # Matrix-free operator class
-│   ├── hilbert.m          # Hilbert matrix generator
-│   ├── kahan.m            # Kahan matrix generator
-│   ├── demo_utils.m       # Demo utilities
-│   └── demo*.m            # Demo suite
-└── julia/
-    ├── librla.jl          # Main library
-    ├── LinearOperator.jl  # Matrix-free operator type
-    ├── hilbert.jl         # Hilbert matrix generator
-    ├── kahan.jl           # Kahan matrix generator
-    ├── demo_utils.jl      # Demo utilities
-    └── demo*.jl           # Demo suite
+│   ├── demo_utils.m       # Demo utilities (includes hilbert matrix)
+│   ├── test_utils.m       # Test utilities
+│   ├── demo*.m            # Demo suite (demo01-demo05)
+│   └── test*.m            # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+├── julia/
+│   ├── librla.jl          # Main library
+│   ├── LinearOperator.jl  # Matrix-free operator type
+│   ├── demo_utils.jl      # Demo utilities (includes hilbert matrix)
+│   ├── test_utils.jl      # Test utilities
+│   ├── demo*.jl           # Demo suite (demo01-demo05)
+│   └── test*.jl           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+├── compare/               # External library comparisons
+├── climate_analysis/      # Climate data analysis examples
+└── image_analysis/        # Image compression examples
 ```
 
 ## Requirements
@@ -456,8 +461,10 @@ Tests for validating that the algorithms are working are:
 
 Additional resources provided for users are:
 
-- The folder '/distrib/compare' provides codes that compare 'librla' with other randomized liner algebra packages.
-- The folder '/distrib/image_analysis' provides codes that illustrate the use of the different randomized methods for image compression.  
+- The folder '/distrib/compare' provides codes that compare 'librla' with other randomized linear algebra packages:
+  - `compare_id_scipy.py` - Python: librla vs SciPy (ID)
+  - `compare_svd_torch.py` - Python: librla vs PyTorch (SVD)
+- The folder '/distrib/image_analysis' provides codes that illustrate the use of the different randomized methods for image compression.
 - The folder '/distrib/climate_analysis' provides codes that illustrate the use of randomized methods for data compression.
 
 The folders contain documentation.  The last two folders illustrate the use of 'librla' for common applications of interest.  The examples considered are taken from the randomized linear algebra literature.
