@@ -1,10 +1,56 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Repository Overview
 
 This is the **distrib/** directory of the librla (randomized linear algebra) library. It contains a multi-language distribution with identical APIs across Python, MATLAB/Octave, and Julia for low-rank matrix approximations using randomized sketching algorithms.
+
+## Build/Test/Run Commands
+
+### Running Tests
+
+```bash
+# Python - run all tests
+cd python && python test_all.py
+
+# Python - run individual test
+cd python && python test_id.py     # Interpolative decomposition
+cd python && python test_svd.py    # SVD
+cd python && python test_qr.py     # QR
+cd python && python test_orth.py   # Orthonormal basis
+
+# MATLAB/Octave - run all tests (from MATLAB command window)
+cd matlab
+test_all
+
+# MATLAB/Octave - run individual test
+test_id
+test_svd
+test_qr
+test_orth
+
+# Julia - run all tests
+cd julia && julia test_all.jl
+
+# Julia - run individual test
+cd julia && julia test_id.jl
+cd julia && julia test_svd.jl
+```
+
+### Running Demos
+
+```bash
+# Python
+cd python && python demo01_basic.py
+
+# MATLAB (in command window)
+cd matlab
+demo01_basic
+
+# Julia
+cd julia && julia demo01_basic.jl
+```
 
 ## Core Architecture
 
@@ -99,56 +145,6 @@ A(:, piv(k+1:end)) = A(:, piv(1:k)) * T
 A[:, piv[k+1:end]] = A[:, piv[1:k]] * T
 ```
 
-## File Organization
-
-Each language directory contains:
-
-### Main Library
-| File | Description |
-|------|-------------|
-| `librla.*` | Core randomized linear algebra routines |
-| `LinearOperator.*` | Matrix-free operator class (MATLAB/Julia only) |
-
-### Utilities
-| File | Description |
-|------|-------------|
-| `hilbert.*` | Hilbert matrix generator |
-| `kahan.*` | Kahan matrix generator |
-| `demo_utils.*` | Demo utilities |
-| `test_utils.*` | Test utilities (matrix generators, helpers) |
-
-### Demo Suite
-| File | Description |
-|------|-------------|
-| `demo01_basic.*` | Basic ID algorithms (id_sketch, id_qrpiv) |
-| `demo02_svd.*` | SVD and QR sketching |
-| `demo03_linop.*` | LinearOperator abstraction |
-| `demo04_power.*` | Power iteration effects |
-| `demo05_methods.*` | T computation methods comparison |
-
-### Test Suite
-| File | Description |
-|------|-------------|
-| `test_all.*` | Run all tests |
-| `test_id.*` | Interpolative decomposition tests |
-| `test_orth.*` | Orthonormal basis tests |
-| `test_qr.*` | QR factorization tests |
-| `test_svd.*` | SVD tests |
-
-### Running Demos
-
-```bash
-# Python
-cd python && python demo01_basic.py
-
-# MATLAB
-cd matlab
-demo01_basic
-
-# Julia
-cd julia && julia demo01_basic.jl
-```
-
 ## Key Algorithmic Features
 
 ### id_sketch Method Options
@@ -180,18 +176,3 @@ When making changes:
 3. Update tests in all three languages when adding features
 4. Ensure documentation stays synchronized in README.md
 5. Preserve the svd_sketch return convention (Python/Julia: transposed V; MATLAB: non-transposed V)
-
-## Directory Structure
-
-```
-distrib/
-├── README.md              # Main documentation (includes installation)
-├── CLAUDE.md              # This file
-├── TODO.md                # Development tasks
-├── python/                # Python implementation
-├── matlab/                # MATLAB/Octave implementation
-├── julia/                 # Julia implementation
-├── compare/               # Comparison scripts with other libraries
-├── climate_analysis/      # Climate data analysis examples
-└── image_analysis/        # Image processing examples
-```
