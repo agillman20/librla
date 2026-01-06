@@ -54,7 +54,7 @@ function exit_code = test_qr()
     results(end+1) = run_test_case(A2, 1e-8, 'Low-Rank Matrix (rank~15)');
 
     % Test 3: Hilbert matrix (extremely ill-conditioned)
-    A3 = hilbert(2000, 1000);
+    A3 = demo_utils.hilbert(2000, 1000);
     results(end+1) = run_test_case(A3, 15, 'Hilbert Matrix (severely ill-conditioned)');
 
     % Test 4: Complex matrix
@@ -87,7 +87,7 @@ function exit_code = test_qr()
     results(end+1) = run_test_case(A7, 1e-8, 'Large Low-Rank (800x500, rank~15)');
 
     % Test 8: Large Hilbert matrix
-    A8 = hilbert(4000, 2000);
+    A8 = demo_utils.hilbert(4000, 2000);
     results(end+1) = run_test_case(A8, 15, 'Large Hilbert Matrix (4000x2000)');
 
     % Test 9: Large complex matrix
