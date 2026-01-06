@@ -70,7 +70,7 @@ k, piv, T = id_sketch(A, rtol=1e-6, method='lstsq')
 
 ```matlab
 % Create a test matrix
-A = hilbert(1000, 500);
+A = demo_utils.hilbert(1000, 500);
 
 % Orthonormal basis
 [Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
@@ -96,7 +96,7 @@ include("demo_utils.jl")
 using .librla
 
 # Create a test matrix
-A = hilbert(1000, 500)
+A = demo_utils.hilbert(1000, 500)
 
 # Orthonormal basis
 Q, flag, diagR = orth_sketch(A, 1e-6)
