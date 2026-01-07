@@ -39,7 +39,7 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 
 The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, \texttt{librla} requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
-While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011],[@Liberty:2007], there is a large collection of related work:  [@Duersch:2020],[@Mahoney:2009],[@MEIER:2024], [@Martinsson:2019], [@Sorensen:2016], [@Gu:1996].
+While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011],[@Liberty:2007], there is a large collection of related work:  [@Duersch:2020 , @Mahoney:2009 , @MEIER:2024, @Martinsson:2019 , @Sorensen:2016, @Gu:1996].
 The user specified rank algorithm in 'librla' is built in a similar manner to the 'svd_lowrank' routine in Pytorch.
 
 
@@ -55,7 +55,7 @@ Currently, there are two available related routines available in widely availabl
 
 The algorithm that serves as the foundations of \texttt{librla} is called \texttt{orth\_sketch} . It creates an orthogonal basis of the range of the operator of interest.  The user specified tolerance portion of the package was heavily influenced by the method presented in [@Halko:2011],  [@Tygert:2008] and [@Liberty:2007].  The user specified rank portion of the package was influenced by the \texttt{svd\_lowrank} in Pytorch.  Once the orthogonal basis is created it is possible to create the low rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of \texttt{orth\_sketch} is presented in the following subsection. Pseudocodes for all of the factorizations are provided in the \texttt{PSEUDOCODE.md} file found in the *distrib* folder.  
 
-Users call the desired factorization subroutine with a linear operator ${\bf A}$ of size $m\times n$, a desired rank and stopping condition ${rtol}$.  The user has the option to use power iteration and specify the number of iterations $power\_iter$ to accelerate convergence. Users are also provided the option to add oversampling $extra\_samp$ and specify the number of vector for the oversampling.   These optional parameters are fed into the subroutine that is the workhorse of the \texttt{librla} package called \texttt{orth\_sketch}.   Roughly speaking, given a linear operator ${\bf A}$, desired rank or stopping condition $rtol$, specified $block\_size$ and $power\_iter$, then \texttt{orth\_sketch} randomly samples the range of ${\bf A}$ to create an orthogonal basis for the range.  The range is sampled by applying ${\bf A}$ to a matrix ${\bf \Omega}$ of size $m \times block\_size$ columns whose entries are uniformly sampled from $[-1,1]$.   In the tolerance option, the $block\_size$ is increased to ensure the range is sufficiently sampled and includes the number of user specified extra samples.  In the rank option, the size of $\Omega$ is determined by the desired rank and the number of user specified extra samples.The orthogonal basis is formed by taking a pivoted QR factorization of the ${\bf A \ \Omega}$.  The magnitude of the diagonal entries of ${\bf R}$ are stored in a vector ${\bf diagR}$ and are used in the stopping criterion for the tolerance option of the factorization.  \texttt{orth\_sketch} returns ${\bf Q}$ or a submatrix of ${\bf Q}$, ${\bf diagR}$ and an error flag to the factorization routine that called it.  The matrix ${\bf Q}$ is then used to create the desired factorization.
+Users call the desired factorization subroutine with a linear operator ${\bf A}$ of size $m\times n$, a desired rank and stopping condition ${rtol}$.  The user has the option to use power iteration and specify the number of iterations $power\_iter$ to accelerate convergence. Users are also provided the option to specify a number of oversampling vectors.  The workhorse of the \texttt{librla} package called \texttt{orth\_sketch}.   Roughly speaking, given a linear operator ${\bf A}$, desired rank or stopping condition $rtol$, specified $block\_size$ and $power\_iter$, then \texttt{orth\_sketch} randomly samples the range of ${\bf A}$ to create an orthogonal basis for the range.  The range is sampled by applying ${\bf A}$ to a matrix ${\bf \Omega}$ of size $m \times block\_size$ columns whose entries are uniformly sampled from $[-1,1]$.   The oversampling vectors are included in $block\_size$.  In the tolerance option, the $block\_size$ is increased to ensure the range is sufficiently sampled and includes the number of user specified extra samples.  In the rank option, the size of $\Omega$ is determined by the desired rank and the number of user specified extra samples.The orthogonal basis is formed by taking a pivoted QR factorization of the ${\bf A \ \Omega}$.  The magnitude of the diagonal entries of ${\bf R}$ are stored in a vector ${\bf diagR}$ and are used in the stopping criterion for the tolerance option of the factorization.  \texttt{orth\_sketch} returns ${\bf Q}$ or a submatrix of ${\bf Q}$, ${\bf diagR}$ and an error flag to the factorization routine that called it.  The matrix ${\bf Q}$ is then used to create the desired factorization.
 
 
 ## Pseudocode for the \texttt{orth\_sketch} algorithm
@@ -64,14 +64,13 @@ For simplicity of presentation the pseudocode presented here varies slightly fro
 
 
 ```
-function orth_sketch(A, rtol, block_size, power_iter, extra_samp):
+function orth_sketch(A, rtol, block_size, power_iter):
     Input: A (a real or complex matrix of size {m×n}) , rtol (tolerance or rank), 
-             block_size, power_iter, extra_samp
+             block_size, power_iter
     Output: Q (orthonormal basis), flag, diagR
 
     if rtol ≥ 1:  # Rank mode
         k_max = floor(rtol)
-        block_size = block_size + extra_samp
         Ω = random_matrix(n, block_size)        # Uniform[-1,1]
         Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
         Y = A Ω
@@ -80,7 +79,6 @@ function orth_sketch(A, rtol, block_size, power_iter, extra_samp):
 
     # Tolerance mode (rtol < 1): adaptive rank
     while true:
-        block_size = block_size + extra_samp
         Ω = random_matrix(n, block_size)
         Ω = power_iteration(A, Ω, power_iter)
         Y = A Ω
