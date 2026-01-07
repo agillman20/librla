@@ -140,10 +140,10 @@ Figure \ref{fig:climate_singular} illustrates the performance of the randomized 
 ![Illustration of the exact singular values vs approximate singular values via the (a) randomized SVD, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples with 2 power iterations.  The matrix is taken from [@Tropp:2019]  \label{fig:climate_singular}](svdAll.png){width=100%}
 
 
-The image compression example \texttt{test\_image\_id} code in the *image_analysis* folder produces 6 images.  Figure \ref{fig:image_orig} illustrates 5 of them: (a) the original imate and rank 30 approximations of the image using (b) the randomized SVD, (c) the interpolatory decomposition, (c) the randomized SVD with 15 extra samples and 2 power iterations and (d) the interpolatory decomposition with 15 extra samples and 2 power iterations.  While the rank of the approximations is the same, the SVD produces an image with less smearing.  This is more evident in the examples with oversampling and power iterations.
+The image compression example \texttt{test\_image\_id} code in the *image_analysis* folder produces 6 images.  Figure \ref{fig:image_orig} illustrates 5 of them: (a) the original image and rank 30 approximations of the image using (b) the randomized SVD, (c) the interpolatory decomposition, (c) the randomized SVD with 15 extra samples and 2 power iterations and (d) the interpolatory decomposition with 15 extra samples and 2 power iterations.  While the rank of the approximations is the same, the SVD produces an image with less smearing.  The examples with oversampling and power iterations further highlight this result.
 
 
-![Image processing experiment illustrating a use of randomized low rank factorizations \label{fig:image_orig}](imageEX.png){width=100%}
+![illustration of the use of randomized factorization for image compression: (a) original image, and rank 30 approximations using (a) the randomized SVD, (b) the interpolatory decomposition, (c) the randomized SVD with 15 extra samples and 2 power iterations and (d) the interpolatory decomposition with 15 extra samples and 2 power iterations.  The example is taken from [@Duersch:2020].  \label{fig:image_orig}](imageEX.png){width=100%}
 
 
 
