@@ -1,6 +1,6 @@
 # librla - Randomized Linear Algebra Library
 
-A unified, multi-language library implementing randomized algorithms for low-rank matrix approximations of both real and complex matrices. The library provides efficient sketching-based methods for large-scale matrix decompositions with consistent APIs across Python, MATLAB/Octave, and Julia.
+A unified, multi-language library implementing randomized algorithms for low-rank matrix factorizations of both real and complex matrices. The library provides efficient sketching-based methods for large-scale matrix decompositions with consistent APIs across Python, MATLAB/Octave, and Julia.
 
 ## Features
 
@@ -118,16 +118,21 @@ k, piv, T = id_sketch(A, 1e-6, method="lstsq")
 
 ### Tolerance Mode (rtol < 1)
 
-Adaptively determines rank to achieve specified relative accuracy:
+Adaptively determines rank to achieve specified relative tolerance:
 
 ```python
-# Python: Adaptive rank selection to achieve 10^-6 relative accuracy
+# Python: Adaptive rank selection to achieve 10^-6 tolerance
 Q, flag, diagR = orth_sketch(A, 1e-6)
 ```
 
 ```matlab
-% MATLAB: Same behavior
+% MATLAB: Adaptive rank selection to achieve 10^-6 tolerance
 [Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
+```
+
+```julia
+# Julia: Adaptive rank selection to achieve 10^-6 tolerance
+Q, flag, diagR = orth_sketch(A, 1e-6)
 ```
 
 ### Rank Mode (rtol >= 1)
@@ -143,6 +148,12 @@ U, s, Vh = svd_sketch(A, 20)
 % MATLAB: Rank-20 approximation
 [U, s, V] = librla.svd_sketch(A, 20);
 ```
+
+```julia
+# Julia: Rank-20 approximation
+U, s, Vt = svd_sketch(A, 20)
+```
+
 
 ## API Notes
 
