@@ -39,7 +39,8 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 
 The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.    The package does include the option to create low rank factorizations of matrices that are applied via matrix vector multiplication codes. In order to use this option, \texttt{librla} requires both the ability to apply both the matrix and its transpose via a subroutine.  
 
-While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011;@Liberty:2007], there is a large collection of related work:  [@Duersch:2020;@Mahoney:2009; @MEIER:2024; @Martinsson:2019 , @Sorensen:2016; @Gu:1996].
+While the tolerance mode of the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011;@Liberty:2007], there is a large collection of related work:  [@Duersch:2020;@Mahoney:2009; @MEIER:2024; @Martinsson:2019 , @Sorensen:2016; @Gu:1996; @Frieze:2004; @Drineas:2006; @Drineas:2006_2; @Drinea:2006_3; @Sarlos:2006; @Drineas:2008; @Drineas:2007 ; @Rokhlin:2008; @Avron:2010; @Meng:2014; @Martinsson:2020; @Roosta-Khorasani:2019; @Pilanci:2017; @Yao:2021; @Mahoney:2011; @Woodruff:2014; @Drineas:2016; @Yang:2015; @Drineas2017LecturesOR; @Pilanci:2016; @Duersch:2017_2; @ERICHSON:2018; @Voronin:2017; 
+@Balu:2016; @Cormode:2018; @Choi:2020; @Yu:2017; @Yu:2018; @Tropp:2017; @Bjarkason:2019; @Drineas:2012; @Chowdhury:2020; @Martinsson:2019; @Lindquist:2020; @Feng:2018].
 The user specified rank algorithm in 'librla' is built in a influenced by the 'svd_lowrank' routine in Pytorch.
 
 
