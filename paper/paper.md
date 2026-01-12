@@ -13,10 +13,10 @@ authors:
     equal-contrib: true
     affiliation: 2 # (Multiple affiliations must be quoted)
 affiliations:
- - name: National Institute of Standards and Technology (NIST)
-   index: 2
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 1
+ - name: National Institute of Standards and Technology (NIST)
+   index: 2
  
 date: 05 January 2026
 bibliography: paper.bib
