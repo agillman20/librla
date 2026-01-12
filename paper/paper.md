@@ -11,12 +11,13 @@ affiliations:
    index: 1
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 2
+ - name: Adrianna Gillman
+    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 2
   - name: Zydrunas Gimbutas
     equal-contrib: true
     affiliation: "1" # (Multiple affiliations must be quoted)
-  - name: Adrianna Gillman
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: 2
+ 
 date: 05 January 2026
 bibliography: paper.bib
 
