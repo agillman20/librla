@@ -114,9 +114,9 @@ where ${\tt diag}({\bf s})$ is a diagonal matrix where the non-zero entries are 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
 
-To recover an approximation of the full matrix, first build an $k \times n$ matrix ${\bf W}$ where 
-${\bf W}(:,{\bf piv}(1:k)) = {\bf I}_k$ where ${\bf I}_k$  is an identity matrix of size $k$.  Then set 
-$${\bf W}(:,{\bf piv}(k+1:end)) = {\bf T}$$.  The result is that
+To recover an approximation of the full matrix, first build an $k \times n$ matrix ${\bf W}$, where 
+${\bf W}(:,{\bf piv}(1:k)) = {\bf I}_k$, where ${\bf I}_k$  is an identity matrix of size $k$.  Then set 
+$${\bf W}(:,{\bf piv}(k+1:end)) = {\bf T}.$$  The result is that
 
 $${\bf A} \sim {\bf A}(:, {\bf piv}(1:k)) {\bf W}.$$
 
