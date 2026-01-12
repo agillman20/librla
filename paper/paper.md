@@ -6,18 +6,18 @@ tags:
   - Matlab
   - QR, SVD and Interpolatory decomposition
 authors:
+affiliations:
+ - name: National Institute of Standards and Technology (NIST)
+   index: 1
+ - name: University of Colorado, Boulder, Department of Applied Mathematics
+   index: 2
   - name: Zydrunas Gimbutas
     equal-contrib: true
     affiliation: "1" # (Multiple affiliations must be quoted)
   - name: Adrianna Gillman
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 2
-affiliations:
- - name: National Institute of Standards and Technology (NIST)
-   index: 1
- - name: University of Colorado, Boulder, Department of Applied Mathematics
-   index: 2
-date: 22 September 2025
+date: 05 January 2026
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
