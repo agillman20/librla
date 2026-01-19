@@ -16,7 +16,6 @@ authors:
 affiliations:
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 1
-   ror: 00hx57361
  - name: National Institute of Standards and Technology (NIST)
    index: 2
  
