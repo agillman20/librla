@@ -11,6 +11,7 @@ authors:
     equal-contrib: true
     affiliation: "1" # (Multiple affiliations must be quoted)
   - name: Zydrunas Gimbutas
+    orcid: 0000-0003-3209-8228
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 2
 affiliations:
