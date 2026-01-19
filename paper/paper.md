@@ -6,15 +6,17 @@ tags:
   - Matlab
   - QR, SVD and Interpolatory decomposition
 authors:
- - name: Adrianna Gillman
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: 1
-  - name: Zydrunas Gimbutas
+  - name: Adrianna Gillman
+    orcid: 0000-0002-3413-4133
     equal-contrib: true
-    affiliation: 2 # (Multiple affiliations must be quoted)
+    affiliation: "1" # (Multiple affiliations must be quoted)
+  - name: Zydrunas Gimbutas
+    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 2
 affiliations:
  - name: University of Colorado, Boulder, Department of Applied Mathematics
    index: 1
+   ror: 00hx57361
  - name: National Institute of Standards and Technology (NIST)
    index: 2
  
