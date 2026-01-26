@@ -18,7 +18,7 @@ The choice of method affects:
 Try changing the CONFIGURATION parameters below to experiment!
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
+SPDX-License-Identifier: NIST-PD
 Assisted by: Claude Code (Anthropic)
 """
 

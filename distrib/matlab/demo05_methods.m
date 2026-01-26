@@ -15,7 +15,7 @@
 %   - Accuracy (lstsq gives best reconstruction)
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
+% SPDX-License-Identifier: NIST-PD
 % Assisted by: Claude Code (Anthropic)
 %
 % Try changing the CONFIGURATION parameters below to experiment!

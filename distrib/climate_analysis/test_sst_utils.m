@@ -12,8 +12,8 @@ classdef test_sst_utils
 %   test_sst_utils.print_north_test(s, n_samples, n_modes);
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
-% Version: 0.1.0
+% SPDX-License-Identifier: NIST-PD
+% Version: 1.0.0
 % Date: January 5, 2026
 % Assisted by: Claude Code (Anthropic)
 

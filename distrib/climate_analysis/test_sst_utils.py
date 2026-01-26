@@ -4,7 +4,7 @@ test_sst_utils.py - Utilities for SST/EOF climate analysis
 Statistical tests and helper functions for EOF analysis of climate data.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
+SPDX-License-Identifier: NIST-PD
 Assisted by: Claude Code (Anthropic)
 """
 
