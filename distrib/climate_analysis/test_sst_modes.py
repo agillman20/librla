@@ -27,8 +27,8 @@ Requirements
 * pip install numpy scipy netCDF4 matplotlib
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
-Version: 0.1.0
+SPDX-License-Identifier: NIST-PD
+Version: 1.0.0
 Date: January 5, 2026
 Assisted by: Claude Code (Anthropic)
 """
@@ -205,7 +205,7 @@ def reshape_to_map(vec, mask):
 
 
 # Compute Niño 3.4 index for ENSO validation (not for sign fixing)
-# Niño 3.4 region: 5°N-5°S, 170°W-120°W (-170° to -120° in -180/180 system)
+# Niño 3.4 region: 5°N-5°S, 170°W-120°W (-170° to -120° in -181.0.0 system)
 nino34_lon_idx = np.where((lon >= -170) & (lon <= -120))[0]
 nino34_lat_idx = np.where((lat >= -5) & (lat <= 5))[0]
 

@@ -4,7 +4,7 @@ test_utils.py - Shared utilities for librla tests
 Matrix generators and helper functions used across all test files.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
+SPDX-License-Identifier: NIST-PD
 Assisted by: Claude Code (Anthropic)
 """
 

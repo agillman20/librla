@@ -16,8 +16,8 @@ Note: Matrix-free mode only supports rank mode (rtol >= 1).
 Try changing the CONFIGURATION parameters below to experiment!
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
-Version: 0.1.0
+SPDX-License-Identifier: NIST-PD
+Version: 1.0.0
 Date: January 5, 2026
 Assisted by: Claude Code (Anthropic)
 """

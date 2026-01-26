@@ -28,8 +28,8 @@ Requirements
 * librla.m (automatically added to path)
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
-Version: 0.1.0
+SPDX-License-Identifier: NIST-PD
+Version: 1.0.0
 Date: January 5, 2026
 Assisted by: Claude Code (Anthropic)
 %}
@@ -185,7 +185,7 @@ test_sst_utils.print_north_test(s_full, n_time, 10);
 % ========================================================================
 
 % Compute Nino 3.4 index for ENSO validation (not for sign fixing)
-% Nino 3.4 region: 5N-5S, 170W-120W (-170 to -120 in -180/180 system)
+% Nino 3.4 region: 5N-5S, 170W-120W (-170 to -120 in -181.0.0 system)
 nino34_lon_idx = find(lon >= -170 & lon <= -120);
 nino34_lat_idx = find(lat >= -5 & lat <= 5);
 

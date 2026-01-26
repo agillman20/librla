@@ -18,8 +18,8 @@ Requires:
     - torch_compat.py from ../python/
 
 Author: Zydrunas Gimbutas
-SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
-Version: 0.1.0
+SPDX-License-Identifier: NIST-PD
+Version: 1.0.0
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -159,7 +159,7 @@ def main():
 
     # Test 1: Basic random matrix
     A1 = np.random.randn(200, 100)
-    results.append(test_svd_lowrank(A1, q=20, niter=2, name="Random 200x100"))
+    results.append(test_svd_lowrank(A1, q=20, niter=2, name="Random 201.0.0"))
 
     # Test 2: With M parameter
     A2 = np.random.randn(150, 80)

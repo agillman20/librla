@@ -30,10 +30,10 @@ U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 # Author
 Adrianna Gillman, Zydrunas Gimbutas
 
-# SPDX-License-Identifier: BSD-3-Clause AND NIST-PD
+# SPDX-License-Identifier: NIST-PD
 
 # Version
-0.1.0
+1.0.0
 
 # Date
 January 5, 2026
