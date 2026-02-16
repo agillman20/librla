@@ -33,7 +33,6 @@ where a failure could cause risk of injury or damage to property. The
 software was developed by NIST employees. NIST employee contributions
 are not subject to copyright protection within the United States.
 
-
 ----------------------------------------------------------------------
 
 AI-Generated Content Disclaimer
@@ -44,7 +43,6 @@ suites, were developed with the assistance of AI coding tools
 (Claude/Claude Code by Anthropic). All AI-generated content has been
 reviewed, but may contain errors or inconsistencies. Users should
 verify correctness for their specific applications.
-
 
 ----------------------------------------------------------------------
 
