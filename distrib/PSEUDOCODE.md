@@ -20,6 +20,7 @@ function orth_sketch(A, rtol, block_size, power_iter):
         return Q[:, 1:k_max], 0, |diag(R)|
 
     # Tolerance mode (rtol < 1): adaptive rank
+    # Restart with larger sketch (no accumulation across iterations)
     while true:
         Ω = random_matrix(n, block_size)
         Ω = power_iteration(A, Ω, power_iter)
@@ -47,6 +48,7 @@ function qr_sketch(A, rtol, block_size, power_iter, extra_samples):
     if rtol ≥ 1:  # Rank mode
         k_max = floor(rtol)
         block_size = k_max + extra_samples
+    # Tolerance mode: block_size used as-is, orth_sketch grows adaptively
 
     # Step 1: Sketch orthonormal basis for range(A)
     Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter)
@@ -79,32 +81,33 @@ function svd_sketch(A, rtol, block_size, power_iter, extra_samples):
     Output: U, s, V^H  such that A ≈ U diag(s) V^H
 
     if m < n:  # Handle wide matrices via transpose
-        V, s, U = svd_sketch(A^H, rtol, ...)
-        return U^H, s, V^H
+        Vt_tmp, s, Ut_tmp = svd_sketch(A^H, rtol, ...)
+        return Ut_tmp^H, s, Vt_tmp^H
 
     if rtol ≥ 1:  # Rank mode
         k_max = floor(rtol)
         block_size = k_max + extra_samples
+    # Tolerance mode: block_size used as-is, orth_sketch grows adaptively
 
     # Step 1: Sketch orthonormal basis for range(A)
     Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter)
 
     if flag ≠ 0:  # Fallback to full SVD
-        U, s, V = svd(A)
+        U, s, V^H = svd(A)
         k = rank_from_diagonal(s, rtol)
-        return U[:, 1:k], s[1:k], V[1:k, :]
+        return U[:, 1:k], s[1:k], V^H[1:k, :]
 
     # Step 2: Project onto sketch basis
     B = Q_s^H A                    # k × n projected matrix
 
     # Step 3: SVD of small projected matrix
-    U_proj, s, V = svd(B)
+    U_proj, s, V^H = svd(B)
 
     # Step 4: Expand left singular vectors
     U = Q_s U_proj
     k = rank_from_diagonal(s, rtol)
 
-    return U[:, 1:k], s[1:k], V[1:k, :]
+    return U[:, 1:k], s[1:k], V^H[1:k, :]
 ```
 
 ## id_sketch
@@ -118,7 +121,7 @@ function id_sketch(A, rtol, block_size, power_iter, extra_samples, method):
 
     # Step 1: Get column permutation via QR sketch
     _, R, piv = qr_sketch(A, rtol, block_size, power_iter, extra_samples)
-    k = rows(R)
+    k = size(R, 1)
 
     # Step 2: Compute interpolation matrix T
     R₁₁ = R[1:k, 1:k]
@@ -197,10 +200,10 @@ function rank_from_diagonal(d, rtol):
 
 | Function | Complexity | Notes |
 |----------|------------|-------|
-| `orth_sketch` | O(mnk + nk²) | k = sketch size |
-| `qr_sketch` | O(mnk + nk²) | k = target rank |
-| `svd_sketch` | O(mnk + nk²) | k = target rank |
-| `id_sketch` | O(mnk + nk²) | k = target rank |
+| `orth_sketch` | O(mnk + nk²) | k = sketch size; with p power iterations: O((2p+1)mnk + nk²) |
+| `qr_sketch` | O(mnk + nk²) | k = target rank; with p power iterations: O((2p+1)mnk + nk²) |
+| `svd_sketch` | O(mnk + nk²) | k = target rank; with p power iterations: O((2p+1)mnk + nk²) |
+| `id_sketch` | O(mnk + nk²) | k = target rank; with p power iterations: O((2p+1)mnk + nk²) |
 | `id_qrpiv` | O(mn²) | Full QR, deterministic |
 
 For k << min(m,n), randomized methods are O(mnk) vs O(mn·min(m,n)) for full decompositions.
