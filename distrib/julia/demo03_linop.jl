@@ -26,7 +26,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 ==============================================================================#
 
-const MATRIX_SIZE = (300, 200)    # (rows, columns)
+const MATRIX_SIZE = (1000, 2000)    # (rows, columns)
 const TARGET_RANK = 15            # Must be >= 1 for matrix-free mode
 const RANDOM_SEED = 42            # For reproducibility
 

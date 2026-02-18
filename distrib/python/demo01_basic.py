@@ -22,7 +22,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 # =============================================================================
 
-MATRIX_SIZE = (300, 200)    # (rows, columns)
+MATRIX_SIZE = (1000, 2000)  # (rows, columns)
 TARGET_RANK = 15            # Number of skeleton columns to select
 RANDOM_SEED = 42            # For reproducibility (set to None for random)
 

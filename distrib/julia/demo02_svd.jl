@@ -24,7 +24,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 ==============================================================================#
 
-const MATRIX_SIZE = (500, 300)    # (rows, columns)
+const MATRIX_SIZE = (1000, 2000)    # (rows, columns)
 const TARGET_RANK = 30            # Number of singular values to compute
 const RANDOM_SEED = 42            # For reproducibility
 
@@ -65,7 +65,7 @@ function main()
     @printf("   s[1] = %.6e\n", s_true[1])
     @printf("   s[%d] = %.6e\n", k, s_true[k])
     @printf("   s[%d] = %.6e\n", k+1, s_true[k+1])
-    @printf("   s[%d] = %.6e\n", n, s_true[n])
+    @printf("   s[%d] = %.6e\n", min(m,n), s_true[min(m,n)])
 
     # JIT warm-up
     println("\nJIT warm-up...")

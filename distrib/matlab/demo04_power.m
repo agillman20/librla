@@ -28,7 +28,7 @@ function demo04_power()
     % CONFIGURATION - Modify these to experiment
     %======================================================================
 
-    MATRIX_SIZE = [500, 300];   % [rows, columns]
+    MATRIX_SIZE = [2000, 1000];   % [rows, columns]
     TARGET_RANK = 50;           % Number of singular values to compute
     RANDOM_SEED = 42;           % For reproducibility
 

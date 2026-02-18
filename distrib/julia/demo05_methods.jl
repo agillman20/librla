@@ -28,8 +28,8 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 ==============================================================================#
 
-const MATRIX_SIZE = (400, 300)    # (rows, columns)
-const TARGET_RANK = 20            # Number of skeleton columns
+const MATRIX_SIZE = (2000, 1000)    # (rows, columns)
+const TARGET_RANK = 50            # Number of skeleton columns
 const RANDOM_SEED = 42            # For reproducibility
 
 # Matrix type: "lowrank", "fullrank", or "hilbert"

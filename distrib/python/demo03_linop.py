@@ -23,7 +23,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 # =============================================================================
 
-MATRIX_SIZE = (300, 200)    # (rows, columns)
+MATRIX_SIZE = (1000, 2000)    # (rows, columns)
 TARGET_RANK = 15            # Must be >= 1 for matrix-free mode
 RANDOM_SEED = 42            # For reproducibility
 

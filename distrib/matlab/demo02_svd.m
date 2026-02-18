@@ -23,7 +23,7 @@ function demo02_svd()
     % CONFIGURATION - Modify these to experiment
     %======================================================================
 
-    MATRIX_SIZE = [500, 300];   % [rows, columns]
+    MATRIX_SIZE = [1000, 2000];   % [rows, columns]
     TARGET_RANK = 30;           % Number of singular values to compute
     RANDOM_SEED = 42;           % For reproducibility
 
@@ -53,7 +53,7 @@ function demo02_svd()
     fprintf('   s(1) = %.6e\n', s_true(1));
     fprintf('   s(%d) = %.6e\n', k, s_true(k));
     fprintf('   s(%d) = %.6e\n', k+1, s_true(k+1));
-    fprintf('   s(%d) = %.6e\n', n, s_true(n));
+    fprintf('   s(%d) = %.6e\n', min(m,n), s_true(min(m,n)));
 
     %----------------------------------------------------------------------
     % Method 1: svd_sketch
