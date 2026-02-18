@@ -46,8 +46,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 import librla
 
 # Load image
-# image_file = 'pexels-flickr-149387.jpg'
-image_file = 'pexels-anniroenkae-4793404.jpg'
+image_file = 'pexels-flickr-149387.jpg'
+# image_file = 'pexels-anniroenkae-4793404.jpg'
 A = np.array(Image.open(image_file))
 
 # A = np.transpose(A, (1, 0, 2))
@@ -61,7 +61,7 @@ plt.title('Original (RGB)')
 plt.draw()
 plt.pause(0.1)
 
-k = 60*2
+k = 60
 use_single = True  # set to True for single precision
 
 if use_single:
