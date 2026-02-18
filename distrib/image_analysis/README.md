@@ -40,7 +40,7 @@ Download sample images:
 python download_images.py   # or .m / .jl
 ```
 
-Python and MATLAB require are initializing the computing environment.
+Python and MATLAB require initializing the computing environment.
 
 In Python, run:
 
