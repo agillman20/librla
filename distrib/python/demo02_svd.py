@@ -63,7 +63,7 @@ def main():
     print(f"   s[0] = {s_true[0]:.6e}")
     print(f"   s[{int(k)-1}] = {s_true[int(k)-1]:.6e}")
     print(f"   s[{int(k)}] = {s_true[int(k)]:.6e}")
-    print(f"   s[{n-1}] = {s_true[n-1]:.6e}")
+    print(f"   s[{min(m-1,n-1)}] = {s_true[min(m-1,n-1)]:.6e}")
 
     # -------------------------------------------------------------------------
     # Method 1: svd_sketch
