@@ -27,7 +27,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 # =============================================================================
 
-MATRIX_SIZE = (500, 300)    # (rows, columns)
+MATRIX_SIZE = (2000, 1000)    # (rows, columns)
 TARGET_RANK = 50            # Number of singular values to compute
 RANDOM_SEED = 42            # For reproducibility
 
@@ -91,7 +91,7 @@ def main():
     print(f"   s[0]     = {s_true[0]:.6e} (largest)")
     print(f"   s[{k-1}]   = {s_true[k-1]:.6e} (at target rank)")
     print(f"   s[{k}]   = {s_true[k]:.6e} (first neglected)")
-    print(f"   s[{n-1}] = {s_true[n-1]:.6e} (smallest)")
+    print(f"   s[{min(m-1,n-1)}] = {s_true[min(m-1,n-1)]:.6e} (smallest)")
     print(f"   Condition number: {cond:.2e}")
     print(f"   Spectral gap at k={k}: {gap:.1f}x")
 

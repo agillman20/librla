@@ -24,7 +24,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 ==============================================================================#
 
-const MATRIX_SIZE = (300, 200)    # (rows, columns)
+const MATRIX_SIZE = (1000, 2000)    # (rows, columns)
 const TARGET_RANK = 15            # Number of skeleton columns to select
 const RANDOM_SEED = 42            # For reproducibility (set to nothing for random)
 

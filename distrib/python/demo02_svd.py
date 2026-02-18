@@ -22,7 +22,7 @@ Assisted by: Claude Code (Anthropic)
 # CONFIGURATION - Modify these to experiment
 # =============================================================================
 
-MATRIX_SIZE = (500, 300)    # (rows, columns)
+MATRIX_SIZE = (1000, 2000)  # (rows, columns)
 TARGET_RANK = 30            # Number of singular values to compute
 RANDOM_SEED = 42            # For reproducibility
 
