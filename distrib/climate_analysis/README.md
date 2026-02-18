@@ -1,6 +1,6 @@
 # Climate Analysis Examples
 
-The examples illustrate the use of randomized linear algebra for data sets.  The particular example is EOF/SVD analysis of NOAA Sea Surface Temperature (SST) data. The example was taken from the Tropp, et al. paper mentioned below.  This example useful for learning about the impact of oversampling and power iterations on the randomized linear algebra performance. 
+The examples illustrate the use of randomized linear algebra for data sets.  The particular example is EOF/SVD analysis of NOAA Sea Surface Temperature (SST) data. The example was taken from the Tropp, et al. paper mentioned below.  This example is useful for learning about the impact of oversampling and power iterations on the randomized linear algebra performance. 
 
 ## References
 
@@ -11,7 +11,7 @@ The examples illustrate the use of randomized linear algebra for data sets.  The
 
 ## Overview
 
-In order to run the examples in this folder, the data must be downloaded.  The next section explains who to do that.   Once the file is downloaded, the user can run either of the analysis scripts.  The modes that are listed in the *Analysis Scripts* section below are related to the singular vectors of the data matrix in order of their magnitude.  The accuracy of the singular values is directly correlated to the accuracy of the modes.  The user can mimic the experiments illustrated in the JOSS paper by changing the number of extra samples and power iterations used in the randomized SVD.  
+In order to run the examples in this folder, the data must be downloaded.  The next section explains how to do that.   Once the file is downloaded, the user can run either of the analysis scripts.  The modes that are listed in the *Analysis Scripts* section below are related to the singular vectors of the data matrix in order of their magnitude.  The accuracy of the singular values is directly correlated to the accuracy of the modes.  The user can mimic the experiments illustrated in the JOSS paper by changing the number of extra samples and power iterations used in the randomized SVD.  
 
 ## Data
 
@@ -71,6 +71,9 @@ The plots on the right illustrate the different modes.  The routines plot the ap
 
 ![Raw SST EOF](sst_modes.png)
 *EOF analysis of raw SST showing mean pattern (EOF1) and seasonal cycles (EOF2-4)*
+
+![Randomized SVD EOF](sst_modes_sketch.png)
+*EOF analysis using randomized SVD (svd_sketch)*
 
 ## Languages
 
