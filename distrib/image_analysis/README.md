@@ -6,22 +6,9 @@ They also illustrate that while the error in the approximation can be of the sam
 
 ## Scripts
 
-### test_image (Grayscale)
-
-Compresses grayscale images using truncated SVD:
-
-| Method | Description |
-|--------|-------------|
-| `svd_sketch(k)` | Basic rank-k approximation |
-| `svd_sketch(k, extra, power)` | With oversampling and power iteration |
-
-### test_image_rgb (RGB)
-
-Same as above but for RGB images (reshaped to m x 3n matrix).
-
 ### test_image_id (Method Comparison)
 
-Compares five low-rank approximation methods on RGB images:
+Compares five low-rank approximation methods on RGB images (reshaped to m x 3n matrix):
 
 | Method | Description |
 |--------|-------------|
@@ -62,7 +49,7 @@ In a terminal, type the following commands:
 ```bash
 ./setup-venv.sh 
 python3 download_images.py 
-python3 test_image.py
+python3 test_image_id.py
 ```
 
 ### Example MATLAB run sequence
@@ -72,7 +59,7 @@ In the MATLAB command line, type the following:
 ```bash
 startup
 download_images
-test_image
+test_image_id
 ```
 
 ## Requirements
