@@ -311,7 +311,8 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
 
     # Handle wide matrices via transpose
     if m < n
-        Vt_tmp, s, Ut_tmp = svd_sketch(copy(A'), rtol; block_size=block_size,
+        At = _is_matrix_free_linop(A) ? A' : copy(A')
+        Vt_tmp, s, Ut_tmp = svd_sketch(At, rtol; block_size=block_size,
                                      power_iter=power_iter, extra_samples=extra_samples, rng=rng)
         U = Ut_tmp'
         Vt = Vt_tmp'
