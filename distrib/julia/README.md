@@ -240,15 +240,23 @@ The demo suite provides examples for:
 
 ## Tests
 
+Run the tests from the `test/` directory:
+
+```
+cd distrib/julia/test
+julia test_all.jl
+julia test_id.jl
+```
+
 Tests for validating that the algorithms are working are:
 
 | Test | Description |
 |------|-------------|
-| test_id | Validates Interpolatory decomposition | 
-| test_svd | Validates the SVD| 
+| test_id | Validates Interpolatory decomposition |
+| test_svd | Validates the SVD|
 | test_qr | Validates the randomized QR |
 | test_orth | Validates the orthogonal sketch |
-| test_all | runs all the test listed above |
+| test_all | runs all the tests listed above |
 
 
 
