@@ -23,7 +23,7 @@ Options:
 
 Requires:
     - NumPy, SciPy
-    - librla.py, make_mat.py from ../python/
+    - librla.py from ../python/, test_utils.py from ../python/test/
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
@@ -69,6 +69,7 @@ else:
 
 # Add parent python directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python', 'test'))
 
 # Import implementations
 from librla import id_sketch
