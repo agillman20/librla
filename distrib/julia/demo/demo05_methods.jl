@@ -43,7 +43,7 @@ using LinearAlgebra
 using Printf
 using Random
 
-include("librla.jl")
+include("../librla.jl")
 include("demo_utils.jl")
 
 using .librla: id_sketch
