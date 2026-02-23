@@ -1,13 +1,12 @@
-# test_svd.jl - Compare librla SVD implementations
+# test_qr.jl - Compare librla QR implementations
 #
-# Compares svd_sketch (randomized) vs svd (deterministic):
+# Compares qr_sketch (randomized) vs qr with column pivoting:
 # - Accuracy (reconstruction error)
-# - Singular value accuracy
-# - Orthonormality of U and V
+# - Orthonormality of Q
 # - Runtime
 #
 # Usage:
-#     julia test_svd.jl
+#     julia test_qr.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: NIST-PD
@@ -15,18 +14,18 @@
 # Date: January 5, 2026
 # Assisted by: Claude Code (Anthropic)
 
-module TestSVD
+module TestQR
 
 using LinearAlgebra
 using Printf
 using Statistics
 using Random
 
-include(joinpath(@__DIR__, "librla.jl"))
+include(joinpath(@__DIR__, "..", "librla.jl"))
 include(joinpath(@__DIR__, "test_utils.jl"))
 using .TestUtils: make_mat
 
-using .librla: svd_sketch
+using .librla: qr_sketch
 
 export test
 
@@ -41,10 +40,8 @@ mutable struct ComparisonResult
     err_sketch::Float64
     err_ref::Float64
 
-    sval_err::Float64
-
-    orth_U_sketch::Float64
-    orth_V_sketch::Float64
+    orth_Q_sketch::Float64
+    orth_Q_ref::Float64
 
     t_sketch::Float64
     t_ref::Float64
@@ -62,7 +59,7 @@ end
 
 
 function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where T
-    """Compare SVD implementations on a single matrix."""
+    """Compare QR implementations on a single matrix."""
 
     println("\n", "="^70)
     println("Test: ", name)
@@ -78,38 +75,45 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
     normA = norm(A)
 
     # -------------------------------------------------------------------------
-    # 1. svd_sketch (randomized)
+    # 1. qr_sketch (randomized)
     # -------------------------------------------------------------------------
-    println("\n--- svd_sketch (randomized) ---")
+    println("\n--- qr_sketch (randomized) ---")
 
-    t_sketch = @elapsed U_sketch, s_sketch, Vt_sketch = svd_sketch(A, rtol_or_rank)
+    t_sketch = @elapsed Q_sketch, R_sketch, p_sketch = qr_sketch(A, rtol_or_rank)
 
-    k_sketch = length(s_sketch)
+    k_sketch = size(Q_sketch, 2)
 
-    # Reconstruction error (Vt is already conjugate-transposed in Julia)
-    A_recon_sketch = U_sketch * Diagonal(s_sketch) * Vt_sketch
-    err_sketch = norm(A - A_recon_sketch) / normA
+    # Reconstruction error: A[:, p] = Q * R
+    A_perm_sketch = A[:, p_sketch]
+    err_sketch = norm(A_perm_sketch - Q_sketch * R_sketch) / normA
 
-    # Orthonormality checks
-    orth_U_sketch = norm(U_sketch' * U_sketch - I(k_sketch))
-    orth_V_sketch = norm(Vt_sketch * Vt_sketch' - I(k_sketch))
+    # Orthonormality check
+    orth_Q_sketch = norm(Q_sketch' * Q_sketch - I(k_sketch))
+
+    # R diagonal (conditioning indicator)
+    diag_R_sketch = abs.(diag(R_sketch[1:min(k_sketch,n), 1:min(k_sketch,n)]))
+    if !isempty(diag_R_sketch) && diag_R_sketch[1] != 0
+        r_ratio_sketch = diag_R_sketch[end] / diag_R_sketch[1]
+    else
+        r_ratio_sketch = 0.0
+    end
 
     @printf("Rank:       k = %d\n", k_sketch)
-    @printf("Error:      ||A - U @ S @ Vt|| / ||A|| = %.3e\n", err_sketch)
-    @printf("Orth U:     ||U'U - I|| = %.3e\n", orth_U_sketch)
-    @printf("Orth V:     ||Vt*Vt' - I|| = %.3e\n", orth_V_sketch)
+    @printf("Error:      ||A[:,p] - Q*R|| / ||A|| = %.3e\n", err_sketch)
+    @printf("Orth Q:     ||Q'Q - I|| = %.3e\n", orth_Q_sketch)
+    @printf("R ratio:    R[k,k]/R[1,1] = %.3e\n", r_ratio_sketch)
     @printf("Time:       %.4f s\n", t_sketch)
 
     # -------------------------------------------------------------------------
-    # 2. svd (deterministic, truncated)
+    # 2. qr with column pivoting (deterministic)
     # -------------------------------------------------------------------------
-    println("\n--- svd (deterministic) ---")
+    println("\n--- qr (pivoted, deterministic) ---")
 
-    t_ref = @elapsed F = svd(A)
+    t_ref = @elapsed F = qr(A, ColumnNorm())
 
-    U_ref_full = F.U
-    s_ref_full = F.S
-    Vt_ref_full = F.Vt
+    Q_ref_full = Matrix(F.Q)
+    R_ref_full = F.R
+    p_ref = F.p
 
     # Determine reference rank (same as sketch for fair comparison)
     if rtol_or_rank >= 1
@@ -118,42 +122,33 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
         k_ref = k_sketch
     end
 
-    # Truncate to target rank
-    U_ref = U_ref_full[:, 1:k_ref]
-    s_ref = s_ref_full[1:k_ref]
-    Vt_ref = Vt_ref_full[1:k_ref, :]
+    # Truncate Q and R
+    Q_ref = Q_ref_full[:, 1:k_ref]
+    R_ref = R_ref_full[1:k_ref, :]
 
     # Reconstruction error
-    A_recon_ref = U_ref * Diagonal(s_ref) * Vt_ref
-    err_ref = norm(A - A_recon_ref) / normA
+    A_perm_ref = A[:, p_ref]
+    err_ref = norm(A_perm_ref - Q_ref * R_ref) / normA
+
+    # Orthonormality check
+    orth_Q_ref = norm(Q_ref' * Q_ref - I(k_ref))
 
     @printf("Rank:       k = %d\n", k_ref)
-    @printf("Error:      ||A - U @ S @ Vt|| / ||A|| = %.3e\n", err_ref)
-    @printf("Time:       %.4f s (full SVD)\n", t_ref)
-
-    # -------------------------------------------------------------------------
-    # Singular value accuracy
-    # -------------------------------------------------------------------------
-    k_cmp = min(k_sketch, length(s_ref_full))
-    if k_cmp > 0
-        sval_err = norm(s_sketch[1:k_cmp] - s_ref_full[1:k_cmp]) / norm(s_ref_full[1:k_cmp])
-    else
-        sval_err = 0.0
-    end
-
-    @printf("\nSingular value accuracy: ||s_sketch - s_ref|| / ||s_ref|| = %.3e\n", sval_err)
+    @printf("Error:      ||A[:,p] - Q*R|| / ||A|| = %.3e\n", err_ref)
+    @printf("Orth Q:     ||Q'Q - I|| = %.3e\n", orth_Q_ref)
+    @printf("Time:       %.4f s (full QR)\n", t_ref)
 
     # -------------------------------------------------------------------------
     # Summary comparison
     # -------------------------------------------------------------------------
     println("\n--- Summary ---")
-    @printf("%-28s %-8s %-12s %-12s %-10s\n", "Method", "Rank", "Recon Err", "SVal Err", "Time (s)")
+    @printf("%-28s %-8s %-12s %-12s %-10s\n", "Method", "Rank", "Recon Err", "Orth Err", "Time (s)")
     println("-"^75)
-    @printf("%-28s %-8d %-12.3e %-12.3e %-10.4f\n", "svd_sketch (randomized)", k_sketch, err_sketch, sval_err, t_sketch)
-    @printf("%-28s %-8d %-12.3e %-12s %-10.4f\n", "svd (deterministic)", k_ref, err_ref, "(ref)", t_ref)
+    @printf("%-28s %-8d %-12.3e %-12.3e %-10.4f\n", "qr_sketch (randomized)", k_sketch, err_sketch, orth_Q_sketch, t_sketch)
+    @printf("%-28s %-8d %-12.3e %-12.3e %-10.4f\n", "qr (deterministic)", k_ref, err_ref, orth_Q_ref, t_ref)
 
     # Highlight fastest method
-    methods = ["svd_sketch", "svd"]
+    methods = ["qr_sketch", "qr"]
     times = [t_sketch, t_ref]
     fastest_idx = argmin(times)
     @printf("\nFastest method: %s (%.4fs)\n", methods[fastest_idx], times[fastest_idx])
@@ -162,9 +157,9 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
     if t_sketch > 0
         speedup = t_ref / t_sketch
         if speedup > 1
-            @printf("Speedup: svd_sketch is %.1fx faster\n", speedup)
+            @printf("Speedup: qr_sketch is %.1fx faster\n", speedup)
         else
-            @printf("Speedup: svd is %.1fx faster\n", 1/speedup)
+            @printf("Speedup: qr is %.1fx faster\n", 1/speedup)
         end
     end
 
@@ -173,11 +168,11 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
     # -------------------------------------------------------------------------
     if rtol_or_rank < 1
         tol_threshold = rtol_or_rank * 100
-        passed = err_sketch < min(0.1, tol_threshold) && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10
+        passed = err_sketch < min(0.1, tol_threshold) && orth_Q_sketch < 1e-10
     else
-        # Rank mode: sketch error should be within 4x of optimal
+        # Rank mode: sketch error should be within 4x of reference
         error_ratio_ok = (err_ref == 0) || (err_sketch / max(err_ref, 1e-15) < 4.0)
-        passed = error_ratio_ok && sval_err < 0.5 && orth_U_sketch < 1e-10 && orth_V_sketch < 1e-10
+        passed = error_ratio_ok && orth_Q_sketch < 1e-10
     end
 
     return ComparisonResult(
@@ -185,8 +180,7 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
         rtol_or_rank,
         k_sketch, k_ref,
         err_sketch, err_ref,
-        sval_err,
-        orth_U_sketch, orth_V_sketch,
+        orth_Q_sketch, orth_Q_ref,
         t_sketch, t_ref,
         passed
     )
@@ -227,32 +221,25 @@ function print_summary(results::Vector{ComparisonResult})
     avg_time_ref = mean([r.t_ref for r in results])
 
     println()
-    @printf("%-28s %-12s %-15s\n", "Method", "Avg Time", "vs SVD")
+    @printf("%-28s %-12s %-15s\n", "Method", "Avg Time", "vs QR")
     println("-"^80)
-    @printf("%-28s %8.4fs    %6.1fx\n", "svd_sketch (randomized)", avg_time_sketch, avg_time_ref/avg_time_sketch)
-    @printf("%-28s %8.4fs    %6.1fx -\n", "svd (deterministic)", avg_time_ref, 1.0)
+    @printf("%-28s %8.4fs    %6.1fx\n", "qr_sketch (randomized)", avg_time_sketch, avg_time_ref/avg_time_sketch)
+    @printf("%-28s %8.4fs    %6.1fx -\n", "qr (deterministic)", avg_time_ref, 1.0)
 
     # Accuracy summary
     println("\nReconstruction Error Summary:")
     println("-"^80)
     avg_err_sketch = mean([r.err_sketch for r in results])
     max_err_sketch = maximum([r.err_sketch for r in results])
-    @printf("  svd_sketch:    mean=%.3e, max=%.3e\n", avg_err_sketch, max_err_sketch)
-
-    # Singular value accuracy
-    println("\nSingular Value Accuracy (vs reference):")
-    println("-"^80)
-    avg_sval_err = mean([r.sval_err for r in results])
-    max_sval_err = maximum([r.sval_err for r in results])
-    @printf("  svd_sketch:    mean=%.3e, max=%.3e\n", avg_sval_err, max_sval_err)
+    @printf("  qr_sketch:    mean=%.3e, max=%.3e\n", avg_err_sketch, max_err_sketch)
 
     # Orthonormality summary
     println("\nOrthonormality Summary:")
     println("-"^80)
-    max_orth_U = maximum([r.orth_U_sketch for r in results])
-    max_orth_V = maximum([r.orth_V_sketch for r in results])
-    @printf("  max ||U'U - I||:    %.3e\n", max_orth_U)
-    @printf("  max ||Vt*Vt' - I||: %.3e\n", max_orth_V)
+    max_orth_Q_sketch = maximum([r.orth_Q_sketch for r in results])
+    max_orth_Q_ref = maximum([r.orth_Q_ref for r in results])
+    @printf("  qr_sketch:    max ||Q'Q - I|| = %.3e\n", max_orth_Q_sketch)
+    @printf("  qr:           max ||Q'Q - I|| = %.3e\n", max_orth_Q_ref)
 
     println()
     println("="^80)
@@ -262,8 +249,8 @@ end
 function test()
     println()
     println("="^70)
-    println("SVD COMPARISON")
-    println("svd_sketch (randomized) vs svd (deterministic)")
+    println("QR COMPARISON")
+    println("qr_sketch (randomized) vs qr (deterministic)")
     println("="^70)
     println("\nEnvironment:")
     println("  Julia:      ", VERSION)
@@ -273,8 +260,8 @@ function test()
     println("\nJIT warm-up (compiling methods)...")
     A_warmup = randn(50, 30)
     try
-        svd_sketch(A_warmup, 10.0)
-        svd(A_warmup)
+        qr_sketch(A_warmup, 10.0)
+        qr(A_warmup, ColumnNorm())
     catch
     end
     println("JIT warm-up complete.")
@@ -420,9 +407,9 @@ function test()
     end
 end
 
-end # module TestSVD
+end # module TestQR
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    exit(TestSVD.test())
+    exit(TestQR.test())
 end

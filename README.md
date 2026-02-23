@@ -123,24 +123,29 @@ distrib/
 ├── CLAUDE.md              # AI assistant instructions
 ├── python/
 │   ├── librla.py          # Main library
-│   ├── demo_utils.py      # Demo utilities (includes hilbert matrix)
 │   ├── test_utils.py      # Test utilities
-│   ├── demo*.py           # Demo suite (demo01-demo05)
-│   └── test*.py           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   ├── test*.py           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   └── demo/
+│       ├── demo_utils.py  # Demo utilities (includes hilbert matrix)
+│       ├── demo*.py       # Demo suite (demo01-demo05)
+│       └── demo*.ipynb    # Jupyter notebook demos
 ├── matlab/
 │   ├── librla.m           # Main library
 │   ├── LinearOperator.m   # Matrix-free operator class
-│   ├── demo_utils.m       # Demo utilities (includes hilbert matrix)
 │   ├── test_utils.m       # Test utilities
-│   ├── demo*.m            # Demo suite (demo01-demo05)
-│   └── test*.m            # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   ├── test*.m            # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   └── demo/
+│       ├── demo_utils.m   # Demo utilities (includes hilbert matrix)
+│       └── demo*.m        # Demo suite (demo01-demo05)
 ├── julia/
 │   ├── librla.jl          # Main library
 │   ├── LinearOperator.jl  # Matrix-free operator type
-│   ├── demo_utils.jl      # Demo utilities (includes hilbert matrix)
-│   ├── test_utils.jl      # Test utilities
-│   ├── demo*.jl           # Demo suite (demo01-demo05)
-│   └── test*.jl           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   ├── test/
+│   │   ├── test_utils.jl  # Test utilities
+│   │   └── test*.jl       # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   └── demo/
+│       ├── demo_utils.jl  # Demo utilities (includes hilbert matrix)
+│       └── demo*.jl       # Demo suite (demo01-demo05)
 ├── compare/               # External library comparisons
 ├── climate_analysis/      # Climate data analysis examples
 └── image_analysis/        # Image compression examples
