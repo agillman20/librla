@@ -108,6 +108,11 @@ All sketching functions support these optional parameters:
 | `power_iter` | 0 | Number of power iterations for accuracy |
 | `extra_samples` | 12 | Oversampling for rank mode |
 
+
+The use of oversampling and power iteration are useful for increasing accuracy especially of the singular
+values. In practice, power iteration provides more improvement than oversampling.  Thus if the application 
+of the operator is not expensive, the use of power iteration is recommended.
+
 For `id_sketch` and `id_qrpiv` only:
 
 | Parameter | Default | Description |
@@ -162,6 +167,8 @@ distrib/
 
 ## Examples
 
+Each language has a folder dedicated to demonstrations of the library in use. 
+
 The demo suite provides examples for:
 
 | Demo | Description |
@@ -171,6 +178,8 @@ The demo suite provides examples for:
 | demo03_linop | LinearOperator abstraction |
 | demo04_power | Power iteration effects |
 | demo05_methods | T computation methods comparison |
+
+***demo04_power*** highlights the accuracy gains from using the power iteration coupled with oversampling.
 
 ## Tests
 
