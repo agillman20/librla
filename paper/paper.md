@@ -20,7 +20,7 @@ affiliations:
  - name: National Institute of Standards and Technology (NIST)
    index: 2
  
-date: 05 January 2026
+date: March 16, 2026
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
@@ -73,8 +73,8 @@ function orth_sketch(A, rtol, block_size, power_iter):
 
     if rtol ≥ 1:  # Rank mode
         k_max = floor(rtol)
-        Ω = random_matrix(n, block_size)        # Uniform[-1,1]
-        Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
+        Ω = random_matrix(n, block_size)
+        Ω = power_iteration(A, Ω, power_iter)
         Y = A Ω
         Q, R, _ = qr_pivoted(Y)
         return Q[:, 1:k_max], 0, |diag(R)|
@@ -154,7 +154,7 @@ The image compression example \texttt{test\_image\_id} code in the *image_analys
 
 # AI usage disclosure
 
-Generative AI tools were used during the preparation of this work to assist with code development, testing, and editing of the manuscript. The authors reviewed and verified all AI-generated content and take full responsibility for the accuracy and integrity of the final publication. The original algorithm was prototyped and debugged in Python. Claude Code (Anthropic, Claude Sonnet 3.5) was used to assist in porting to Matlab and Julia, while maintaining consistency in API calls and documentation. Unit tests were generated to ensure correctness of the ported code.
+Generative AI tools were used during the preparation of this work to assist with code development, testing, and editing of the manuscript. The authors reviewed and verified all AI-generated content and take full responsibility for the accuracy and integrity of the final publication. The original algorithm was prototyped and debugged in Python. Claude Code (Anthropic, Claude Sonnet 3.5 and Claude Opus 4.6) was used to assist in porting to Matlab and Julia, while maintaining consistency in API calls and documentation. Unit tests were generated to ensure correctness of the ported code.
 
 # Acknowledgements
 
@@ -162,6 +162,6 @@ The work by A. Gillman was supported by the National Science Foundation (DMS-211
 
 Contributions by staff of NIST, an agency of the U.S. Government, are not subject to copyright within the United States.
 
-Certain commercial materials and equipment are identified in this paper to foster understanding. Such identification does not imply recommendation or endorsement by NIST, nor does it imply that the materials or equipment identified is necessarily the best available for the purpose.
+Certain commercial software and equipment are identified in this paper to foster understanding. Such identification does not imply recommendation or endorsement by NIST, nor does it imply that the software or equipment identified is necessarily the best available for the purpose.
 
 # References
