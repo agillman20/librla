@@ -10,7 +10,7 @@ LUA = joss-author.lua
 PANDOC_FLAGS = -s --citeproc \
   --lua-filter=$(LUA) \
   -V monofont="Menlo" \
-  -V fontsize=11pt \
+  -V fontsize=12pt \
   -V geometry:margin=1in
 
 .PHONY: pdf latex clean
