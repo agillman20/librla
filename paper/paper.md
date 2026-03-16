@@ -152,6 +152,10 @@ The image compression example \texttt{test\_image\_id} code in the *image_analys
 
 
 
+# AI usage disclosure
+
+Generative AI tools were used during the preparation of this work to assist with code development, testing, and editing of the manuscript. The authors reviewed and verified all AI-generated content and take full responsibility for the accuracy and integrity of the final publication. The original algorithm was prototyped and debugged in Python. Claude Code (Anthropic, Claude Sonnet 3.5) was used to assist in porting to Matlab and Julia, while maintaining consistency in API calls and documentation. Unit tests were generated to ensure correctness of the ported code.
+
 # Acknowledgements
 
 The work by A. Gillman was supported by the National Science Foundation (DMS-2110886), and a Knut and Alice Wallenberg Foundation Grant. Part of this work was carried out while A. Gillman was in residence at Institut Mittag-Leffler in Djursholm, Sweden in autumn 2025, supported by the Swedish Research Council under grant no. 2021-06594.
