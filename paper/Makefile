@@ -1,8 +1,8 @@
-# Makefile for building the JOSS paper locally
+# Makefile for building a draft PDF (without JOSS formatting)
 # Requires: pandoc (>= 3.0), xelatex (TeX Live), Menlo font (macOS)
 
-TEX = paper.tex
-PDF = paper.pdf
+TEX = paper-draft.tex
+PDF = paper-draft.pdf
 SRC = paper.md
 BIB = paper.bib
 LUA = joss-author.lua
@@ -27,4 +27,4 @@ $(PDF): $(TEX)
 	xelatex $(TEX)
 
 clean:
-	rm -f $(TEX) $(PDF) paper.aux paper.log paper.out paper.toc paper.nav paper.snm
+	rm -f $(TEX) $(PDF) paper-draft.aux paper-draft.log paper-draft.out paper-draft.toc paper-draft.nav paper-draft.snm
