@@ -6,12 +6,12 @@ This document analyzes GPU support for key linear algebra operations used in lib
 
 | Operation | CUDA (NVIDIA) | Metal (Apple) | MPS (PyTorch) |
 |-----------|---------------|---------------|---------------|
-| QR with pivoting | No* | No | No |
+| QR with pivoting | JAX only | No | No |
 | SVD | Yes | Partial | Yes |
 | Matrix multiply | Yes | Yes | Yes |
 | float64 support | Yes | No | Yes |
 
-*MAGMA has pivoted QR, but PyTorch doesn't expose it.
+*PyTorch pivoted QR is in development (CPU-only PR as of March 2026). JAX supports pivoted QR on GPU.
 
 ## Pivoted QR Decomposition
 
@@ -23,7 +23,7 @@ From [PyTorch GitHub issue #82092](https://github.com/pytorch/pytorch/issues/820
 
 > "Pivoted QR is implemented in many libraries on the CPU (LAPACK, etc.). On the GPU there seems to be only MAGMA. In particular, there is no pivoted QR in cuSOLVER (only pivoted LU)."
 
-**Status:** Not supported. PyTorch's `torch.linalg.qr()` has no pivoting option.
+**Status:** Not yet supported. [PR #170051](https://github.com/pytorch/pytorch/pull/170051) adds `torch.linalg.qr_piv` but is CPU-only (CUDA support was dropped due to the ongoing MAGMA deprecation effort). As of March 2026, the PR is under review.
 
 ### JAX / CUDA
 
@@ -31,7 +31,7 @@ From [JAX documentation](https://docs.jax.dev/en/latest/_autosummary/jax.scipy.l
 
 > "Pivoting is only implemented on the CPU and GPU backends."
 
-**Status:** Supported on CUDA via MAGMA (with `use_magma=True`).
+**Status:** Supported on CPU and GPU backends via `jax.scipy.linalg.qr(pivoting=True)`.
 
 ### JAX / Metal (Apple Silicon)
 
@@ -73,7 +73,7 @@ This is expected behavior because:
 ### For librla (pivoted QR-based)
 
 1. **CPU with Accelerate** (macOS) or **MKL** (Linux/Windows) - best option
-2. **JAX with CUDA** - if GPU acceleration needed and MAGMA available
+2. **JAX with CUDA** - if GPU acceleration needed (pivoted QR supported on GPU)
 3. **Not recommended:** PyTorch CUDA, JAX Metal
 
 ### For SVD comparison (`compare_svd_torch.py`)
@@ -86,5 +86,8 @@ This is expected behavior because:
 
 - [torch.linalg.qr documentation](https://docs.pytorch.org/docs/stable/generated/torch.linalg.qr.html)
 - [PyTorch issue #82092: Add pivoted QR from MAGMA](https://github.com/pytorch/pytorch/issues/82092)
+- [PyTorch PR #170051: Add pivoted QR to ATen and torch.linalg](https://github.com/pytorch/pytorch/pull/170051)
 - [JAX scipy.linalg.qr documentation](https://docs.jax.dev/en/latest/_autosummary/jax.scipy.linalg.qr.html)
 - [Apple JAX Metal documentation](https://developer.apple.com/metal/jax/)
+
+*Last updated: 2026-03-16*
