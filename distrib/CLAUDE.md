@@ -12,16 +12,16 @@ This is the **distrib/** directory of the librla (randomized linear algebra) lib
 
 ```bash
 # Python - run all tests
-cd python && python test_all.py
+cd python/test && python test_all.py
 
 # Python - run individual test
-cd python && python test_id.py     # Interpolative decomposition
-cd python && python test_svd.py    # SVD
-cd python && python test_qr.py     # QR
-cd python && python test_orth.py   # Orthonormal basis
+cd python/test && python test_id.py     # Interpolative decomposition
+cd python/test && python test_svd.py    # SVD
+cd python/test && python test_qr.py     # QR
+cd python/test && python test_orth.py   # Orthonormal basis
 
 # MATLAB/Octave - run all tests (from MATLAB command window)
-cd matlab
+cd matlab/test
 test_all
 
 # MATLAB/Octave - run individual test
@@ -31,25 +31,25 @@ test_qr
 test_orth
 
 # Julia - run all tests
-cd julia && julia test_all.jl
+cd julia/test && julia test_all.jl
 
 # Julia - run individual test
-cd julia && julia test_id.jl
-cd julia && julia test_svd.jl
+cd julia/test && julia test_id.jl
+cd julia/test && julia test_svd.jl
 ```
 
 ### Running Demos
 
 ```bash
 # Python
-cd python && python demo01_basic.py
+cd python/demo && python demo01_basic.py
 
 # MATLAB (in command window)
-cd matlab
+cd matlab/demo
 demo01_basic
 
 # Julia
-cd julia && julia demo01_basic.jl
+cd julia/demo && julia demo01_basic.jl
 ```
 
 ## Core Architecture
