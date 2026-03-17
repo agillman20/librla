@@ -51,8 +51,10 @@ Pursuant to Title 17, United States Code, Section 105, this software
 is not subject to copyright protection within the United States.
 
 Certain commercial equipment and software referred to in this
-repository are identified for informational purposes only, and does
+repository are identified for informational purposes only, and do
 not imply recommendation of or endorsement by the National Institute
 of Standards and Technology, nor does it imply that the products so
 identified are necessarily the best available for the purpose.
+
+----------------------------------------------------------------------
 

@@ -128,8 +128,9 @@ distrib/
 ├── CLAUDE.md              # AI assistant instructions
 ├── python/
 │   ├── librla.py          # Main library
-│   ├── test_utils.py      # Test utilities
-│   ├── test*.py           # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   ├── test/
+│   │   ├── test_utils.py  # Test utilities
+│   │   └── test*.py       # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
 │   └── demo/
 │       ├── demo_utils.py  # Demo utilities (includes hilbert matrix)
 │       ├── demo*.py       # Demo suite (demo01-demo05)
@@ -137,8 +138,9 @@ distrib/
 ├── matlab/
 │   ├── librla.m           # Main library
 │   ├── LinearOperator.m   # Matrix-free operator class
-│   ├── test_utils.m       # Test utilities
-│   ├── test*.m            # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
+│   ├── test/
+│   │   ├── test_utils.m   # Test utilities
+│   │   └── test*.m        # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
 │   └── demo/
 │       ├── demo_utils.m   # Demo utilities (includes hilbert matrix)
 │       └── demo*.m        # Demo suite (demo01-demo05)
@@ -153,7 +155,8 @@ distrib/
 │       └── demo*.jl       # Demo suite (demo01-demo05)
 ├── compare/               # External library comparisons
 ├── climate_analysis/      # Climate data analysis examples
-└── image_analysis/        # Image compression examples
+├── image_analysis/        # Image compression examples
+└── notes/                 # AI-generated notes and attribution
 ```
 
 ## Requirements
@@ -202,6 +205,7 @@ Additional resources provided for users are:
   - `compare_svd_torch.py` - Python: librla vs PyTorch (SVD)
 - The folder '/distrib/image_analysis' provides codes that illustrate the use of the different randomized methods for image compression.
 - The folder '/distrib/climate_analysis' provides codes that illustrate the use of randomized methods for data compression.
+- The folder '/distrib/notes' contains AI-generated notes, attribution, and pseudocode documentation.
 
 The folders contain documentation.  The last two folders illustrate the use of 'librla' for common applications of interest.  The examples considered are taken from the randomized linear algebra literature.
 
