@@ -37,6 +37,7 @@ import sys
 import os
 import re
 import time
+import shutil
 from pathlib import Path
 from datetime import datetime
 
@@ -162,11 +163,28 @@ print("=" * 70)
 # Number of modes to compute
 n_modes = 30
 
-print(f"\nComputing {n_modes}-mode SVD using svd_sketch...")
+print(f"\nComputing {n_modes}-mode SVD using svd_sketch (extra_samples=10, power_iter=2)...")
 t0 = time.time()
 U, s, Vh = librla.svd_sketch(SST_matrix, n_modes, power_iter=2, extra_samples=10)
 V = Vh.T
-print(f"  Elapsed time: {time.time() - t0:.2f}s")
+print(f"  Elapsed time: {time.time() - t0:.4f}s")
+
+# Additional SVD configurations for paper figure comparison
+print("\nComputing additional SVD configurations...")
+t0 = time.time()
+U_a, s_a, Vh_a = librla.svd_sketch(SST_matrix, n_modes, extra_samples=0)
+print(f"  (a) Basic (extra_samples=0, power_iter=0): {time.time() - t0:.4f}s")
+
+t0 = time.time()
+U_b, s_b, Vh_b = librla.svd_sketch(SST_matrix, n_modes, extra_samples=10)
+print(f"  (b) extra_samples=10, power_iter=0: {time.time() - t0:.4f}s")
+
+t0 = time.time()
+U_c, s_c, Vh_c = librla.svd_sketch(SST_matrix, n_modes, extra_samples=0, power_iter=2)
+print(f"  (c) extra_samples=0, power_iter=2: {time.time() - t0:.4f}s")
+
+# (d) is the existing computation: extra_samples=10, power_iter=2
+s_d = s
 
 # Also compute reference SVD
 print("\nComputing reference SVD...")
@@ -399,5 +417,87 @@ print("=" * 70)
 #print("\nFigure saved to sst_modes.png")
 #fig2.savefig("sst_modes_sketch.png", dpi=150)
 #print("\nFigure saved to sst_modes_sketch.png")
+
+# ========================================================================
+# Publication-quality figures
+# ========================================================================
+
+SCRIPT_DIR = Path(__file__).parent
+PAPER_DIR = SCRIPT_DIR.parent.parent / "paper"
+
+pub_rcParams = {
+    'font.size': 8,
+    'axes.labelsize': 8,
+    'axes.titlesize': 9,
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'legend.fontsize': 7,
+    'font.family': 'serif',
+    'lines.linewidth': 0.8,
+    'axes.linewidth': 0.5,
+    'xtick.major.width': 0.5,
+    'ytick.major.width': 0.5,
+    'xtick.major.size': 2.5,
+    'ytick.major.size': 2.5,
+}
+
+# --- svdAll.png: 2x2 singular value spectrum ---
+with plt.rc_context(pub_rcParams):
+    fig5, axes5 = plt.subplots(2, 2, figsize=(6.5, 5.0), sharey=True)
+
+    configs = [
+        (s_a, "(a)"),
+        (s_b, "(b) extra_samples=10"),
+        (s_c, "(c) power_iter=2"),
+        (s_d, "(d) extra_samples=10, power_iter=2"),
+    ]
+
+    n_plot = min(50, len(s_full))
+    for ax, (s_config, label) in zip(axes5.flat, configs):
+        ax.semilogy(range(1, n_plot + 1), s_full[:n_plot],
+                     'o', markersize=2.5, label="Deterministic")
+        ax.semilogy(range(1, n_modes + 1), s_config, 'x', markersize=4,
+                     color='red', label="Randomized")
+        ax.set_xlabel("Mode")
+        ax.set_title(label, fontsize=8)
+        ax.legend(fontsize=7)
+
+    axes5[0, 0].set_ylabel(r"$\sigma_i$")
+    axes5[1, 0].set_ylabel(r"$\sigma_i$")
+
+    fig5.tight_layout()
+    fig5.savefig(SCRIPT_DIR / "svdAll.png", dpi=600, bbox_inches='tight')
+    print("\nSaved svdAll.png")
+
+    shutil.copy2(SCRIPT_DIR / "svdAll.png", PAPER_DIR / "svdAll.png")
+    print(f"Copied to {PAPER_DIR / 'svdAll.png'}")
+
+# --- sstModes.png: 5-mode randomized SVD EOF figure ---
+with plt.rc_context(pub_rcParams):
+    fig6, axes6 = plt.subplots(5, 2, figsize=(7.0, 8.0))
+
+    for i in range(5):
+        ax_spatial = axes6[i, 0]
+        clim = np.nanmax(np.abs(EOF_maps_rand[i])) * 0.8
+        ax_spatial.pcolormesh(lon, lat, EOF_maps_rand[i].T, cmap='RdBu_r',
+                              vmin=-clim, vmax=clim, shading='auto')
+        ax_spatial.set_xlabel("Longitude")
+        ax_spatial.set_ylabel("Latitude")
+        ax_spatial.set_title(f"{mode_names[i]} ({100*var_explained_rand[i]:.1f}%)")
+
+        ax_temporal = axes6[i, 1]
+        ax_temporal.plot(years, PC_rand[i], linewidth=0.6, color='steelblue')
+        ax_temporal.set_xlabel("Year")
+        ax_temporal.set_ylabel(r"$\degree$C")
+        ax_temporal.set_title(f"PC{i+1}")
+        if i > 0:
+            ax_temporal.axhline(0, color='gray', linestyle='--', linewidth=0.3)
+
+    fig6.subplots_adjust(top=0.97, bottom=0.04, hspace=0.55, wspace=0.30)
+    fig6.savefig(SCRIPT_DIR / "sstModes.png", dpi=600, bbox_inches='tight')
+    print("\nSaved sstModes.png")
+
+    shutil.copy2(SCRIPT_DIR / "sstModes.png", PAPER_DIR / "sstModes.png")
+    print(f"Copied to {PAPER_DIR / 'sstModes.png'}")
 
 plt.show(block=False)

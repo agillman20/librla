@@ -36,6 +36,8 @@ Assisted by: Claude Code (Anthropic)
 import sys
 import os
 import time
+import shutil
+from pathlib import Path
 import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
@@ -61,7 +63,7 @@ plt.title('Original (RGB)')
 plt.draw()
 plt.pause(0.1)
 
-k = 60
+k = 30
 use_single = True  # set to True for single precision
 
 if use_single:
@@ -199,5 +201,65 @@ print(f'{"id_sketch(k=" + str(k_id) + ")":<40} {k_id:4d}    {rel_error_id:.6e}')
 print(f'{"svd_sketch(k=" + str(k) + ", extra, power)":<40} {k:4d}    {rel_error_svd2:.6e}')
 print(f'{"id_sketch(k=" + str(k_id2) + ", extra, power)":<40} {k_id2:4d}    {rel_error_id2:.6e}')
 print(f'{"qr_sketch(k=" + str(k_qr) + ", extra, power)":<40} {k_qr:4d}    {rel_error_qr:.6e}')
+
+# ========================================================================
+# Publication-quality composite figure
+# ========================================================================
+
+SCRIPT_DIR = Path(__file__).parent
+PAPER_DIR = SCRIPT_DIR.parent.parent / "paper"
+
+pub_rcParams = {
+    'font.size': 8,
+    'axes.labelsize': 8,
+    'axes.titlesize': 9,
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'legend.fontsize': 7,
+    'font.family': 'serif',
+    'lines.linewidth': 0.8,
+    'axes.linewidth': 0.5,
+    'xtick.major.width': 0.5,
+    'ytick.major.width': 0.5,
+    'xtick.major.size': 2.5,
+    'ytick.major.size': 2.5,
+}
+
+images = [
+    (A, "(a) Original"),
+    (np.clip(B_svd, 0, 255).astype(np.uint8), "(b) SVD"),
+    (np.clip(B_id, 0, 255).astype(np.uint8), "(c) ID"),
+    (np.clip(B_svd2, 0, 255).astype(np.uint8), "(d) SVD + power iter"),
+    (np.clip(B_id2, 0, 255).astype(np.uint8), "(e) ID + power iter"),
+]
+
+with plt.rc_context(pub_rcParams):
+    fig_pub, axes_pub = plt.subplots(3, 2, figsize=(6.5, 9.0))
+
+    # Top row: (a) original in left cell, right cell empty
+    axes_pub[0, 0].imshow(images[0][0])
+    axes_pub[0, 0].set_title(images[0][1])
+    axes_pub[0, 0].axis('off')
+    axes_pub[0, 1].axis('off')
+
+    # Middle row: (b) SVD, (c) ID
+    for j in range(2):
+        axes_pub[1, j].imshow(images[1 + j][0])
+        axes_pub[1, j].set_title(images[1 + j][1])
+        axes_pub[1, j].axis('off')
+
+    # Bottom row: (d) SVD + power iter, (e) ID + power iter
+    for j in range(2):
+        axes_pub[2, j].imshow(images[3 + j][0])
+        axes_pub[2, j].set_title(images[3 + j][1])
+        axes_pub[2, j].axis('off')
+
+    fig_pub.subplots_adjust(hspace=0.02, wspace=0.05)
+
+    fig_pub.savefig(SCRIPT_DIR / "imageEX.png", dpi=600, bbox_inches='tight')
+    print("\nSaved imageEX.png")
+
+    shutil.copy2(SCRIPT_DIR / "imageEX.png", PAPER_DIR / "imageEX.png")
+    print(f"Copied to {PAPER_DIR / 'imageEX.png'}")
 
 plt.show(block=False)
