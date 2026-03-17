@@ -16,6 +16,37 @@ This document analyzes GPU support for key linear algebra operations used in lib
 ## Pivoted QR Decomposition
 
 librla relies heavily on `linalg.qr(..., pivoting=True)` for rank-revealing decompositions.
+Column pivoting is not merely an optimization — it is structurally required by the
+algorithms.  Without it, three failure modes arise:
+
+1. **Rank detection breaks.**  Pivoted QR sorts columns by decreasing norm, so the
+   diagonal of R decays monotonically.  The tolerance test
+   `|R[k,k]| / |R[1,1]| ≤ rtol` (used in `orth_sketch` to adaptively grow the
+   sketch until the desired accuracy is reached) relies on this ordering.  With
+   unpivoted QR the diagonal has no guaranteed ordering; small and large values
+   can appear in any position, making the ratio unreliable.  In practice this
+   causes the adaptive loop to either terminate too early (returning an
+   under-rank basis) or never terminate (growing the sketch to full size and
+   falling back unnecessarily).
+
+2. **Column selection fails.**  The interpolative decomposition (`id_sketch`,
+   `id_qrpiv`) uses the permutation vector returned by pivoted QR to identify
+   *skeleton columns* — the most linearly independent subset of columns of A.
+   Unpivoted QR returns no permutation; the leading columns of R correspond to
+   the original column order, which is generally unrelated to linear
+   independence.  Selecting the first k columns as the skeleton can yield a
+   badly conditioned interpolation matrix T, or an outright rank-deficient one,
+   causing the reconstruction `A[:, piv[k:]] ≈ A[:, piv[:k]] @ T` to blow up.
+
+3. **Power iteration re-orthogonalization degrades.**  The `_power_iteration`
+   helper orthogonalizes via pivoted QR at each step.  When the sketch matrix
+   is nearly rank-deficient (common after several subspace iterations on a
+   matrix with rapid singular-value decay), pivoting relegates the
+   near-dependent directions to the trailing columns of Q, keeping the leading
+   block well-conditioned.  Without pivoting the near-zero directions are mixed
+   into the leading columns, and rounding errors amplify across iterations,
+   producing an orthonormal basis that poorly approximates the dominant
+   subspace.
 
 ### PyTorch / CUDA
 
@@ -54,19 +85,25 @@ Used in `compare_svd_torch.py` for randomized low-rank SVD comparison.
 - CUDA (cuSOLVER)
 - MPS (Metal Performance Shaders on Apple Silicon)
 
-### Single Precision Anomalies
+### GPU Orthogonality Anomalies
 
-When running with `--precision single`, tests may show:
+When running on GPU with `--precision single`, tests show:
 
 1. **Orthogonality loss**: ~1 digit lost in `||U'U - I||` and `||V'V - I||`
-2. **Test failures**: Orthogonality checks may fail with single precision
+2. **Test failures**: Orthogonality checks may fail
 
-This is expected behavior because:
-- Single precision (float32) has ~7 significant digits vs ~16 for double (float64)
-- Accumulated rounding errors in Gram-Schmidt orthogonalization
-- GPU implementations may use different algorithms than CPU
+These results were observed in single precision only — we did not have access to
+hardware supporting float64 on GPU to test double precision.
 
-**Example:** Orthogonality error of `1e-5` in single precision vs `1e-14` in double precision.
+Possible causes:
+- GPU implementations may use different algorithms than CPU (e.g. different
+  Householder panel strategies, batched vs column-by-column Gram-Schmidt)
+- Non-deterministic reduction order on massively parallel hardware
+- Fused-multiply-add (FMA) usage differences between CPU and GPU paths
+
+**Observed:** Orthogonality error of `1e-5` on GPU (single precision) vs `1e-7` on
+CPU (single precision) — a loss of roughly 2 digits, independent of the float32
+vs float64 distinction.
 
 ## Recommendations
 
@@ -79,8 +116,8 @@ This is expected behavior because:
 ### For SVD comparison (`compare_svd_torch.py`)
 
 1. **Double precision** (`--precision double`): Use for accuracy comparisons
-2. **Single precision** (`--precision single`): Expect ~1 digit orthogonality loss
-3. **CUDA** (`--cuda`): Supported via `torch.svd_lowrank`
+2. **Single precision** (`--precision single`): Expect ~1 digit orthogonality loss on GPU relative to CPU at the same precision
+3. **CUDA** (`--cuda`): Supported via `torch.svd_lowrank`; note the GPU orthogonality anomalies above
 
 ## References
 
