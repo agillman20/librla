@@ -23,3 +23,5 @@ preserving design rationale across conversations.
 ## AI-generated notes
 
 - [PSEUDOCODE.md](PSEUDOCODE.md) — Pseudocode for all randomized linear algebra algorithms in librla (`orth_sketch`, `qr_sketch`, `svd_sketch`, `id_sketch`, `id_qrpiv`) with helper functions and complexity analysis.
+- [ATTRIBUTION.md](ATTRIBUTION.md) — Code similarity check and data source attribution for climate analysis examples.
+- [EOF_GOTCHAS.md](EOF_GOTCHAS.md) — Gotchas and common pitfalls in EOF/SVD analysis of climate data.
