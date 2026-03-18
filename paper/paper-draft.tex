@@ -102,7 +102,7 @@
 \author{Adrianna Gillman\textsuperscript{1} \quad Zydrunas Gimbutas\textsuperscript{2} \\[6pt]
 \small \textsuperscript{1}University of Colorado, Boulder, Department of Applied Mathematics \\
 \small \textsuperscript{2}National Institute of Standards and Technology (NIST)}
-\date{March 17, 2026}
+\date{March 18, 2026}
 
 \begin{document}
 \maketitle
@@ -112,11 +112,11 @@
 Randomized linear algebra algorithms have become a vital tool for a
 variety of areas including fast direct solvers, reduced order modeling,
 and data science. Additionally, randomized linear algebra provides
-useful routines for solving total least squares problems and rank
-deficient least squares problems, doing matrix approximation, and
+useful routines for solving total least squares problems and
+rank-deficient least squares problems, doing matrix approximation, and
 skeletonizing (i.e.~subset selection) a matrix (Chan and Hansen 1992).
 \texttt{librla}, written natively in Python, Julia and Matlab, provides
-low rank QR factorizations, SVDs and interpolatory decompositions. The
+low-rank QR factorizations, SVDs and interpolatory decompositions. The
 algorithms randomly sample the range of the matrix or operator in a
 similar manner to (Halko et al. 2011). A key feature of this package is
 that it is designed to exploit Level 3 BLAS operators as much as
@@ -133,7 +133,7 @@ for both real and complex matrices:
 \item
   \texttt{qr\_sketch}: Randomized QR factorization.
 \item
-  \texttt{svd\_sketch}: Randomized Singular Value Decomposition (SVD)
+  \texttt{svd\_sketch}: Randomized Singular Value Decomposition (SVD).
 \item
   \texttt{id\_sketch}: Interpolatory Decomposition via randomized
   sampling.
@@ -142,7 +142,7 @@ for both real and complex matrices:
 The user has the choice of specifying a tolerance or a desired rank. For
 each method, the user has the option to use extra samples and to use a
 specified number of power iterations. The package does include the
-option to create low rank factorizations of matrices that are applied
+option to create low-rank factorizations of matrices that are applied
 via matrix-vector multiplication codes. In order to use this option,
 \texttt{librla} requires the ability to apply both the matrix and its
 transpose via a subroutine.
@@ -161,15 +161,15 @@ Yang et al. 2015; Pilanci and Wainwright 2016; Erichson et al. 2018;
 Voronin and Martinsson 2017; Balu and Furon 2016; Cormode et al. 2018;
 Choi et al. 2020; Yu et al. 2017; Yu et al. 2018; Tropp et al. 2017;
 Bjarkason 2019; Chowdhury et al. 2020; Lindquist et al. 2020; Feng et
-al. 2018). The user specified rank algorithm in \texttt{librla} is
+al. 2018). The user-specified rank algorithm in \texttt{librla} is
 influenced by the \texttt{svd\_lowrank} routine in PyTorch.
 
 \section{Statement of need}\label{statement-of-need}
 
 While there is a large amount of research activity in the field of
-randomized linear algebra, an easy to use and stable factorization
-library is not available. The need is even greater for those using high
-level languages where standard coding techniques can result in an
+randomized linear algebra, an easy-to-use and stable factorization
+library is not available. The need is even greater for those using
+high-level languages where standard coding techniques can result in
 unnecessarily slow code. The research area of fast direct solvers
 provides an example of the need for \texttt{librla}. For some time, the
 development and use of fast direct solvers in Matlab required a
@@ -177,7 +177,7 @@ specialized wrapper on the Fortran package (Martinsson et al. 2008)
 which is based on (Liberty et al. 2007). The lack of portability of the
 wrapper has slowed the design and use of these solvers.
 
-Currently, there are two related routines available in widely available,
+Currently, there are two related routines in widely available,
 maintained Python packages. They are PyTorch's \texttt{svd\_lowrank} and
 SciPy's \texttt{id\_decomp} found in the
 \texttt{scipy.linalg.interpolative} library. Codes allowing the user to
@@ -192,13 +192,13 @@ methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 \section{Mathematics}\label{mathematics}
 
 The algorithm that serves as the foundation of \texttt{librla} is called
-\texttt{orth\_sketch} . It creates an orthogonal basis of the range of
-the operator of interest. The user specified tolerance portion of the
+\texttt{orth\_sketch}. It creates an orthogonal basis of the range of
+the operator of interest. The user-specified tolerance portion of the
 package was heavily influenced by the methods presented in (Halko et al.
-2011; Martinsson et al. 2008; Liberty et al. 2007). The user specified
+2011; Martinsson et al. 2008; Liberty et al. 2007). The user-specified
 rank portion of the package was influenced by the \texttt{svd\_lowrank}
 in PyTorch. Once the orthogonal basis is created, it is possible to
-create the low rank QR, SVD or interpolatory decomposition via standard
+create the low-rank QR, SVD or interpolatory decomposition via standard
 techniques. For simplicity of presentation, a pseudocode of
 \texttt{orth\_sketch} is presented in the following subsection.
 Pseudocodes for all of the factorizations are provided in the
@@ -214,20 +214,23 @@ rank or stopping condition \(rtol\), specified \(block\_size\) and
 \(power\_iter\), \texttt{orth\_sketch} randomly samples the range of
 \({\bf A}\) to create an orthogonal basis for the range. The range is
 sampled by applying \({\bf A}\) to a matrix \({ \Omega }\) of size
-\(m \times block\_size\) columns whose entries are uniformly random
-sampled from \([-1,1]\). The oversampling vectors are included in
+\(n \times block\_size\) whose entries are uniformly randomly sampled
+from \([-1,1]\). The oversampling vectors are included in
 \(block\_size\). In the tolerance option, the \(block\_size\) is
-increased to ensure the range is sufficiently sampled and includes the
-number of user specified extra samples. In the rank option, the size of
-\(\Omega\) is determined by the desired rank and the number of user
-specified extra samples. The orthogonal basis is formed by taking a
-pivoted QR factorization of \({\bf A}\Omega\). The magnitude of the
-diagonal entries of \({\bf R}\) are stored in a vector \({\bf diagR}\)
-and are used in the stopping criterion for the tolerance option of the
-factorization. \texttt{orth\_sketch} returns \({\bf Q}\) or a submatrix
-of \({\bf Q}\), \({\bf diagR}\) and an error flag to the factorization
-routine that called it. The matrix \({\bf Q}\) is then used to create
-the desired factorization.
+adaptively increased to ensure the range is sufficiently sampled and
+includes the number of user specified extra samples. In the rank option,
+the size of \(\Omega\) is determined by the desired rank and the number
+of user specified extra samples. The orthogonal basis is formed by
+taking a pivoted QR factorization of \({\bf A}\Omega\), where \(\Omega\)
+is optionally refined via power iteration with reorthogonalization at
+each step. The magnitudes of the diagonal entries of \({\bf R}\) are
+stored in a vector \({\bf diagR}\) and are used in the stopping
+criterion for the tolerance option of the factorization.
+\texttt{orth\_sketch} returns \({\bf Q}\) or a submatrix of \({\bf Q}\),
+\({\bf diagR}\) and an error flag to the factorization routine that
+called it. The matrix \({\bf Q}\) is then used to create the desired
+factorization. If the sketching step terminates early, the factorization
+routine falls back to a deterministic algorithm.
 
 \subsection{\texorpdfstring{Pseudocode for the \texttt{orth\_sketch}
 algorithm}{Pseudocode for the  algorithm}}\label{pseudocode-for-the-algorithm}
@@ -272,29 +275,29 @@ demonstrations for calling the available factorizations. The
 factorization options are:
 
 \begin{itemize}
-\item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
+\item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
 $${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
 
 
-\item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$ where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
+\item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
 
-$$ {\bf A}  \sim  {\bf U}{\tt diag}({\bf s}){\bf V}^{*},$$
+$$ {\bf A}  \sim  {\bf U}\,{\tt diag}({\bf s})\,{\bf V}^{*},$$
 
 where ${\tt diag}({\bf s})$ is a diagonal matrix with non-zero entries coming from the vector ${\bf s}$.
 
-\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\rm piv}$ denote the skeleton columns the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\rm piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
-$$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k)) {\bf T}.$$
+$$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k))\, {\bf T}.$$
 
-To recover an approximation of the full matrix, the interpolation matrix ${\bf W}$ of size $k \times n$ matrix ${\bf W}$ is built by:
+To recover an approximation of the full matrix, the interpolation matrix ${\bf W}$ of size $k \times n$ is built by:
  $${\bf W}(:,{\bf piv}(1:k)) = {\bf I}_k,$$
   where ${\bf I}_k$  is an identity matrix of size $k$ and 
 $${\bf W}(:,{\bf piv}(k+1:end)) = {\bf T}.$$  
 The result is that
 
-$${\bf A} \sim {\bf A}(:, {\bf piv}(1:k)) {\bf W}.$$
+$${\bf A} \sim {\bf A}(:, {\bf piv}(1:k))\, {\bf W}.$$
 
 
 \end{itemize}
@@ -342,32 +345,33 @@ Extended Reconstructed Sea Surface Temperature (ERSST), Version 5 (Huang
 et al. 2017). \label{fig:climate_singular}}
 \end{figure}
 
-Figure \ref{fig:sst_modes} shows the first five randomized SVD modes
-(empirical orthogonal function (EOF) spatial patterns and principal
-component (PC) time series) of the NOAA ERSST v5 data.
+Figure \ref{fig:sst_modes} shows the first five modes from the
+randomized SVD with 10 extra samples and 2 power iterations (empirical
+orthogonal function (EOF) spatial patterns and principal component (PC)
+time series) of the NOAA ERSST v5 data.
 
 \begin{figure}
 \centering
-\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Randomized SVD modes of NOAA ERSST v5 sea surface temperature data (Huang et al. 2017), computed with 10 extra samples and 2 power iterations: spatial empirical orthogonal function (EOF) patterns (left) and principal component (PC) time series (right) for the first five modes. EOF1 captures the mean spatial pattern, EOF2--4 represent seasonal variations, and EOF5 captures the ENSO signal. }]{sstModes.png}
+\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Randomized SVD modes of NOAA ERSST v5 sea surface temperature data (Huang et al. 2017), computed with 10 extra samples and 2 power iterations: spatial empirical orthogonal function (EOF) patterns (left) and principal component (PC) time series (right) for the first five modes. EOF1 captures the mean spatial pattern, EOF2--4 represent seasonal variations, and EOF5 captures the El Niño--Southern Oscillation (ENSO) signal. }]{sstModes.png}
 \caption{Randomized SVD modes of NOAA ERSST v5 sea surface temperature
 data (Huang et al. 2017), computed with 10 extra samples and 2 power
 iterations: spatial empirical orthogonal function (EOF) patterns (left)
 and principal component (PC) time series (right) for the first five
 modes. EOF1 captures the mean spatial pattern, EOF2--4 represent
-seasonal variations, and EOF5 captures the ENSO signal.
-\label{fig:sst_modes}}
+seasonal variations, and EOF5 captures the El Niño--Southern Oscillation
+(ENSO) signal. \label{fig:sst_modes}}
 \end{figure}
 
 The image compression example \texttt{test\_image\_id} code in the
 \emph{image\_analysis} folder produces 6 images. Figure
-\ref{fig:image_orig} illustrates 5 of them: (a) the original image and
-rank 30 approximations of the image using (b) the randomized SVD, (c)
-the interpolatory decomposition, (d) the randomized SVD with 15 extra
-samples and 2 power iterations and (e) the interpolatory decomposition
-with 15 extra samples and 2 power iterations. While the rank of the
-approximations is the same, the SVD produces an image with less
-smearing. The examples with oversampling and power iterations further
-highlight this result.
+\ref{fig:image_orig} illustrates five of them: (a) the original image
+and rank 30 approximations of the image using (b) the randomized SVD,
+(c) the interpolatory decomposition, (d) the randomized SVD with 15
+extra samples and 2 power iterations and (e) the interpolatory
+decomposition with 15 extra samples and 2 power iterations. While the
+rank of the approximations is the same, the SVD produces an image with
+less smearing. The examples with oversampling and power iterations
+further highlight this result.
 
 \begin{figure}
 \centering
