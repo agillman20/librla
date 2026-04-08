@@ -56,7 +56,7 @@ Currently, there are two related routines in widely available, maintained Python
 
 
 +-------------------+------------+----------+----------+
-| Header 1          | Header 2   | Header 3 | Header 4 |
+| Problem          |Scipy   | librla  | Speedup  |
 |                   |            |          |          |
 +:=================:+:==========:+:========:+:========:+
 | row 1, column 1   | column 2   | column 3 | column 4 |
