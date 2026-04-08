@@ -56,10 +56,9 @@ Currently, there are two related routines in widely available, maintained Python
 
 
 +-------------------+------------+----------+----------+
-| Problem          |Scipy   | librla  | Speedup  |
-|                   |            |          |          |
+|  Problem          |Scipy   | librla  | Speedup  |
 +:=================:+:==========:+:========:+:========:+
-| row 1, column 1   | column 2   | column 3 | column 4 |
+| Hilbert matrix    | 0.0355s   | 0.0024s  | 14.6 |
 +-------------------+------------+----------+----------+
 | row 2             | cells span columns               |
 +-------------------+------------+---------------------+
