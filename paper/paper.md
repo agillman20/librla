@@ -55,34 +55,15 @@ While there is a large amount of research activity in the field of randomized li
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
 
-+-------------------+------------+----------+----------+
-|  Problem          |Scipy        | librla     | Speedup  |
-+:==========:+:==========:+:========:+:========:+
-| Hilbert matrix    | 0.0355s   | 0.0024s  | 14.6 |
-+==========+------------+----------+----------+
-| row 2             | cells span columns               |
-+-------------------+------------+---------------------+
-| row 3             | cells      | - body              |
-+-------------------+ span rows  | - elements          |
-| row 4             |            | - here              |
-+===================+============+=====================+
-| Footer                                               |
-+===================+============+=====================+
+
+| Problem                  | Size        | Pytorch  | librla  |
+|--------------------------|-------------|----------|---------|
+| Hilbert matrix           | 2000 x 1000 | 0.002s   | 0.0018s |
+| Hilbert matrix           | 4000 x 2000 | 0.0045s  | 0.0043s |
+| Decaying spectrum matrix | 800 x 600   |  0.0026s | 0.0023s |
+| Gaussian mixture model   | 400 x 400   | 0.0016s  | 0.0014s |
 
 
-+-------------------+------------+----------+----------+
-| Problem   | Scipy   | librla  |  Speedup  |
-|                          |            |          |               |
-+:===========:+:==========:+:========:+:========:+
-| Hilbert matrix   | 0.0355s   | 0.0024s  | 14.6 |
-|   2000 x 1000   |                |              |         |
-+============+==========+========+========+
-| Hilbert matrix   | 0.1557s   | 0.0046s   | 33.9  |
-+=================+==========+========+========+
-| Decaying spectrum matrix   | 0.2933s   | 0.0146s    | 20  |
-+=================+==========+========+========+
-| Rank 15 matrix  | 0.0063s  |0.0013s     | 4.8  |
-+===================+============+=====================+
 
 # Mathematics
 
