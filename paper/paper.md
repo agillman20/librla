@@ -54,25 +54,15 @@ While there is a large amount of research activity in the field of randomized li
 
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
-
-``{=latex}
-
-\begin{table}[tbp]
-\begin{center}
-\caption{Descriptive statistics included in the present study.}
-\begin{tabular}{ll}
+md"""
+$\begin{array}{lcc}
+\hline & \text { Treatment A } & \text { Treatment B } \\
+\hline \text { John Smith } & 1 & 2 \\
+\text { Jane Doe } & - & 3 \\
+\text { Mary Johnson } & 4 & 5 \\
 \hline
-cyl & \multicolumn{1}{c}{Some columnname}\
-\hline
-4.00 & 26.66 &plusmn; 4.51\
-6.00 & 19.74 &plusmn; 1.45\
-8.00 & 15.1 &plusmn; 2.56\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
-
-```
+\end{array}$
+"""
 
 
 # Mathematics
