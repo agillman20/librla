@@ -42,17 +42,43 @@ Randomized linear algebra algorithms have become a vital tool for a variety of a
 
 The user has the choice of specifying a tolerance or a desired rank.  For each method, the user has the option to use extra samples and to use a specified number of power iterations.  The package does include the option to create low-rank factorizations of matrices that are applied via matrix-vector multiplication codes. In order to use this option, \texttt{librla} requires the ability to apply both the matrix and its transpose via a subroutine.
 
-While the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011;@Liberty:2007], there is a large collection of related work:  [@Duersch:2020; @Mahoney:2009; @MEIER:2024; @Martinsson:2019; @Sorensen:2016; @Gu:1996; @Frieze:2004; @Drineas:2006; @Drineas:2006_2; @Drinea:2006_3; @Sarlos:2006; @Drineas:2008; @Drineas:2007; @Rokhlin:2008; @Avron:2010; @Meng:2014; @Martinsson:2020; @Roosta-Khorasani:2019; @Pilanci:2017; @Yao:2021; @Mahoney:2011; @Woodruff:2014; @Drineas:2016; @Yang:2015; @Drineas2017LecturesOR; @Pilanci:2016; @Duersch:2017_2; @ERICHSON:2018; @Voronin:2017; 
-@Balu:2016; @Cormode:2018; @Choi:2020; @Yu:2017; @Yu:2018; @Tropp:2017; @Bjarkason:2019; @Drineas:2012; @Chowdhury:2020; @Martinsson:2019; @Lindquist:2020; @Feng:2018].
+While the algorithm used in \texttt{librla} is built in a similar manner to the randomized methods in [@Halko:2011;@Liberty:2007]. There is a large collection of related work.  [@Martinsson:2020;
+@Mahoney:2011;@Drineas2017LecturesOR;@Woodruff:2014;@Voronin:2017; ] are some review papers on the field.  Some literature [@Mahoney:2009;@Sorensen:2016; @Drineas:2008] has focused on the design of CUR factorizations .  While other manuscripts [@Frieze:2004; @Drineas:2006_2; @Drinea:2006_3] have focused on monte carlo approaches to creating the low rank factorizations.  Randomized projection methods [@Halko:2011;@Liberty:2007;@Duersch:2020;@MEIER:2024; @Gu:1996; @ERICHSON:2018;@Rokhlin:2008] are common.  Deterministic factorization techniques exist [@Duersch:2017_2;@Feng:2018].  Many techniques are specifically designed for distributed memory  and/or to not require many passes through the data [;@Martinsson:2019;@Sarlos:2006; @Tropp:2017;@Yu:2017;@Lindquist:2020;@Yang:2015;@Bjarkason:2019;].  There is much literature from the randomized linear algebra community for applications including $L_2$ solutions [@Drineas:2006;@Drineas:2007;@Avron:2010; @Meng:2014;@Pilanci:2016], reduced order modelling [@Sorensen:2016], linear programming [@Drineas:2012;@Chowdhury:2020;], statisics [@Drineas:2016], machine learning [@Yao:2021],
+Newton methods [@Roosta-Khorasani:2019; @Pilanci:2017], and differentially private matrices [@Balu:2016; @Cormode:2018; @Choi:2020].
 The user-specified rank algorithm in \texttt{librla} is influenced by the \texttt{svd\_lowrank} routine in PyTorch.
 
 
 # Statement of need
 
-While there is a large amount of research activity in the field of randomized linear algebra, an easy-to-use and stable factorization library is not available.  The need is even greater for those using high-level languages where standard coding techniques can result in unnecessarily slow code.  The research area of fast direct solvers provides an example of the need for \texttt{librla}.  For some time, the development and use of fast direct solvers in Matlab required a specialized wrapper on the Fortran package [@Tygert:2008] which is based on [@Liberty:2007].  The lack of portability of the wrapper has slowed the design and use of these solvers.
+While there is a large amount of research activity in the field of randomized linear algebra, an easy-to-use, efficient and stable factorization library is not available.  For several factorization libraries, the stability issue manafest itself by either failure in the form of an invalid factorization or being unable to return anything.  When new techniques implemented in a high level language are depdent on low level language libraries, it has a big impact on the portability and usability of the new work.  This problem has had an impact of the field of fast direct solvers for boundary integral equations which often depend on a legacy Fortran library [Tygert:2008].  
 
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
+
+``{=latex}
+
+\begin{table}[tbp]
+\begin{center}
+\begin{threeparttable}
+\caption{Descriptive statistics included in the present study.}
+\begin{tabular}{ll}
+\toprule
+cyl & \multicolumn{1}{c}{Some columnname}\
+\midrule
+4.00 & 26.66 &plusmn; 4.51\
+6.00 & 19.74 &plusmn; 1.45\
+8.00 & 15.1 &plusmn; 2.56\
+\bottomrule
+\addlinespace
+\end{tabular}
+\begin{tablenotes}[para]
+\textit{Note.} There were no signnificant differences in the means between the groups.
+\end{tablenotes}
+\end{threeparttable}
+\end{center}
+\end{table}
+
+```
 
 
 # Mathematics
