@@ -62,6 +62,8 @@ Currently, there are two related routines in widely available, maintained Python
 | Hilbert matrix           | 4000 x 2000 | 0.0045s  | 0.0043s |
 | Decaying spectrum matrix | 800 x 600   |  0.0026s | 0.0023s |
 | Gaussian mixture model   | 400 x 400   | 0.0016s  | 0.0014s |
+: Table reporting time in seconds for creating rank 15 factorizations using Pytorch and librla.
+
 
 
 | Problem                  | Size        | Stopping condition | Scipy   | librla  | Speedup |
