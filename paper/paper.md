@@ -55,9 +55,24 @@ While there is a large amount of research activity in the field of randomized li
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
 
++-------------------+------------+----------+----------+
+| Header 1          | Header 2   | Header 3 | Header 4 |
+|                   |            |          |          |
++:=================:+:==========:+:========:+:========:+
+| row 1, column 1   | column 2   | column 3 | column 4 |
++-------------------+------------+----------+----------+
+| row 2             | cells span columns               |
++-------------------+------------+---------------------+
+| row 3             | cells      | - body              |
++-------------------+ span rows  | - elements          |
+| row 4             |            | - here              |
++===================+============+=====================+
+| Footer                                               |
++===================+============+=====================+
+
 
 +-------------------+------------+----------+----------+
-| Problem            | Scipy   | librla  | Speedup |
+| Problem   | Scipy   | librla  |  Speedup  |
 |                          |            |          |               |
 +:===========:+:==========:+:========:+:========:+
 | Hilbert matrix   | 0.0355s   | 0.0024s  | 14.6 |
