@@ -55,17 +55,13 @@ While there is a large amount of research activity in the field of randomized li
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
 
-|               |          Grouping             ||         Grouping 2         ||  Not Grouped    |
-| First Header  | Second Header | Third Header   | Forth Header | Fifth Header | Sixth Header    |
-| ------------- | :-----------: | -------------: | :----------: | :----------: | --------------- |
-| Tall Cell     |          *Long Cell*          ||         *Long Long Cell*                    |||
-| ^^            |   **Bold**    | 1. first item  | *Italic*     | 3. third item | + first point  |\
-| ^^            |               | 1. second item |              | 1. forth item | + second point |
+| |: Comparison of programming languages used in the publishing tool. []{label="proglangs"}
 
-| New section   |     More      |         Data   | ... - -- --- |||
-| And more      | With an escaped \|          || "Try 'quotes' in quotes "         |||
-[Compicated table]
-Table: Your Caption
+|Problem    | Scipy           | librla             | Speedup |     
+|----------|:---------------:|:-----------------:|------------|
+|Hilbert    |                |                 ||  
+|2000 x 1000|0.0355s         |0.0024s          |14.6 |
+| rank 15 approx|            |                |     | 
 
 
 # Mathematics
