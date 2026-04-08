@@ -59,11 +59,11 @@ Currently, there are two related routines in widely available, maintained Python
 
 |Problem    | Scipy           | librla             | Speedup |     
 |----------|:---------------:|:-----------------:|------------|
-|Hilbert matrix   |                |                 ||  
+|Hilbert matrix   |                |                 |
 |2000 x 1000|0.0355s         |0.0024s          |14.6 |
 | rank 15 approx|            |                |     | 
-|----------|:---------------:|:-----------------:|------------|
-|Hilbert matrix   |                |                 ||  
+|----------+---------------+-----------------+------------|
+|Hilbert matrix   |                |                 |  
 |4000 x 2000 | 0.1557s         |0.0046s          |33.9 |
 | rank 15 approx|            |                |     | 
 |----------|:---------------:|:-----------------:|------------|
