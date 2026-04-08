@@ -80,6 +80,22 @@ Currently, there are two related routines in widely available, maintained Python
 | tol = 10^{-2}|            |                |     | 
 
 
+
++-------------------+------------+----------+----------+
+| Header 1          | Header 2   | Header 3 | Header 4 |
+|                   |            |          |          |
++:=================:+:==========:+:========:+:========:+
+| row 1, column 1   | column 2   | column 3 | column 4 |
++-------------------+------------+----------+----------+
+| row 2             | cells span columns               |
++-------------------+------------+---------------------+
+| row 3             | cells      | - body              |
++-------------------+ span rows  | - elements          |
+| row 4             |            | - here              |
++===================+============+=====================+
+| Footer                                               |
++===================+============+=====================+
+
 # Mathematics
 
 The algorithm that serves as the foundation of \texttt{librla} is called \texttt{orth\_sketch}. It creates an orthogonal basis of the range of the operator of interest.  The user-specified tolerance portion of the package was heavily influenced by the methods presented in [@Halko:2011;@Tygert:2008;@Liberty:2007].  The user-specified rank portion of the package was influenced by the \texttt{svd\_lowrank} in PyTorch.  Once the orthogonal basis is created, it is possible to create the low-rank QR, SVD or interpolatory decomposition via standard techniques.  For simplicity of presentation, a pseudocode of \texttt{orth\_sketch} is presented in the following subsection. Pseudocodes for all of the factorizations are provided in the \texttt{PSEUDOCODE.md} file found in the *distrib* folder.
