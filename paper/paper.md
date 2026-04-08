@@ -59,22 +59,16 @@ Currently, there are two related routines in widely available, maintained Python
 
 \begin{table}[tbp]
 \begin{center}
-\begin{threeparttable}
 \caption{Descriptive statistics included in the present study.}
 \begin{tabular}{ll}
-\toprule
+\hline
 cyl & \multicolumn{1}{c}{Some columnname}\
-\midrule
+\hline
 4.00 & 26.66 &plusmn; 4.51\
 6.00 & 19.74 &plusmn; 1.45\
 8.00 & 15.1 &plusmn; 2.56\
-\bottomrule
-\addlinespace
+\hline
 \end{tabular}
-\begin{tablenotes}[para]
-\textit{Note.} There were no signnificant differences in the means between the groups.
-\end{tablenotes}
-\end{threeparttable}
 \end{center}
 \end{table}
 
