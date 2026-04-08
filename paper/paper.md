@@ -52,7 +52,12 @@ The user-specified rank algorithm in \texttt{librla} is influenced by the \textt
 
 While there is a large amount of research activity in the field of randomized linear algebra, an easy-to-use, efficient and stable factorization library is not available.  For several factorization libraries, the stability issue manafest itself by either failure in the form of an invalid factorization or being unable to return anything.  When new techniques implemented in a high level language are depdent on low level language libraries, it has a big impact on the portability and usability of the new work.  This problem has had an impact of the field of fast direct solvers for boundary integral equations which often depend on a legacy Fortran library [Tygert:2008].  
 
-Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
+Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  To illustrate the performance of librla, a subset of the provided examples are presented here.  The experiments were run on a macbook pro with an M4 processor and 64 GB of RAM in the virtual environment created by \texttt{setup\_venv.sh}.  The results in this manuscript are for a subset of the experiments in the comparison codes.  Here the following matrices are considered: Hilbert matrices, a matrix where the spectrum decays $~1/k$ for integer $k$ between 1 and the size of the matrix, and a matrix from a Gaussian mixture model (Add citation). Table 1 reports a subset of results obtained by running \texttt{compare\_svd\_torch.py}.  For a sequence of matrices, rank 15 approximate singular value decompositions are computed.  The Pytorch \texttt{svd\_lowrank} software only runs in a fixed rank modes and the only factorization option is SVD.  The results demonstrate that the timings are comparable.  Table 2 reports a subset of the result obtained by running \texttt{compare\_id\_scipy.py}.  The inteporlatory decomposition in SciPy allows the user to input a desire rank or tolerance.  The results in the table include both types of experiments.  Table 2 also reports the ratio of time it takes librla to compute the factorization over the time it takes SciPy under the title *speedup*.   The results illustrate the benefits of using the \texttt{librla} package.  
+
+In addition to the performance in terms of speed, the library \texttt{librla} has an additional feature in that it 
+is the only package that provides the user the option of three different factorizations.  
+
+
 
 
 
@@ -62,16 +67,17 @@ Currently, there are two related routines in widely available, maintained Python
 | Hilbert matrix           | 4000 x 2000 | 0.0045s  | 0.0043s |
 | Decaying spectrum matrix | 800 x 600   |  0.0026s | 0.0023s |
 | Gaussian mixture model   | 400 x 400   | 0.0016s  | 0.0014s |
-: Table reporting time in seconds for creating rank 15 factorizations using Pytorch and librla.
+: Table reporting time in seconds for creating rank 15 factorizations of different matrices using Pytorch and librla.
 
 
 
-| Problem                  | Size        | Stopping condition | Scipy   | librla  | Speedup |
+| Problem                  | Size        | Stopping condition | SciPy   | librla  | Speedup |
 |--------------------------|-------------|--------------------|---------|---------|---------|
 | Hilbert matrix           | 2000 x 1000 | rank 15            | 0.0355s | 0.0024s | 14.6    |
 | Hilbert matrix           | 4000 x 2000 | rank 15            | 0.1557s | 0.0046s | 33.9    |
 | Decaying spectrum matrix | 800 x 600   | tol = 0.01         | 0.2933s | 0.0146s | 20      |
 | Gaussian mixture model   | 400 x 400   | tol = 0.01         | 0.0699s | 0.0055s | 12.8    |
+: Table reporting time in seconds for creating low factorizations of different matrices using SciPy and librla. Examples involved fixed rank or tolerance approximations. 
 
 
 
