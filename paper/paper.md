@@ -55,13 +55,29 @@ While there is a large amount of research activity in the field of randomized li
 Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  The results show that the performance of \texttt{librla} is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster than the interpolatory decomposition \texttt{id\_decomp}.  The library \texttt{librla} is the only package that provides the user the option of three different factorizations.  The factorization speeds of all three methods are comparable to PyTorch's \texttt{svd\_lowrank}.
 
 
-| |: Comparison of programming languages used in the publishing tool. []{label="proglangs"}
+|: Comparison of SciPy's \texttt{id\_decomp} with \texttt{librla}. []{label="scipy"}
 
 |Problem    | Scipy           | librla             | Speedup |     
 |----------|:---------------:|:-----------------:|------------|
-|Hilbert    |                |                 ||  
+|Hilbert matrix   |                |                 ||  
 |2000 x 1000|0.0355s         |0.0024s          |14.6 |
 | rank 15 approx|            |                |     | 
+|----------|:---------------:|:-----------------:|------------|
+|Hilbert matrix   |                |                 ||  
+|4000 x 2000 | 0.1557s         |0.0046s          |33.9 |
+| rank 15 approx|            |                |     | 
+|----------|:---------------:|:-----------------:|------------|
+|Decaying spectrum matrix   |                |                 ||  
+|800 x 600 | 0.2933s         |0.0146s          |20 |
+| tol = 10^{-2}|            |                |     | 
+|----------|:---------------:|:-----------------:|------------|
+|Rank 15 matrix   |                |                 ||  
+|800 x 500 | 0.0063s         |0.0013s          |4.8 |
+| tol = 10^{-8}|            |                |     | 
+|----------|:---------------:|:-----------------:|------------|
+|Gaussian mixture model   |                |                 ||  
+|400 x 400 | 0.0699s         | 0.0055s          |12.8 |
+| tol = 10^{-2}|            |                |     | 
 
 
 # Mathematics
