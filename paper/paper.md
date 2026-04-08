@@ -64,6 +64,14 @@ Currently, there are two related routines in widely available, maintained Python
 | Gaussian mixture model   | 400 x 400   | 0.0016s  | 0.0014s |
 
 
+| Problem                  | Size        | Stopping condition | Scipy   | librla  | Speedup |
+|--------------------------|-------------|--------------------|---------|---------|---------|
+| Hilbert matrix           | 2000 x 1000 | rank 15            | 0.0355s | 0.0024s | 14.6    |
+| Hilbert matrix           | 4000 x 2000 | rank 15            | 0.1557s | 0.0046s | 33.9    |
+| Decaying spectrum matrix | 800 x 600   | tol = 0.01         | 0.2933s | 0.0146s | 20      |
+| Gaussian mixture model   | 400 x 400   | tol = 0.01         | 0.0699s | 0.0055s | 12.8    |
+
+
 
 # Mathematics
 
