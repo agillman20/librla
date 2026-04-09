@@ -130,7 +130,7 @@ There are three different factorization options.  This section provides details 
 \begin{itemize}
 \item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
-$${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
+$${\bf{A}}(:,\bf p}) \sim {\bf Q \ R}.$$
 
 
 \item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
@@ -139,7 +139,7 @@ $$ {\bf A}  \sim  {\bf U}\,{\tt diag}({\bf s})\,{\bf V}^{*},$$
 
 where ${\tt diag}({\bf s})$ is a diagonal matrix with non-zero entries coming from the vector ${\bf s}$.
 
-\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\rm piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\bf piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k))\, {\bf T}.$$
