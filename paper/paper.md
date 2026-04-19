@@ -51,14 +51,22 @@ The user-specified rank algorithm in \texttt{librla} is influenced by the \textt
 
 # Statement of need
 
-While there is a large amount of research activity in the field of randomized linear algebra, an easy-to-use, efficient and stable factorization library is not available.  For several factorization libraries, the stability issue manafest itself by either failure in the form of an invalid factorization or being unable to return anything.  When new techniques implemented in a high level language are depdent on low level language libraries, it has a big impact on the portability and usability of the new work.  This problem has had an impact of the field of fast direct solvers for boundary integral equations which often depend on a legacy Fortran interpolatory decomposition library [Tygert:2008].  
+While there is a large amount of research activity in the field of randomized linear algebra, an easy-to-use, efficient and stable factorization library is not available.  For several factorization libraries, the stability issue manafest itself by either failure in the form of an invalid factorization or being unable to return anything.  When new techniques implemented in a high level language are depdent on low level language libraries, it has a big impact on the portability and usability of the new work.  This problem has had an impact of the field of fast direct solvers for boundary integral equations which often depend on a legacy Fortran interpolatory decomposition library [@Tygert:2008].  
 
-Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  To illustrate the performance of librla, a subset of the provided examples are presented here.  The experiments were run on a macbook pro with an M4 processor and 64 GB of RAM in the virtual environment created by \texttt{setup\_venv.sh}.  The results in this manuscript are for a subset of the experiments in the comparison codes.  Here the following matrices are considered: Hilbert matrices, a matrix where the spectrum decays $~1/k$ for integer $k$ between 1 and the size of the matrix, and a matrix from a Gaussian mixture model (Add citation). Table 1 reports a subset of results obtained by running \texttt{compare\_svd\_torch.py}.  For a sequence of matrices, rank 15 approximate singular value decompositions are computed.  The Pytorch \texttt{svd\_lowrank} software only runs in a fixed rank modes and the only factorization option is SVD.  The results demonstrate that the timings are comparable.  Table 2 reports a subset of the result obtained by running \texttt{compare\_id\_scipy.py}.  The inteporlatory decomposition in SciPy allows the user to input a desire rank or tolerance.  The results in the table include both types of experiments.  Table 2 also reports the ratio of time it takes librla to compute the factorization over the time it takes SciPy under the title *speedup*.   The results illustrate the benefits of using the \texttt{librla} package.  
+Currently, there are two related routines in widely available, maintained Python packages.  They are PyTorch's \texttt{svd\_lowrank} and SciPy's \texttt{id\_decomp} found in the \texttt{scipy.linalg.interpolative} library.  Codes allowing the user to compare the performance are available in the *compare* folder of our repository.  To illustrate the performance of librla, a subset of the provided examples are presented here.  The experiments were run on a macbook pro with an M4 processor and 64 GB of RAM in the virtual environment created by \texttt{setup\_venv.sh}.  The results in this manuscript are for a subset of the experiments in the comparison codes.  Here the following matrices are considered: Hilbert matrices, a matrix where the spectrum decays $~1/k$ for integer $k$ between 1 and the size of the matrix, and a matrix from a Gaussian mixture model [@Dong:2025]. Table 1 reports a subset of results obtained by running \texttt{compare\_svd\_torch.py}.  For a sequence of matrices, rank 15 approximate singular value decompositions are computed.  The Pytorch \texttt{svd\_lowrank} software only runs in a fixed rank modes and the only factorization option is SVD.  The results demonstrate that the timings are comparable.  Table 2 reports a subset of the result obtained by running \texttt{compare\_id\_scipy.py}.  The inteporlatory decomposition in SciPy allows the user to input a desire rank or tolerance.  The results in the table include both types of experiments.  Table 2 also reports the ratio of time it takes librla to compute the factorization over the time it takes SciPy under the title *speedup*.   The results illustrate the benefits of using the \texttt{librla} package.  
 
 In addition to the performance in terms of speed, the library \texttt{librla} has an additional feature in that it 
 is the only package that provides the user the option of three different factorizations.  
 
 
+
+| Problem                  | Size        | Pytorch   | librla   | Relative Error |
+|--------------------------|-------------|-----------|----------|----------------|
+| Hilbert matrix           | 2000 x 1000 | 0.002s    | 0.0018s  | 3.679e-08      |
+| Hilbert matrix           | 4000 x 2000 | 0.0045s   | 0.0043s  | 1.604e-07      |
+| Decaying spectrum matrix | 800 x 600   |  0.0026s  | 0.0023s  | 1.529e-01      |
+| Gaussian mixture model   | 400 x 400   | 0.0016s   | 0.0014s  | 7.096e-01      |
+: Table reporting time in seconds for creating rank 15 factorizations of different matrices using Pytorch and librla.
 
 
 
@@ -70,6 +78,15 @@ is the only package that provides the user the option of three different factori
 | Gaussian mixture model   | 400 x 400   | 0.0016s  | 0.0014s |
 : Table reporting time in seconds for creating rank 15 factorizations of different matrices using Pytorch and librla.
 
+
+
+| Problem                  | Size        | Stopping Condition | Pytorch | librla  | Speedup | Relative Error |
+|--------------------------|-------------|--------------------|---------|---------|---------|----------------|
+| Hilbert matrix           | 2000 x 1000 | rank 15            | 0.0355s | 0.0024s | 14.6    | 8.571e-08      |
+| Hilbert matrix           | 4000 x 2000 | rank 15            | 0.1557s | 0.0046s | 33.9    | 1.306e-06      |
+| Decaying spectrum matrix | 800 x 600   | tol  = 0.01        | 0.2933s | 0.0146s | 20      | 0              |
+| Gaussian mixture model   | 400 x 400   | tol = 0.01         | 0.0699s | 0.0055s | 12.8    | 5.659e-05      |
+: Table reporting time in seconds for creating low factorizations of different matrices using SciPy and librla. Examples involved fixed rank or tolerance approximations. 
 
 
 | Problem                  | Size        | Stopping condition | SciPy   | librla  | Speedup |
@@ -160,7 +177,7 @@ $${\bf A} \sim {\bf A}(:, {\bf piv}(1:k))\, {\bf W}.$$
 
 # Demo and test codes
 
-The file named *demo* located in each of the language files provides a collection of codes that demonstrate how to call the factorizations in 'librla' with the different options.  These \texttt{demo\_} codes are designed to aid users.   The codes in the *test* directory named \texttt{test\_} validate that the codes are working correctly.  The code \texttt{test\_all} validates all the factorization techniques while the other test codes are written to test one factorization technique.  Standard test matrices from the literature (add citation). 
+The file named *demo* located in each of the language files provides a collection of codes that demonstrate how to call the factorizations in 'librla' with the different options.  These \texttt{demo\_} codes are designed to aid users.   The codes in the *test* directory named \texttt{test\_} validate that the codes are working correctly.  The code \texttt{test\_all} validates all the factorization techniques while the other test codes are written to test one factorization technique.  Several of the test matrices were taken from [@Dong:2025]. 
 
 # Examples from the literature
 
