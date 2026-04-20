@@ -73,7 +73,7 @@ is the only package that provides the user the option of three different factori
 
 
 
-| Problem                  | Size        | Stopping Condition | Pytorch | librla  | Speedup | Relative Error |
+| Problem                  | Size        | Stopping Condition | SciPy   | librla  | Speedup | Relative Error |
 |--------------------------|-------------|--------------------|---------|---------|---------|----------------|
 | Hilbert matrix           | 2000 x 1000 | rank 15            | 0.0355s | 0.0024s | 14.6    | 8.571e-08      |
 | Hilbert matrix           | 4000 x 2000 | rank 15            | 0.1557s | 0.0046s | 33.9    | 1.306e-06      |
