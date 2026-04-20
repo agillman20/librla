@@ -39,6 +39,17 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
 \usepackage{graphicx}
 \makeatletter
 \newsavebox\pandoc@box
@@ -120,10 +131,12 @@ low-rank QR factorizations, SVDs and interpolatory decompositions. The
 algorithms randomly sample the range of the matrix or operator in a
 similar manner to (Halko et al. 2011). A key feature of this package is
 that it is designed to exploit Level 3 BLAS operators as much as
-possible. \texttt{librla} is designed for small to mid-range sized
-matrices (i.e.~up to roughly 10,000 in size depending on computing
-resources). \texttt{librla} is not intended for matrices that are larger
-or do not fit in memory.
+possible. The use of Level 3 BLAS allows for all the linear algebraic
+operations in the method be executed via low level optimized code.
+\texttt{librla} is designed for small to mid-range sized matrices
+(i.e.~up to roughly 10,000 in size depending on computing resources).
+\texttt{librla} is not intended for matrices that are larger or do not
+fit in memory.
 
 \texttt{librla} includes the following options, all of which can be used
 for both real and complex matrices:
@@ -139,55 +152,194 @@ for both real and complex matrices:
   sampling.
 \end{itemize}
 
-The user has the choice of specifying a tolerance or a desired rank. For
-each method, the user has the option to use extra samples and to use a
-specified number of power iterations. The package does include the
-option to create low-rank factorizations of matrices that are applied
-via matrix-vector multiplication codes. In order to use this option,
+The user has the choice of specifying a desired accuracy (tolerance) or
+rank. For each method, the user has the option to use extra samples and
+to use a specified number of power iterations.\\
+The package does include the option to create low-rank factorizations of
+matrices that are applied via matrix-vector multiplication codes. When
+the matrix-vector multiplication is ``matrix-free,'' the creation of the
+low factorization is also matrix free. In order to use this option,
 \texttt{librla} requires the ability to apply both the matrix and its
 transpose via a subroutine.
 
 While the algorithm used in \texttt{librla} is built in a similar manner
-to the randomized methods in (Halko et al. 2011; Liberty et al. 2007),
-there is a large collection of related work: (Duersch and Gu 2020, 2017;
-Mahoney and Drineas 2009; Meier and Nakatsukasa 2024; Martinsson et al.
-2019, 2019; Sorensen and Embree 2016; Gu and Eisenstat 1996; Frieze et
-al. 2004; Drineas, Kannan, et al. 2006a, 2006b; Drineas, Mahoney, et al.
-2006, 2008; Sarlos 2006; Drineas et al. 2007, 2012; Rokhlin and Tygert
-2008; Avron et al. 2010; Meng et al. 2014; Martinsson and Tropp 2020;
-Roosta-Khorasani and Mahoney 2019; Pilanci and Wainwright 2017; Yao et
-al. 2021; Mahoney 2011; Woodruff 2014; Drineas and Mahoney 2016, 2017;
-Yang et al. 2015; Pilanci and Wainwright 2016; Erichson et al. 2018;
-Voronin and Martinsson 2017; Balu and Furon 2016; Cormode et al. 2018;
-Choi et al. 2020; Yu et al. 2017; Yu et al. 2018; Tropp et al. 2017;
-Bjarkason 2019; Chowdhury et al. 2020; Lindquist et al. 2020; Feng et
-al. 2018). The user-specified rank algorithm in \texttt{librla} is
-influenced by the \texttt{svd\_lowrank} routine in PyTorch.
+to the randomized methods in (Halko et al. 2011; Liberty et al. 2007).
+There is a large collection of related work. {[}Martinsson and Tropp
+(2020); Mahoney (2011);Drineas and Mahoney (2017);Woodruff
+(2014);Voronin and Martinsson (2017); {]} are some review papers on the
+field. Some literature (Mahoney and Drineas 2009; Sorensen and Embree
+2016; Drineas et al. 2008) has focused on the design of CUR
+factorizations . While other manuscripts (Frieze et al. 2004; Drineas,
+Kannan, et al. 2006b; Drineas, Mahoney, et al. 2006) have focused on
+monte carlo approaches to creating the low rank factorizations.
+Randomized projection methods (Halko et al. 2011; Liberty et al. 2007;
+Duersch and Gu 2020; Meier and Nakatsukasa 2024; Gu and Eisenstat 1996;
+Erichson et al. 2018; Rokhlin and Tygert 2008) are common. Deterministic
+factorization techniques exist (Duersch and Gu 2017; Feng et al. 2018).
+Many techniques are specifically designed for distributed memory and/or
+to not require many passes through the data {[};Martinsson et al.
+(2019);Sarlos (2006); Tropp et al. (2017);Yu et al. (2017);Lindquist et
+al. (2020);Yang et al. (2015);Bjarkason (2019);{]}. There is much
+literature from the randomized linear algebra community for applications
+including \(L_2\) solutions (Drineas, Kannan, et al. 2006a; Drineas et
+al. 2007; Avron et al. 2010; Meng et al. 2014; Pilanci and Wainwright
+2016), reduced order modelling (Sorensen and Embree 2016), linear
+programming {[}Drineas et al. (2012);Chowdhury et al. (2020);{]},
+statisics (Drineas and Mahoney 2016), machine learning (Yao et al.
+2021), Newton methods (Roosta-Khorasani and Mahoney 2019; Pilanci and
+Wainwright 2017), and differentially private matrices (Balu and Furon
+2016; Cormode et al. 2018; Choi et al. 2020). The user-specified rank
+algorithm in \texttt{librla} is influenced by the \texttt{svd\_lowrank}
+routine in PyTorch.
 
 \section{Statement of need}\label{statement-of-need}
 
 While there is a large amount of research activity in the field of
-randomized linear algebra, an easy-to-use and stable factorization
-library is not available. The need is even greater for those using
-high-level languages where standard coding techniques can result in
-unnecessarily slow code. The research area of fast direct solvers
-provides an example of the need for \texttt{librla}. For some time, the
-development and use of fast direct solvers in Matlab required a
-specialized wrapper on the Fortran package (Martinsson et al. 2008)
-which is based on (Liberty et al. 2007). The lack of portability of the
-wrapper has slowed the design and use of these solvers.
+randomized linear algebra, an easy-to-use, efficient and stable
+factorization library is not available. For several factorization
+libraries, the stability issue manafest itself by either failure in the
+form of an invalid factorization or being unable to return anything.
+When new techniques implemented in a high level language are depdent on
+low level language libraries, it has a big impact on the portability and
+usability of the new work. This problem has had an impact of the field
+of fast direct solvers for boundary integral equations which often
+depend on a legacy Fortran interpolatory decomposition library
+(Martinsson et al. 2008).
 
 Currently, there are two related routines in widely available,
 maintained Python packages. They are PyTorch's \texttt{svd\_lowrank} and
 SciPy's \texttt{id\_decomp} found in the
 \texttt{scipy.linalg.interpolative} library. Codes allowing the user to
 compare the performance are available in the \emph{compare} folder of
-our repository. The results show that the performance of \texttt{librla}
-is comparable to that of PyTorch's \texttt{svd\_lowrank} and is faster
-than the interpolatory decomposition \texttt{id\_decomp}. The library
-\texttt{librla} is the only package that provides the user the option of
-three different factorizations. The factorization speeds of all three
-methods are comparable to PyTorch's \texttt{svd\_lowrank}.
+our repository. To illustrate the performance of librla, a subset of the
+provided examples are presented here. The experiments were run on a
+macbook pro with an M4 processor and 64 GB of RAM in the virtual
+environment created by \texttt{setup\_venv.sh}. The results in this
+manuscript are for a subset of the experiments in the comparison codes.
+Here the following matrices are considered: Hilbert matrices, a matrix
+where the spectrum decays \(~1/k\) for integer \(k\) between 1 and the
+size of the matrix, and a matrix from a Gaussian mixture model (Dong et
+al. 2025). Table 1 reports a subset of results obtained by running
+\texttt{compare\_svd\_torch.py}. For a sequence of matrices, rank 15
+approximate singular value decompositions are computed. The Pytorch
+\texttt{svd\_lowrank} software only runs in a fixed rank modes and the
+only factorization option is SVD. The results demonstrate that the
+timings are comparable. Table 2 reports a subset of the result obtained
+by running \texttt{compare\_id\_scipy.py}. The inteporlatory
+decomposition in SciPy allows the user to input a desire rank or
+tolerance. The results in the table include both types of experiments.
+Table 2 also reports the ratio of time it takes librla to compute the
+factorization over the time it takes SciPy under the title
+\emph{speedup}. The results illustrate the benefits of using the
+\texttt{librla} package.
+
+In addition to the performance in terms of speed, the library
+\texttt{librla} has an additional feature in that it is the only package
+that provides the user the option of three different factorizations.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.3421}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1711}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1447}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1316}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2105}}@{}}
+\caption{Table reporting time in seconds for creating rank 15
+factorizations of different matrices using Pytorch and
+librla.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Problem
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Size
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Pytorch
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+librla
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Relative Error
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Problem
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Size
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Pytorch
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+librla
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Relative Error
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Hilbert matrix & 2000 x 1000 & 0.002s & 0.0018s & 3.679e-08 \\
+Hilbert matrix & 4000 x 2000 & 0.0045s & 0.0043s & 1.604e-07 \\
+Decaying spectrum matrix & 800 x 600 & 0.0026s & 0.0023s & 1.529e-01 \\
+Gaussian mixture model & 400 x 400 & 0.0016s & 0.0014s & 7.096e-01 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2549}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1275}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1961}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0882}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0882}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0882}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1569}}@{}}
+\caption{Table reporting time in seconds for creating low factorizations
+of different matrices using SciPy and librla. Examples involved fixed
+rank or tolerance approximations.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Problem
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Size
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Stopping Condition
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Pytorch
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+librla
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Speedup
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Relative Error
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Problem
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Size
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Stopping Condition
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Pytorch
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+librla
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Speedup
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Relative Error
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Hilbert matrix & 2000 x 1000 & rank 15 & 0.0355s & 0.0024s & 14.6 &
+8.571e-08 \\
+Hilbert matrix & 4000 x 2000 & rank 15 & 0.1557s & 0.0046s & 33.9 &
+1.306e-06 \\
+Decaying spectrum matrix & 800 x 600 & tol = 0.01 & 0.2933s & 0.0146s &
+20 & 0 \\
+Gaussian mixture model & 400 x 400 & tol = 0.01 & 0.0699s & 0.0055s &
+12.8 & 5.659e-05 \\
+\end{longtable}
 
 \section{Mathematics}\label{mathematics}
 
@@ -206,19 +358,23 @@ Pseudocodes for all of the factorizations are provided in the
 
 Users call the desired factorization subroutine with a linear operator
 \({\bf A}\) of size \(m\times n\), a desired rank and stopping condition
-\({rtol}\). The user has the option to use power iteration and specify
-the number of iterations \(power\_iter\) to accelerate convergence.
-Users are also provided the option to specify a number of oversampling
-vectors. Roughly speaking, given a linear operator \({\bf A}\), desired
-rank or stopping condition \(rtol\), specified \(block\_size\) and
-\(power\_iter\), \texttt{orth\_sketch} randomly samples the range of
-\({\bf A}\) to create an orthogonal basis for the range. The range is
-sampled by applying \({\bf A}\) to a matrix \({ \Omega }\) of size
-\(n \times block\_size\) whose entries are uniformly randomly sampled
-from \([-1,1]\). The oversampling vectors are included in
-\(block\_size\). In the tolerance option, the \(block\_size\) is
-adaptively increased to ensure the range is sufficiently sampled and
-includes the number of user specified extra samples. In the rank option,
+\({tol\_or\_rank}\). The user has the option to use power iteration and
+specify the number of iterations \(power\_iter\) to accelerate
+convergence. Users are also provided the option to specify a number of
+oversampling vectors. Roughly speaking, given a linear operator
+\({\bf A}\), tolerance condition or desired rank \(tol\_or\_rank\),
+specified \(block\_size\) and \(power\_iter\), \texttt{orth\_sketch}
+randomly samples the range of \({\bf A}\) to create an orthogonal basis
+for the range. The range is sampled by applying \({\bf A}\) to a matrix
+\({ \Omega }\) of size \(n \times block\_size\) whose entries are
+uniformly randomly sampled from \([-1,1]\). This choice of matrix
+entries for \(\Omega\) ensures that the vectors are linearly independent
+but may not be the optimal basis choice. (This is an open question.) The
+size \(\Omega\) is set so that number of columns includes the over
+sampling vectors; i.e.~the parameter \(block\_size\) is updated to be
+the sum of the original \(block\_size\) and the number of oversampling
+vectors. In the tolerance option, the \(block\_size\) is adaptively
+increased until the stopping criterion is satisfied. In the rank option,
 the size of \(\Omega\) is determined by the desired rank and the number
 of user specified extra samples. The orthogonal basis is formed by
 taking a pivoted QR factorization of \({\bf A}\Omega\), where \(\Omega\)
@@ -229,8 +385,12 @@ criterion for the tolerance option of the factorization.
 \texttt{orth\_sketch} returns \({\bf Q}\) or a submatrix of \({\bf Q}\),
 \({\bf diagR}\) and an error flag to the factorization routine that
 called it. The matrix \({\bf Q}\) is then used to create the desired
-factorization. If the sketching step terminates early, the factorization
-routine falls back to a deterministic algorithm.
+factorization. In the tolerance option of \texttt{librla}, the range of
+\({\bf A}\) is considered sufficiently if the ratio of the magnitude of
+the largest and smallest diagonal entries of the \({\bf R}\) is less
+than the specified tolerance \({tol\_or\_rank}\). If the sketching step
+terminates early, the factorization routine falls back to a
+deterministic algorithm.
 
 \subsection{\texorpdfstring{Pseudocode for the \texttt{orth\_sketch}
 algorithm}{Pseudocode for the  algorithm}}\label{pseudocode-for-the-algorithm}
@@ -238,18 +398,19 @@ algorithm}{Pseudocode for the  algorithm}}\label{pseudocode-for-the-algorithm}
 \begin{verbatim}
 function orth_sketch(A, rtol, block_size, power_iter):
     Input: A (a real or complex matrix (or linear operator) of size {m×n}),
-             rtol (tolerance or rank), block_size, power_iter
+             tol_or_rank (tolerance or rank), block_size, power_iter
     Output: Q (orthonormal basis), flag, diagR
+    # flag = 0 implies success; =1 implies failure
 
-    if rtol ≥ 1:  # Rank mode
-        k_max = floor(rtol)
+    if tol_or_rank ≥ 1:  # Rank mode
+        k_max = floor(tol_or_rank)
         Ω = random_matrix(n, block_size)        # Uniform[-1,1]
         Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
         Y = A Ω
         Q, R, _ = qr_pivoted(Y)
         return Q[:, 1:k_max], 0, |diag(R)|
 
-    # Tolerance mode (rtol < 1): adaptive rank
+    # Tolerance mode (tol_or_rank < 1): adaptive rank
     while true:
         Ω = random_matrix(n, block_size)        # Uniform[-1,1]
         Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
@@ -257,7 +418,7 @@ function orth_sketch(A, rtol, block_size, power_iter):
         Q, R, _ = qr_pivoted(Y)
 
         diagR = |diag(R)|
-        if diagR[end] / diagR[1] ≤ rtol:
+        if diagR[end] / diagR[1] ≤ tol_or_rank:
             return Q, 0, diagR
 
         block_size = min(4 × block_size, min(m, n))
@@ -277,7 +438,7 @@ factorization options are:
 \begin{itemize}
 \item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
 
-$${\bf{A}}(:,p) \sim {\bf Q \ R}.$$
+$${\bf{A}}(:,{\bf p}) \sim {\bf Q \ R}.$$
 
 
 \item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
@@ -286,7 +447,7 @@ $$ {\bf A}  \sim  {\bf U}\,{\tt diag}({\bf s})\,{\bf V}^{*},$$
 
 where ${\tt diag}({\bf s})$ is a diagonal matrix with non-zero entries coming from the vector ${\bf s}$.
 
-\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\rm piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
+\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\bf piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
 
 
 $$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k))\, {\bf T}.$$
@@ -302,7 +463,7 @@ $${\bf A} \sim {\bf A}(:, {\bf piv}(1:k))\, {\bf W}.$$
 
 \end{itemize}
 
-\section{Demo codes}\label{demo-codes}
+\section{Demo and test codes}\label{demo-and-test-codes}
 
 The file named \emph{demo} located in each of the language files
 provides a collection of codes that demonstrate how to call the
@@ -311,7 +472,8 @@ factorizations in `librla' with the different options. These
 \emph{test} directory named \texttt{test\_} validate that the codes are
 working correctly. The code \texttt{test\_all} validates all the
 factorization techniques while the other test codes are written to test
-one factorization technique.
+one factorization technique. Several of the test matrices were taken
+from (Dong et al. 2025).
 
 \section{Examples from the
 literature}\label{examples-from-the-literature}
@@ -332,7 +494,8 @@ used are (a) none, (b) 10 extra samples, (c) two power iterations, and
 (d) 10 extra samples and two power iterations. The extra samples alone
 do not help the randomized SVD much. The power iteration is more
 helpful. The combination of the two options provides the best
-approximations of the singular values.
+approximations of the singular values. See (Gu and Eisenstat 1996) for
+justicifaction for this improved performance.
 
 \begin{figure}
 \centering
@@ -375,7 +538,7 @@ further highlight this result.
 
 \begin{figure}
 \centering
-\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Illustration of the use of randomized factorization for image compression: (a) original image, and rank 30 approximations using (b) the randomized SVD, (c) the interpolatory decomposition, (d) the randomized SVD with 15 extra samples and 2 power iterations and (e) the interpolatory decomposition with 15 extra samples and 2 power iterations. The example is taken from (Duersch and Gu 2020). The original image is ``Silver Metal Round Gears'' from Pexels (Creative Commons Zero license). }]{imageEX.png}
+\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Illustration of the use of randomized factorization for image compression: (a) original image, and rank 30 approximations using (b) the randomized SVD, (c) the interpolatory decomposition, (d) the randomized SVD with 15 extra samples and 2 power iterations and (e) the interpolatory decomposition with 15 extra samples and 2 power iterations. The example is taken from (Duersch and Gu 2020). The original image is ``Silver Metal Round Gears'' from Pexels (Creative Commons Zero license). }]{imageEX_centered.png}
 \caption{Illustration of the use of randomized factorization for image
 compression: (a) original image, and rank 30 approximations using (b)
 the randomized SVD, (c) the interpolatory decomposition, (d) the
@@ -465,6 +628,12 @@ Srivastava, and Tianhao Wang. 2018. {``Privacy at Scale: Local
 Differential Privacy in Practice.''} \emph{Proceedings of the 2018
 International Conference on Management of Data} (New York, NY, USA).
 \url{https://doi.org/10.1145/3183713.3197390}.
+
+\bibitem[\citeproctext]{ref-Dong:2025}
+Dong, Yijun, Chao Chen, Per-Gunnar Martinsson, and Katherine Pearce.
+2025. {``Robust Blockwise Random Pivoting: Fast and Accurate Adaptive
+Interpolative Decomposition.''} \emph{SIAM Journal on Matrix Analysis
+and Applications} 46 (3): 1791--815.
 
 \bibitem[\citeproctext]{ref-Drineas:2006}
 Drineas, Petros, Ravi Kannan, and Michael W. Mahoney. 2006a. {``Fast
@@ -687,12 +856,6 @@ Yu, Wenjian, Yu Gu, Jian Li, Shenghua Liu, and Yaohang Li. 2017.
 of the Twenty-Sixth International Joint Conference on Artificial
 Intelligence, {IJCAI-17}}, 3350--56.
 \url{https://doi.org/10.24963/ijcai.2017/468}.
-
-\bibitem[\citeproctext]{ref-Yu:2018}
-Yu, W., Y. Gu, and Y. Li. 2018. {``Efficient Randomized Algorithms for
-the Fixed-Precision Low-Rank Matrix Approximation.''} \emph{SIAM Journal
-on Matrix Analysis and Applications} 39 (3): 1339--59.
-\url{https://doi.org/10.1137/17M1141977}.
 
 \end{CSLReferences}
 
