@@ -20,7 +20,7 @@ affiliations:
  - name: National Institute of Standards and Technology (NIST)
    index: 2
  
-date: March 18, 2026
+date: April 20, 2026
 bibliography: paper.bib
 
 # Optional fields if submitting to an AAS journal too, see this blog post:
