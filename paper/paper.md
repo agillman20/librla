@@ -94,7 +94,7 @@ Users call the desired factorization subroutine with a linear operator ${\bf A}$
 
 
 ```
-function orth_sketch(A, rtol, block_size, power_iter):
+function orth_sketch(A, tol_or_rank, block_size, power_iter):
     Input: A (a real or complex matrix (or linear operator) of size {m×n}),
              tol_or_rank (tolerance or rank), block_size, power_iter
     Output: Q (orthonormal basis), flag, diagR
