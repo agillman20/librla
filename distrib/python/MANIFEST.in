@@ -1,9 +1,13 @@
 include README.md
 include LICENSE
 include pyproject.toml
+include setup.py
+
+recursive-include test *.py
+recursive-include demo *.py *.ipynb
+
 exclude setup-venv.sh
-recursive-exclude demo *
-recursive-exclude test *
 recursive-exclude __pycache__ *
 global-exclude *.py[cod]
 global-exclude .DS_Store
+prune **/.ipynb_checkpoints

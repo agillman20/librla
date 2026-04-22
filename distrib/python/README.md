@@ -194,13 +194,13 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method='svd')
 
 | Language | Requirements |
 |----------|-------------|
-| Python | Python 3.8+, NumPy >= 1.20, SciPy >= 1.7 |
+| Python | Python 3.9+, NumPy >= 1.20, SciPy >= 1.7 |
 
 ## Installation
 
 ### Python
 
-**Requirements:** Python 3.8+, NumPy >= 1.20, SciPy >= 1.7
+**Requirements:** Python 3.9+, NumPy >= 1.20, SciPy >= 1.7
 
 **Option 1: Add to Python path (recommended for testing)**
 ```python
@@ -234,6 +234,18 @@ Run the demos to see the library in action:
 cd distrib/python/demo
 python demo01_basic.py
 python demo02_svd.py
+```
+
+The `pip install librla` wheel contains only the library module. To obtain
+the demos and tests after installing from PyPI, either clone the GitHub
+repository or download and unpack the source distribution:
+
+```bash
+pip download --no-binary :all: --no-deps librla
+tar xf librla-*.tar.gz
+cd librla-*/demo && python demo01_basic.py
+cd ../test && python test_all.py
+```
 
 
 ## Examples
