@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "1.0.0"
 description = "Randomized linear-algebra routines for low-rank matrix factorizations"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = "NIST-PD"
+license-files = ["LICENSE"]
 authors = [
     { name = "Adrianna Gillman" },
     { name = "Zydrunas Gimbutas" },
@@ -23,7 +24,6 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
-    "License :: Public Domain",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -36,6 +36,11 @@ classifiers = [
 dependencies = [
     "numpy>=1.20",
     "scipy>=1.7",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
 ]
 
 [project.urls]
