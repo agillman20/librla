@@ -15,6 +15,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: NIST-PD
+% Version: 1.0.1
+% Date: April 22, 2026
 % Assisted by: Claude Code (Anthropic)
 %
 % Trade-off: More iterations/samples = better accuracy but more computation.

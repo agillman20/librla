@@ -129,9 +129,9 @@ This variance is expected for randomized algorithms and does not indicate a bug.
 
 For matrices with slowly decaying singular values (small spectral gap), use **power iterations** to improve accuracy:
 
-```python
-# Use power_iter=2 for matrices with slowly decaying singular values
-U, s, Vh = svd_sketch(A, 20, power_iter=2)
+```matlab
+% Use power_iter=2 for matrices with slowly decaying singular values
+[U, s, V] = librla.svd_sketch(A, 20, 'power_iter', 2);
 ```
 
 

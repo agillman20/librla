@@ -18,8 +18,8 @@ Requires:
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
-Version: 1.0.0
-Date: January 5, 2026
+Version: 1.0.1
+Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 import sys
@@ -28,66 +28,6 @@ import importlib.util
 import os
 
 sys.path.insert(0,'..')
-
-# importing
-#from python import librla
-
-def run_comparison_module(module_name, module_path):
-    """
-    Run a comparison module and return (passed, total, elapsed_time).
-
-    Parameters
-    ----------
-    module_name : str
-        Name of the module (for display)
-    module_path : str
-        Path to the module file
-
-    Returns
-    -------
-    passed : int
-        Number of tests passed
-    total : int
-        Total number of tests
-    elapsed : float
-        Time elapsed in seconds
-    success : bool
-        Whether the module ran without errors
-    """
-    print(f"\n{'='*70}")
-    print(f"Running {module_name}...")
-    print("="*70)
-
-    try:
-        # Load and run the module
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
-
-        t0 = time.perf_counter()
-        spec.loader.exec_module(module)
-
-        # Run main() and capture exit code
-        if hasattr(module, 'main'):
-            exit_code = module.main()
-        else:
-            print(f"[ERROR] {module_name} has no main() function")
-            return 0, 0, 0.0, False
-
-        elapsed = time.perf_counter() - t0
-
-        # Count results from the module's global state (if accessible)
-        # Since we can't easily get this, we'll parse from exit code
-        # exit_code 0 = all passed, 1 = some failed
-
-        # For now, we'll re-run and count
-        # This is a simplified approach - in production, modules should return counts
-        return exit_code, elapsed, True
-
-    except Exception as e:
-        print(f"\n[ERROR] Failed to run {module_name}: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1, 0.0, False
 
 
 def run_module_with_count(module_path, module_display_name):
@@ -165,6 +105,7 @@ def main():
         ('test_svd.py', 'test_svd'),
         ('test_qr.py', 'test_qr'),
         ('test_orth.py', 'test_orth'),
+        ('test_linop.py', 'test_linop'),
     ]
 
     # Results tracking

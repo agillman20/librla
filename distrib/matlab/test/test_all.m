@@ -18,8 +18,8 @@ addpath(genpath('..'));
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: NIST-PD
-% Version: 1.0.0
-% Date: January 5, 2026
+% Version: 1.0.1
+% Date: April 22, 2026
 % Assisted by: Claude Code (Anthropic)
 
 fprintf('\n');
@@ -32,6 +32,7 @@ fprintf('  - test_id.m    (id_sketch, id_qrpiv)\n');
 fprintf('  - test_svd.m   (svd_sketch)\n');
 fprintf('  - test_qr.m    (qr_sketch)\n');
 fprintf('  - test_orth.m  (orth_sketch)\n');
+fprintf('  - test_linop.m (LinearOperator, wide, method regressions)\n');
 fprintf('\n');
 
 % Detect environment
@@ -44,10 +45,11 @@ fprintf('%s\n', repmat('=', 1, 70));
 
 % List of test modules
 modules = {
-    'test_id',   'test_id';
-    'test_svd',  'test_svd';
-    'test_qr',   'test_qr';
-    'test_orth', 'test_orth'
+    'test_id',    'test_id';
+    'test_svd',   'test_svd';
+    'test_qr',    'test_qr';
+    'test_orth',  'test_orth';
+    'test_linop', 'test_linop'
     };
 
 num_modules = size(modules, 1);

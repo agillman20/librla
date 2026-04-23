@@ -17,8 +17,8 @@ Try changing the CONFIGURATION parameters below to experiment!
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
-Version: 1.0.0
-Date: January 5, 2026
+Version: 1.0.1
+Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -41,7 +41,7 @@ using Random
 include("../librla.jl")
 include("demo_utils.jl")
 
-using .librla: id_sketch, svd_sketch, LinearOperator
+using .librla: id_sketch, svd_sketch, LinearOperator, from_matrix
 using .demo_utils: hilbert, id_error, print_header, print_subheader
 
 
@@ -88,14 +88,12 @@ function main()
     @printf("       Rank: %d, Error: %.3e, Time: %.4fs\n", k1, err1, elapsed1)
 
     #--------------------------------------------------------------------------
-    # Test 2: Explicit LinearOperator
+    # Test 2: Explicit LinearOperator (stored matrix via from_matrix)
     #--------------------------------------------------------------------------
     println("\n   1b. Explicit LinearOperator (matrix wrapper)")
-    println("       Matrix is stored; LinearOperator wraps it.")
+    println("       Matrix is stored in the LinearOperator for direct access.")
 
-    matvec_explicit = x -> A * x
-    rmatvec_explicit = x -> A' * x
-    A_explicit = LinearOperator(matvec_explicit, rmatvec_explicit, m, n)
+    A_explicit = from_matrix(A)
 
     elapsed2 = @elapsed begin
         k2, piv2, T2 = id_sketch(A_explicit, Float64(k))
@@ -103,11 +101,6 @@ function main()
 
     err2 = id_error(A, k2, piv2, T2)
     @printf("       Rank: %d, Error: %.3e, Time: %.4fs\n", k2, err2, elapsed2)
-
-    # Verify same result as dense
-    if k1 == k2 && abs(err1 - err2) < 1e-12
-        println("       [OK] Same result as dense matrix")
-    end
 
     #--------------------------------------------------------------------------
     # Test 3: Matrix-free LinearOperator
