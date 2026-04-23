@@ -29,8 +29,8 @@ For analysis scripts (test_sst_*.py), also install:
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
-Version: 1.0.0
-Date: January 5, 2026
+Version: 1.0.1
+Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 

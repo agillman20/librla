@@ -131,9 +131,9 @@ This variance is expected for randomized algorithms and does not indicate a bug.
 
 For matrices with slowly decaying singular values (small spectral gap), use **power iterations** to improve accuracy:
 
-```python
+```julia
 # Use power_iter=2 for matrices with slowly decaying singular values
-U, s, Vh = svd_sketch(A, 20, power_iter=2)
+U, s, Vt = svd_sketch(A, 20, power_iter=2)
 ```
 
 ## LinearOperator Usage
@@ -184,7 +184,8 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 ## Requirements
 
 | Language | Requirements |
-| Julia | 1.6 or later (LinearAlgebra, Random standard libraries) |
+|----------|--------------|
+| Julia    | 1.6 or later (LinearAlgebra, Random standard libraries) |
 
 ## Installation
 

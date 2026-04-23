@@ -5,6 +5,8 @@ Matrix generators and helper functions used across all demos.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
+Version: 1.0.1
+Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 

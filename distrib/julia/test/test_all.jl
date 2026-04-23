@@ -15,8 +15,8 @@
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: NIST-PD
-# Version: 1.0.0
-# Date: January 5, 2026
+# Version: 1.0.1
+# Date: April 22, 2026
 # Assisted by: Claude Code (Anthropic)
 
 using Printf
@@ -29,6 +29,7 @@ include(joinpath(SCRIPT_DIR, "test_id.jl"))
 include(joinpath(SCRIPT_DIR, "test_svd.jl"))
 include(joinpath(SCRIPT_DIR, "test_qr.jl"))
 include(joinpath(SCRIPT_DIR, "test_orth.jl"))
+include(joinpath(SCRIPT_DIR, "test_linop.jl"))
 
 function run_test_module(test_func::Function, display_name::String)
     """
@@ -68,6 +69,7 @@ function main()
     println("  - test_svd.jl   (svd_sketch)")
     println("  - test_qr.jl    (qr_sketch)")
     println("  - test_orth.jl  (orth_sketch)")
+    println("  - test_linop.jl (LinearOperator, wide, method regressions)")
     println()
     println("Environment: Julia ", VERSION)
     println("="^70)
@@ -78,6 +80,7 @@ function main()
         (TestSVD.test, "test_svd"),
         (TestQR.test, "test_qr"),
         (TestOrth.test, "test_orth"),
+        (TestLinop.test, "test_linop"),
     ]
 
     # Results tracking: (display_name, status, elapsed, success)

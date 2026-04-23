@@ -33,10 +33,10 @@ Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: NIST-PD
 
 # Version
-1.0.0
+1.0.1
 
 # Date
-January 5, 2026
+April 22, 2026
 
 # Assisted by
 Claude Code (Anthropic)
@@ -241,9 +241,9 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
         R = F.R
         p = F.p
 
-        # Determine rank
+        # Determine rank (cap by the number of rows in R, which equals min(m,n))
         if rank_mode
-            rank = min(kmax, size(R, 2))
+            rank = min(kmax, size(R, 1))
         else
             rank = _rank_from_diag(diag(R), rtol)
         end
@@ -262,9 +262,9 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
     p = F.p
     Q = Qs * Qproj
 
-    # Determine rank
+    # Determine rank (cap by both available Q columns and available R rows)
     if rank_mode
-        rank = min(kmax, size(Q, 2))
+        rank = min(kmax, size(Q, 2), size(R, 1))
     else
         rank = _rank_from_diag(diag(R), rtol)
     end
@@ -309,14 +309,16 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
     is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
 
-    # Handle wide matrices via transpose
+    # Handle wide matrices via transpose. For a LinearOperator, adjoint returns
+    # a concrete new LinearOperator (Base.copy is undefined for it); for a dense
+    # array, copy materializes the lazy Adjoint wrapper so recursive sketching
+    # hits BLAS directly. If A' = U_at * diag(s) * Vt_at, then A = Vt_at' *
+    # diag(s) * U_at', so U = Vt_at' and Vt = U_at'.
     if m < n
-        At = _is_matrix_free_linop(A) ? A' : copy(A')
-        Vt_tmp, s, Ut_tmp = svd_sketch(At, rtol; block_size=block_size,
-                                     power_iter=power_iter, extra_samples=extra_samples, rng=rng)
-        U = Ut_tmp'
-        Vt = Vt_tmp'
-        return U, s, Vt
+        At = isa(A, LinearOperator) ? A' : copy(A')
+        U_at, s, Vt_at = svd_sketch(At, rtol; block_size=block_size,
+                                    power_iter=power_iter, extra_samples=extra_samples, rng=rng)
+        return Vt_at', s, U_at'
     end
 
     # Rank mode vs tolerance mode

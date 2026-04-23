@@ -7,8 +7,8 @@ function all_files = download_ersst_range(start_year, end_year, BASE_URL, DATA_D
     %
     % Author: Adrianna Gillman, Zydrunas Gimbutas
     % SPDX-License-Identifier: NIST-PD
-    % Version: 1.0.0
-    % Date: January 5, 2026
+    % Version: 1.0.1
+    % Date: April 22, 2026
     % Assisted by: Claude Code (Anthropic)
 
     if nargin < 3

@@ -16,6 +16,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: NIST-PD
+% Version: 1.0.1
+% Date: April 22, 2026
 % Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
@@ -70,14 +72,12 @@ function demo03_linop()
     fprintf('       Rank: %d, Error: %.3e, Time: %.4fs\n', k1, err1, elapsed1);
 
     %----------------------------------------------------------------------
-    % Test 2: Explicit LinearOperator
+    % Test 2: Explicit LinearOperator (stored matrix via from_matrix)
     %----------------------------------------------------------------------
     fprintf('\n   1b. Explicit LinearOperator (matrix wrapper)\n');
-    fprintf('       Matrix is stored; LinearOperator wraps it.\n');
+    fprintf('       Matrix is stored in the LinearOperator for direct access.\n');
 
-    matvec_explicit = @(x) A * x;
-    rmatvec_explicit = @(x) A' * x;
-    A_explicit = LinearOperator(matvec_explicit, rmatvec_explicit, m, n);
+    A_explicit = LinearOperator.from_matrix(A);
 
     tic;
     [k2, piv2, T2] = librla.id_sketch(A_explicit, k);
@@ -85,11 +85,6 @@ function demo03_linop()
 
     err2 = demo_utils.id_error(A, k2, piv2, T2);
     fprintf('       Rank: %d, Error: %.3e, Time: %.4fs\n', k2, err2, elapsed2);
-
-    % Verify same result as dense
-    if k1 == k2 && abs(err1 - err2) < 1e-12
-        fprintf('       [OK] Same result as dense matrix\n');
-    end
 
     %----------------------------------------------------------------------
     % Test 3: Matrix-free LinearOperator

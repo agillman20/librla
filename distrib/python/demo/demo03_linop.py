@@ -16,6 +16,8 @@ Try changing the CONFIGURATION parameters below to experiment!
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: NIST-PD
+Version: 1.0.1
+Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -37,7 +39,7 @@ import sys
 sys.path.insert(0, '.')
 sys.path.insert(0,'..')
 
-from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import LinearOperator, aslinearoperator
 from librla import id_sketch, svd_sketch
 from demo_utils import hilbert, id_error, print_header, print_subheader
 
@@ -75,17 +77,12 @@ def main():
     print(f"       Rank: {k1}, Error: {err1:.3e}, Time: {elapsed1:.4f}s")
 
     # -------------------------------------------------------------------------
-    # Test 2: Explicit LinearOperator
+    # Test 2: Explicit LinearOperator (stored matrix, exposed as MatrixLinearOperator)
     # -------------------------------------------------------------------------
     print("\n   1b. Explicit LinearOperator (matrix wrapper)")
-    print("       Matrix is stored; LinearOperator wraps it.")
+    print("       Matrix is stored; aslinearoperator exposes .A for direct access.")
 
-    A_explicit = LinearOperator(
-        shape=(m, n),
-        matvec=lambda x: A @ x,
-        rmatvec=lambda x: A.T @ x,
-        dtype=A.dtype
-    )
+    A_explicit = aslinearoperator(A)
 
     t0 = time.perf_counter()
     k2, piv2, T2 = id_sketch(A_explicit, rtol=float(k))
@@ -93,10 +90,6 @@ def main():
 
     err2 = id_error(A, k2, piv2, T2)
     print(f"       Rank: {k2}, Error: {err2:.3e}, Time: {elapsed2:.4f}s")
-
-    # Verify same result as dense
-    if k1 == k2 and abs(err1 - err2) < 1e-12:
-        print("       [OK] Same result as dense matrix")
 
     # -------------------------------------------------------------------------
     # Test 3: Matrix-free LinearOperator

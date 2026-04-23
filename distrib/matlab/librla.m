@@ -24,8 +24,8 @@ classdef librla
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: NIST-PD
-% Version: 1.0.0
-% Date: January 5, 2026
+% Version: 1.0.1
+% Date: April 22, 2026
 % Assisted by: Claude Code (Anthropic)
 
 methods (Static)
@@ -737,7 +737,8 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   R11 = R(1:k, 1:k);
   R12 = R(1:k, (k+1):end);
 
-  [U, S, Vh] = svd(R11, 'econ');
+  % MATLAB's svd returns V (not V'); R11^+ = V * Σ^-1 * U'.
+  [U, S, V] = svd(R11, 'econ');
   s = diag(S);
 
   % Filter small singular values
@@ -746,7 +747,7 @@ function T = compute_T_svd(R, k, rtol_for_svd)
       T = zeros(size(R12), class(R));
   else
       inv_s = 1 ./ s(keep);
-      T = Vh(:, keep) * diag(inv_s) * (U(:, keep)' * R12);
+      T = V(:, keep) * diag(inv_s) * (U(:, keep)' * R12);
   end
 end
 
