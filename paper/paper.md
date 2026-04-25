@@ -32,7 +32,7 @@ bibliography: paper.bib
 
 # Summary
 
-Randomized linear algebra algorithms have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, randomized linear algebra provides useful routines for solving total least squares problems and rank-deficient least squares problems, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].  \texttt{librla}, written natively in Python, Julia and Matlab, provides low-rank QR factorizations, SVDs and interpolatory decompositions.  The algorithms randomly sample the range of the matrix or operator in a similar manner to [@Halko:2011]. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible.  The use of Level 3 BLAS allows for all the linear algebraic operations in the method be executed via low level optimized code.  \texttt{librla} is designed for small to mid-range sized matrices (i.e. up to roughly 10,000 in size depending on computing resources).  \texttt{librla} is not intended for matrices that are larger or do not fit in memory.
+Randomized linear algebra algorithms have become a vital tool for a variety of areas including fast direct solvers, reduced order modeling, and data science.   Additionally, randomized linear algebra provides useful routines for solving total least squares problems and rank-deficient least squares problems, doing matrix approximation, and skeletonizing (i.e. subset selection) a matrix [@Chan:1992].    \texttt{librla} is designed for small to mid-range sized matrices (i.e. up to roughly 10,000 in size depending on computing resources).  \texttt{librla} is not intended for matrices that are larger or do not fit in memory.
 
 \texttt{librla} includes the following options, all of which can be used for both real and complex matrices: 
 
@@ -92,7 +92,7 @@ Users call the desired factorization subroutine with a linear operator ${\bf A}$
 
 # Software design
 
-The most important goals in the design of the library \texttt{librla} was to make software that was stable, efficient, versatile and easy to maintain.  Versatility is achived by providing the library in three languages: Matlab, Python and Julia. The three factorization options and ability to use matrix vector mulitiplication to build the factorizations add to the versatility.  The stability and efficiency are a result of building on the vast randomized linear algebra literature and the utilization of Level 3 BLAS whenever possible.  The different language variants of the software are written in a similar manner allowing for the software to be easy to maintain in the future.  Specifically it is easy to make changes across the languages. 
+The library \texttt{librla}, written natively in Python, Julia and Matlab, provides low-rank QR factorizations, SVDs and interpolatory decompositions.  The algorithms randomly sample the range of the matrix or operator in a similar manner to [@Halko:2011]. A key feature of this package is that it is designed to exploit Level 3 BLAS operators as much as possible.  The use of Level 3 BLAS allows for all the linear algebraic operations in the method be executed via low level optimized code.  This design choice is the foundation for the stability and efficiency of the software.  The different language variants of the software are written in a similar manner allowing for the software to be easy to maintain in the future.   
 
 # Research impact statement
 
