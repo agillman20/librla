@@ -50,21 +50,6 @@
 % Allow footnotes in longtable head/foot
 \IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
 \makesavenoteenv{longtable}
-\usepackage{graphicx}
-\makeatletter
-\newsavebox\pandoc@box
-\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
-  \sbox\pandoc@box{#1}%
-  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
-  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
-  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
-  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
-  \else\usebox{\pandoc@box}%
-  \fi%
-}
-% Set default figure placement to htbp
-\def\fps@figure{htbp}
-\makeatother
 % definitions for citeproc citations
 \NewDocumentCommand\citeproctext{}{}
 \NewDocumentCommand\citeproc{mm}{%
@@ -126,13 +111,6 @@ and data science. Additionally, randomized linear algebra provides
 useful routines for solving total least squares problems and
 rank-deficient least squares problems, doing matrix approximation, and
 skeletonizing (i.e.~subset selection) a matrix (Chan and Hansen 1992).
-\texttt{librla}, written natively in Python, Julia and Matlab, provides
-low-rank QR factorizations, SVDs and interpolatory decompositions. The
-algorithms randomly sample the range of the matrix or operator in a
-similar manner to (Halko et al. 2011). A key feature of this package is
-that it is designed to exploit Level 3 BLAS operators as much as
-possible. The use of Level 3 BLAS allows for all the linear algebraic
-operations in the method be executed via low level optimized code.
 \texttt{librla} is designed for small to mid-range sized matrices
 (i.e.~up to roughly 10,000 in size depending on computing resources).
 \texttt{librla} is not intended for matrices that are larger or do not
@@ -161,35 +139,6 @@ the matrix-vector multiplication is ``matrix-free,'' the creation of the
 low factorization is also matrix free. In order to use this option,
 \texttt{librla} requires the ability to apply both the matrix and its
 transpose via a subroutine.
-
-While the algorithm used in \texttt{librla} is built in a similar manner
-to the randomized methods in (Halko et al. 2011; Liberty et al. 2007).
-There is a large collection of related work. (Martinsson and Tropp 2020;
-Mahoney 2011; Drineas and Mahoney 2017; Woodruff 2014; Voronin and
-Martinsson 2017) are some review papers on the field. Some literature
-(Mahoney and Drineas 2009; Sorensen and Embree 2016; Drineas et al.
-2008) has focused on the design of CUR factorizations. While other
-manuscripts (Frieze et al. 2004; Drineas, Kannan, et al. 2006b; Drineas,
-Mahoney, et al. 2006) have focused on Monte Carlo approaches to creating
-the low rank factorizations. Randomized projection methods (Halko et al.
-2011; Liberty et al. 2007; Duersch and Gu 2020; Meier and Nakatsukasa
-2024; Gu and Eisenstat 1996; Erichson et al. 2018; Rokhlin and Tygert
-2008) are common. Deterministic factorization techniques exist (Duersch
-and Gu 2017; Feng et al. 2018). Many techniques are specifically
-designed for distributed memory and/or to not require many passes
-through the data (Martinsson et al. 2019; Sarlos 2006; Tropp et al.
-2017; Yu et al. 2017; Lindquist et al. 2020; Yang et al. 2015; Bjarkason
-2019). There is much literature from the randomized linear algebra
-community for applications including \(L_2\) solutions (Drineas, Kannan,
-et al. 2006a; Drineas et al. 2007; Avron et al. 2010; Meng et al. 2014;
-Pilanci and Wainwright 2016), reduced order modeling (Sorensen and
-Embree 2016), linear programming (Drineas et al. 2012; Chowdhury et al.
-2020), statistics (Drineas and Mahoney 2016), machine learning (Yao et
-al. 2021), Newton methods (Roosta-Khorasani and Mahoney 2019; Pilanci
-and Wainwright 2017), and differentially private matrices (Balu and
-Furon 2016; Cormode et al. 2018; Choi et al. 2020). The user-specified
-rank algorithm in \texttt{librla} is influenced by the
-\texttt{svd\_lowrank} routine in PyTorch.
 
 \section{Statement of need}\label{statement-of-need}
 
@@ -230,13 +179,8 @@ only factorization available in SciPy and it allows the user to input a
 desire rank or tolerance. The results in the table include both types of
 experiments. Table 2 also reports the ratio of time it takes librla to
 compute the factorization over the time it takes SciPy under the title
-\emph{speedup}. The results illustrate the benefits of using the
+\emph{Speedup}. The results illustrate the benefits of using the
 \texttt{librla} package.
-
-In addition to the performance in terms of speed, the library
-\texttt{librla} has an additional feature in that it is the only package
-that provides the user the option of three different factorizations: QR,
-SVD and interpolatory decomposition.
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.3421}}
@@ -293,8 +237,8 @@ Gaussian mixture model & 400 x 400 & 0.0016s & 0.0014s & 7.096e-01 \\
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1569}}@{}}
 \caption{The table reports the relative error and the time in seconds
 for creating low factorizations of different matrices using SciPy and
-librla. The examples involve fixed rank or tolerance
-approximations.}\tabularnewline
+librla. The speedup over the SciPy package is also reported. The
+examples involve fixed rank or tolerance approximations.}\tabularnewline
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\raggedright
 Problem
@@ -343,6 +287,37 @@ Gaussian mixture model & 400 x 400 & tol = 0.01 & 0.0699s & 0.0055s &
 12.8 & 5.659e-05 \\
 \end{longtable}
 
+\section{State of the field}\label{state-of-the-field}
+
+While the algorithm used in \texttt{librla} is built in a similar manner
+to the randomized methods in (Halko et al. 2011; Liberty et al. 2007).
+There is a large collection of related work. (Martinsson and Tropp 2020;
+Mahoney 2011; Drineas and Mahoney 2017; Woodruff 2014; Voronin and
+Martinsson 2017) are some review papers on the field. Some literature
+(Mahoney and Drineas 2009; Sorensen and Embree 2016; Drineas et al.
+2008) has focused on the design of CUR factorizations. While other
+manuscripts (Frieze et al. 2004; Drineas, Kannan, et al. 2006b; Drineas,
+Mahoney, et al. 2006) have focused on Monte Carlo approaches to creating
+the low rank factorizations. Randomized projection methods (Halko et al.
+2011; Liberty et al. 2007; Duersch and Gu 2020; Meier and Nakatsukasa
+2024; Gu and Eisenstat 1996; Erichson et al. 2018; Rokhlin and Tygert
+2008) are common. Deterministic factorization techniques exist (Duersch
+and Gu 2017; Feng et al. 2018). Many techniques are specifically
+designed for distributed memory and/or to not require many passes
+through the data (Martinsson et al. 2019; Sarlos 2006; Tropp et al.
+2017; Yu et al. 2017; Lindquist et al. 2020; Yang et al. 2015; Bjarkason
+2019). There is much literature from the randomized linear algebra
+community for applications including \(L_2\) solutions (Drineas, Kannan,
+et al. 2006a; Drineas et al. 2007; Avron et al. 2010; Meng et al. 2014;
+Pilanci and Wainwright 2016), reduced order modeling (Sorensen and
+Embree 2016), linear programming (Drineas et al. 2012; Chowdhury et al.
+2020), statistics (Drineas and Mahoney 2016), machine learning (Yao et
+al. 2021), Newton methods (Roosta-Khorasani and Mahoney 2019; Pilanci
+and Wainwright 2017), and differentially private matrices (Balu and
+Furon 2016; Cormode et al. 2018; Choi et al. 2020). The user-specified
+rank algorithm in \texttt{librla} is influenced by the
+\texttt{svd\_lowrank} routine in PyTorch.
+
 \section{Mathematics}\label{mathematics}
 
 The algorithm that serves as the foundation of \texttt{librla} is called
@@ -353,10 +328,8 @@ package was heavily influenced by the methods presented in (Halko et al.
 rank portion of the package was influenced by the \texttt{svd\_lowrank}
 in PyTorch. Once the orthogonal basis is created, it is possible to
 create the low-rank QR, SVD or interpolatory decomposition via standard
-techniques. For simplicity of presentation, a pseudocode of
-\texttt{orth\_sketch} is presented in the following subsection.
-Pseudocodes for all of the factorizations are provided in the
-\texttt{PSEUDOCODE.md} file found in the \emph{distrib} folder.
+techniques. Pseudocodes for all of the factorizations are provided in
+the \texttt{PSEUDOCODE.md} file found in the \emph{distrib} folder.
 
 Users call the desired factorization subroutine with a linear operator
 \({\bf A}\) of size \(m\times n\), a desired rank and stopping condition
@@ -394,166 +367,31 @@ than the specified tolerance \({tol\_or\_rank}\). If the sketching step
 terminates early, the factorization routine falls back to a
 deterministic algorithm.
 
-\subsection{\texorpdfstring{Pseudocode for the \texttt{orth\_sketch}
-algorithm}{Pseudocode for the  algorithm}}\label{pseudocode-for-the-algorithm}
+\section{Software design}\label{software-design}
 
-\begin{verbatim}
-function orth_sketch(A, tol_or_rank, block_size, power_iter):
-    Input: A (a real or complex matrix (or linear operator) of size {m×n}),
-             tol_or_rank (tolerance or rank), block_size, power_iter
-    Output: Q (orthonormal basis), flag, diagR
-    # flag = 0 implies success; =1 implies failure
+The library \texttt{librla}, written natively in Python, Julia and
+Matlab, provides low-rank QR factorizations, SVDs and interpolatory
+decompositions. The algorithms randomly sample the range of the matrix
+or operator in a similar manner to (Halko et al. 2011). A key feature of
+this package is that it is designed to exploit Level 3 BLAS operators as
+much as possible. The use of Level 3 BLAS allows for all the linear
+algebraic operations in the method be executed via low level optimized
+code. This design choice is the foundation for the efficiency of the
+software. In fact, the performance in terms of both speed and stability
+is the same in all three languages. The codes are consistent between
+languages allowing for the software to be easily maintained.
 
-    if tol_or_rank ≥ 1:  # Rank mode
-        k_max = floor(tol_or_rank)
-        Ω = random_matrix(n, block_size)        # Uniform[-1,1]
-        Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
-        Y = A Ω
-        Q, R, _ = qr_pivoted(Y)
-        return Q[:, 1:k_max], 0, |diag(R)|
+\section{Research impact statement}\label{research-impact-statement}
 
-    # Tolerance mode (tol_or_rank < 1): adaptive rank
-    while true:
-        Ω = random_matrix(n, block_size)        # Uniform[-1,1]
-        Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
-        Y = A Ω
-        Q, R, _ = qr_pivoted(Y)
-
-        diagR = |diag(R)|
-        if diagR[end] / diagR[1] ≤ tol_or_rank:
-            return Q, 0, diagR
-
-        block_size = min(4 × block_size, min(m, n))
-        if block_size ≥ min(m, n):
-            return empty(m, 0), 1, []  # Early termination
-\end{verbatim}
-
-\subsection{The different factorization
-options}\label{the-different-factorization-options}
-
-There are three different factorization options. This section provides
-details on what the different factorizations accomplish. The demo
-section that follows explains where to look in the library for
-demonstrations for calling the available factorizations. The
-factorization options are:
-
-\begin{itemize}
-\item { \bf QR factorization via  \texttt{qr\_sketch}:} The subroutine returns two matrices: ${\bf Q}$ and ${\bf R}$, and a vector ${\bf p}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$. The $n$ entries of ${\bf p}$ are the list of the column pivots.  The matrix ${\bf Q}$ is of size $m \times k$ and the columns form an orthogonal basis for the range of ${\bf A}$.  The matrix ${\bf R}$ is an upper triangular $k\times n$ matrix. The factorization satisfies
-
-$${\bf{A}}(:,{\bf p}) \sim {\bf Q \ R}.$$
-
-
-\item { \bf SVD via \texttt{svd\_sketch:}} The subroutine returns two matrices: ${\bf U}$ and ${\bf V}$ and a vector ${\bf s}$.  The rank of the factorization is $k$, where $k\leq \min\{m,n\}$.  The vector ${\bf s}$ has $k$ entries that are the singular values of ${\bf A}$.  The matrix ${\bf U}$ is of size $m \times k$ and contains the left singular vectors of ${\bf A}$.  The matrix ${\bf V}$ is of size $n\times k$ and contains the right singular vectors of ${\bf A}$.  The columns of both ${\bf U}$ and ${\bf V}$ are orthonormal.  The factorization satisfies
-
-$$ {\bf A}  \sim  {\bf U}\,{\tt diag}({\bf s})\,{\bf V}^{*},$$
-
-where ${\tt diag}({\bf s})$ is a diagonal matrix with non-zero entries coming from the vector ${\bf s}$.
-
-\item { \bf Interpolatory factorization via \texttt{id\_sketch}:} The subroutine returns the number of skeleton columns $k$, a vector ${\bf piv}$ of size $1\times n$ and a matrix ${\bf T}$ of size $k \times (n-k)$.  The first $k$ entries of ${\bf piv}$ denote the skeleton columns; the remaining entries remain in natural order.  The matrix ${\bf T}$ is called the interpolation matrix.  The approximation satisfies the following;
-
-
-$$ {\bf A}(:, {\bf piv}(k+1:end))\sim {\bf A}(:, {\bf piv}(1:k))\, {\bf T}.$$
-
-To recover an approximation of the full matrix, the interpolation matrix ${\bf W}$ of size $k \times n$ is built by:
- $${\bf W}(:,{\bf piv}(1:k)) = {\bf I}_k,$$
-  where ${\bf I}_k$  is an identity matrix of size $k$ and 
-$${\bf W}(:,{\bf piv}(k+1:end)) = {\bf T}.$$  
-The result is that
-
-$${\bf A} \sim {\bf A}(:, {\bf piv}(1:k))\, {\bf W}.$$
-
-
-\end{itemize}
-
-\section{Demo and test codes}\label{demo-and-test-codes}
-
-The file named \emph{demo} located in each of the language files
-provides a collection of codes that demonstrate how to call the
-factorizations in `librla' with the different options. These
-\texttt{demo\_} codes are designed to aid users. The codes in the
-\emph{test} directory named \texttt{test\_} validate that the codes are
-working correctly. The code \texttt{test\_all} validates all the
-factorization techniques while the other test codes are written to test
-one factorization technique. Several of the test matrices were taken
-from (Dong et al. 2025).
-
-\section{Examples from the
-literature}\label{examples-from-the-literature}
-
-To illustrate the ability of the library to handle problems of interest,
-the techniques are applied to two problems. The first problem is a data
-compression problem taken directly from (Tropp et al. 2019). The second
-problem is an image compression problem from (Duersch and Gu 2020).
-Examples similar to these are found throughout the randomized linear
-algebra literature.
-
-Figure \ref{fig:climate_singular} illustrates the performance of the
-randomized SVD for NOAA ERSST v5 data (Huang et al. 2017), following an
-experiment in (Tropp et al. 2019). The results were generated by running
-the \texttt{test\_sst\_mode} code in the \emph{climate\_analysis} folder
-with different variations of the option settings. The specific options
-used are (a) none, (b) 10 extra samples, (c) two power iterations, and
-(d) 10 extra samples and two power iterations. The extra samples alone
-do not help the randomized SVD much. The power iteration is more
-helpful. The combination of the two options provides the best
-approximations of the singular values. See (Gu and Eisenstat 1996) for
-justicifaction for this improved performance.
-
-\begin{figure}
-\centering
-\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio,alt={Illustration of the exact singular values vs approximate singular values via the (a) randomized SVD, (b) 10 extra samples, (c) two power iterations, and (d) 10 extra samples with 2 power iterations. The example is taken from (Tropp et al. 2019). The data is from NOAA Extended Reconstructed Sea Surface Temperature (ERSST), Version 5 (Huang et al. 2017). }]{svdAll.png}
-\caption{Illustration of the exact singular values vs approximate
-singular values via the (a) randomized SVD, (b) 10 extra samples, (c)
-two power iterations, and (d) 10 extra samples with 2 power iterations.
-The example is taken from (Tropp et al. 2019). The data is from NOAA
-Extended Reconstructed Sea Surface Temperature (ERSST), Version 5 (Huang
-et al. 2017). \label{fig:climate_singular}}
-\end{figure}
-
-Figure \ref{fig:sst_modes} shows the first five modes from the
-randomized SVD with 10 extra samples and 2 power iterations (empirical
-orthogonal function (EOF) spatial patterns and principal component (PC)
-time series) of the NOAA ERSST v5 data.
-
-\begin{figure}
-\centering
-\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Randomized SVD modes of NOAA ERSST v5 sea surface temperature data (Huang et al. 2017), computed with 10 extra samples and 2 power iterations: spatial empirical orthogonal function (EOF) patterns (left) and principal component (PC) time series (right) for the first five modes. EOF1 captures the mean spatial pattern, EOF2--4 represent seasonal variations, and EOF5 captures the El Niño--Southern Oscillation (ENSO) signal. }]{sstModes.png}
-\caption{Randomized SVD modes of NOAA ERSST v5 sea surface temperature
-data (Huang et al. 2017), computed with 10 extra samples and 2 power
-iterations: spatial empirical orthogonal function (EOF) patterns (left)
-and principal component (PC) time series (right) for the first five
-modes. EOF1 captures the mean spatial pattern, EOF2--4 represent
-seasonal variations, and EOF5 captures the El Niño--Southern Oscillation
-(ENSO) signal. \label{fig:sst_modes}}
-\end{figure}
-
-The image compression example \texttt{test\_image\_id} code in the
-\emph{image\_analysis} folder produces 6 images. Figure
-\ref{fig:image_orig} illustrates five of them: (a) the original image
-and rank 30 approximations of the image using (b) the randomized SVD,
-(c) the interpolatory decomposition, (d) the randomized SVD with 15
-extra samples and 2 power iterations and (e) the interpolatory
-decomposition with 15 extra samples and 2 power iterations. While the
-rank of the approximations is the same, the SVD produces an image with
-less smearing. The examples with oversampling and power iterations
-further highlight this result.
-
-\begin{figure}
-\centering
-\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio,alt={Illustration of the use of randomized factorization for image compression: (a) original image, and rank 30 approximations using (b) the randomized SVD, (c) the interpolatory decomposition, (d) the randomized SVD with 15 extra samples and 2 power iterations and (e) the interpolatory decomposition with 15 extra samples and 2 power iterations. The example is taken from (Duersch and Gu 2020). The original image is ``Silver Metal Round Gears'' from Pexels (Creative Commons Zero license). The image is 4016 \textbackslash times 6016 pixels (RGB); it is reshaped into a 4016 \textbackslash times 18048 matrix before factorization, and reshaped back for display. }]{imageEX_centered.png}
-\caption{Illustration of the use of randomized factorization for image
-compression: (a) original image, and rank 30 approximations using (b)
-the randomized SVD, (c) the interpolatory decomposition, (d) the
-randomized SVD with 15 extra samples and 2 power iterations and (e) the
-interpolatory decomposition with 15 extra samples and 2 power
-iterations. The example is taken from (Duersch and Gu 2020). The
-original image is
-\href{https://www.pexels.com/photo/silver-metal-round-gears-connected-to-each-other-149387/}{``Silver
-Metal Round Gears''} from Pexels (Creative Commons Zero license). The
-image is \(4016 \times 6016\) pixels (RGB); it is reshaped into a
-\(4016 \times 18048\) matrix before factorization, and reshaped back for
-display. \label{fig:image_orig}}
-\end{figure}
+The avialability of efficient and stable randomized factorization
+techniques has the potential to impact various research areas. For
+example, the \texttt{librla} library allows for the fast direct solvers
+the authors develop to be easily shared with collaborators.
+Additionally, the \texttt{librla} library allows for easy
+reproducibility of the solver work as it is no longer dependent on
+platform dependent wrappers on FORTRAN code. Other areas that can
+experience similar benefits include reduced order modeling and data
+compression.
 
 \section{AI usage disclosure}\label{ai-usage-disclosure}
 
@@ -618,6 +456,7 @@ Choi, Seung Geol, Dana Dachman-Soled, Mukul Kulkarni, and Arkady
 Yerukhimovich. 2020. {``Differentially-Private Multi-Party Sketching for
 Large-Scale Statistics.''} \emph{Proceedings on Privacy Enhancing
 Technologies} 3: 153--74.
+\url{https://doi.org/10.2478/popets-2020-0047}.
 
 \bibitem[\citeproctext]{ref-Chowdhury:2020}
 Chowdhury, Agniva, Palma London, Haim Avron, and Petros Drineas. 2020.
@@ -638,6 +477,7 @@ Dong, Yijun, Chao Chen, Per-Gunnar Martinsson, and Katherine Pearce.
 2025. {``Robust Blockwise Random Pivoting: Fast and Accurate Adaptive
 Interpolative Decomposition.''} \emph{SIAM Journal on Matrix Analysis
 and Applications} 46 (3): 1791--815.
+\url{https://doi.org/10.1137/24M1678027}.
 
 \bibitem[\citeproctext]{ref-Drineas:2006}
 Drineas, Petros, Ravi Kannan, and Michael W. Mahoney. 2006a. {``Fast
@@ -655,7 +495,7 @@ Approximation to a Matrix.''} \emph{SIAM Journal on Computing} 36 (1):
 Drineas, Petros, Malik Magdon-Ismail, Michael W. Mahoney, and David P.
 Woodruff. 2012. {``Fast Approximation of Matrix Coherence and
 Statistical Leverage.''} \emph{Journal of Maching Learning Research} 13
-(1): 3475--506. \url{https://doi.org/10.1007/s11222-025-10723}.
+(1): 3475--506.
 
 \bibitem[\citeproctext]{ref-Drineas:2016}
 Drineas, Petros, and Michael W. Mahoney. 2016. \emph{RandNLA: Randomized
@@ -665,7 +505,7 @@ Numerical Linear Algebra}. (New York, NY, USA) 59 (6).
 \bibitem[\citeproctext]{ref-Drineas2017LecturesOR}
 Drineas, Petros, and Michael W. Mahoney. 2017. {``Lectures on Randomized
 Numerical Linear Algebra.''} \emph{ArXiv} abs/1712.08880.
-\url{https://api.semanticscholar.org/CorpusID:10550412}.
+\url{https://doi.org/10.1090/PCMS/025/01}.
 
 \bibitem[\citeproctext]{ref-Drinea:2006_3}
 Drineas, Petros, Michael W. Mahoney, and S. Muthukrishnan. 2006.
@@ -700,7 +540,7 @@ Rank-Revealing Matrix Factorizations and Low-Rank Approximations.''}
 Erichson, N. Benjamin, Ariana Mendible, Sophie Wihlborn, and J. Nathan
 Kutz. 2018. {``Randomized Nonnegative Matrix Factorization.''}
 \emph{Pattern Recognition Letters} 104: 1--7.
-https://doi.org/\url{https://doi.org/10.1016/j.patrec.2018.01.007}.
+\url{https://doi.org/10.1016/j.patrec.2018.01.007}.
 
 \bibitem[\citeproctext]{ref-Feng:2018}
 Feng, Yuehua, Jianwei Xiao, and Ming Gu. 2018. {``Randomized Complete
@@ -724,12 +564,6 @@ Halko, N., P. G. Martinsson, and J. A. Tropp. 2011. {``Finding Structure
 with Randomness: Probabilistic Algorithms for Constructing Approximate
 Matrix Decompositions.''} \emph{SIAM Review} 53 (2): 217--88.
 \url{https://doi.org/10.1137/090771806}.
-
-\bibitem[\citeproctext]{ref-Huang:2017}
-Huang, Boyin, Peter W. Thorne, Viva F. Banzon, et al. 2017. {``Extended
-Reconstructed Sea Surface Temperature, Version 5 ({ERSSTv5}): Upgrades,
-Validations, and Intercomparisons.''} \emph{Journal of Climate} 30 (20):
-8179--205. \url{https://doi.org/10.1175/JCLI-D-16-0836.1}.
 
 \bibitem[\citeproctext]{ref-Liberty:2007}
 Liberty, Edo, F. Woolfe, P. G Martinsson, V. Rokhlin, and V. Tygert.
@@ -823,12 +657,6 @@ Tropp, Joel A., Alp Yurtsever, Madeleine Udell, and Volkan Cevher. 2017.
 {``Practical Sketching Algorithms for Low-Rank Matrix Approximation.''}
 \emph{SIAM Journal on Matrix Analysis and Applications} 38 (4):
 1454--85. \url{https://doi.org/10.1137/17M1111590}.
-
-\bibitem[\citeproctext]{ref-Tropp:2019}
-Tropp, Joel A., Alp Yurtsever, Madeleine Udell, and Volkan Cevher. 2019.
-{``Streaming Low-Rank Matrix Approximation with an Application to
-Scientific Simulation.''} \emph{SIAM Journal on Scientific Computing} 41
-(4): A2430--63. \url{https://doi.org/10.1137/18M1201068}.
 
 \bibitem[\citeproctext]{ref-Voronin:2017}
 Voronin, S., and P. G. Martinsson. 2017. {``Efficient Algorithms for Cur
