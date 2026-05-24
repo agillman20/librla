@@ -113,7 +113,7 @@
 \author{Adrianna Gillman\textsuperscript{1} \quad Zydrunas Gimbutas\textsuperscript{2} \\[6pt]
 \small \textsuperscript{1}University of Colorado, Boulder, Department of Applied Mathematics \\
 \small \textsuperscript{2}National Institute of Standards and Technology (NIST)}
-\date{April 20, 2026}
+\date{April 23, 2026}
 
 \begin{document}
 \maketitle
@@ -164,46 +164,45 @@ transpose via a subroutine.
 
 While the algorithm used in \texttt{librla} is built in a similar manner
 to the randomized methods in (Halko et al. 2011; Liberty et al. 2007).
-There is a large collection of related work. {[}Martinsson and Tropp
-(2020); Mahoney (2011);Drineas and Mahoney (2017);Woodruff
-(2014);Voronin and Martinsson (2017); {]} are some review papers on the
-field. Some literature (Mahoney and Drineas 2009; Sorensen and Embree
-2016; Drineas et al. 2008) has focused on the design of CUR
-factorizations . While other manuscripts (Frieze et al. 2004; Drineas,
-Kannan, et al. 2006b; Drineas, Mahoney, et al. 2006) have focused on
-monte carlo approaches to creating the low rank factorizations.
-Randomized projection methods (Halko et al. 2011; Liberty et al. 2007;
-Duersch and Gu 2020; Meier and Nakatsukasa 2024; Gu and Eisenstat 1996;
-Erichson et al. 2018; Rokhlin and Tygert 2008) are common. Deterministic
-factorization techniques exist (Duersch and Gu 2017; Feng et al. 2018).
-Many techniques are specifically designed for distributed memory and/or
-to not require many passes through the data {[};Martinsson et al.
-(2019);Sarlos (2006); Tropp et al. (2017);Yu et al. (2017);Lindquist et
-al. (2020);Yang et al. (2015);Bjarkason (2019);{]}. There is much
-literature from the randomized linear algebra community for applications
-including \(L_2\) solutions (Drineas, Kannan, et al. 2006a; Drineas et
-al. 2007; Avron et al. 2010; Meng et al. 2014; Pilanci and Wainwright
-2016), reduced order modelling (Sorensen and Embree 2016), linear
-programming {[}Drineas et al. (2012);Chowdhury et al. (2020);{]},
-statisics (Drineas and Mahoney 2016), machine learning (Yao et al.
-2021), Newton methods (Roosta-Khorasani and Mahoney 2019; Pilanci and
-Wainwright 2017), and differentially private matrices (Balu and Furon
-2016; Cormode et al. 2018; Choi et al. 2020). The user-specified rank
-algorithm in \texttt{librla} is influenced by the \texttt{svd\_lowrank}
-routine in PyTorch.
+There is a large collection of related work. (Martinsson and Tropp 2020;
+Mahoney 2011; Drineas and Mahoney 2017; Woodruff 2014; Voronin and
+Martinsson 2017) are some review papers on the field. Some literature
+(Mahoney and Drineas 2009; Sorensen and Embree 2016; Drineas et al.
+2008) has focused on the design of CUR factorizations. While other
+manuscripts (Frieze et al. 2004; Drineas, Kannan, et al. 2006b; Drineas,
+Mahoney, et al. 2006) have focused on Monte Carlo approaches to creating
+the low rank factorizations. Randomized projection methods (Halko et al.
+2011; Liberty et al. 2007; Duersch and Gu 2020; Meier and Nakatsukasa
+2024; Gu and Eisenstat 1996; Erichson et al. 2018; Rokhlin and Tygert
+2008) are common. Deterministic factorization techniques exist (Duersch
+and Gu 2017; Feng et al. 2018). Many techniques are specifically
+designed for distributed memory and/or to not require many passes
+through the data (Martinsson et al. 2019; Sarlos 2006; Tropp et al.
+2017; Yu et al. 2017; Lindquist et al. 2020; Yang et al. 2015; Bjarkason
+2019). There is much literature from the randomized linear algebra
+community for applications including \(L_2\) solutions (Drineas, Kannan,
+et al. 2006a; Drineas et al. 2007; Avron et al. 2010; Meng et al. 2014;
+Pilanci and Wainwright 2016), reduced order modeling (Sorensen and
+Embree 2016), linear programming (Drineas et al. 2012; Chowdhury et al.
+2020), statistics (Drineas and Mahoney 2016), machine learning (Yao et
+al. 2021), Newton methods (Roosta-Khorasani and Mahoney 2019; Pilanci
+and Wainwright 2017), and differentially private matrices (Balu and
+Furon 2016; Cormode et al. 2018; Choi et al. 2020). The user-specified
+rank algorithm in \texttt{librla} is influenced by the
+\texttt{svd\_lowrank} routine in PyTorch.
 
 \section{Statement of need}\label{statement-of-need}
 
 While there is a large amount of research activity in the field of
 randomized linear algebra, an easy-to-use, efficient and stable
 factorization library is not available. For several factorization
-libraries, the stability issue manafest itself by either failure in the
+libraries, the stability issue manifest itself by either failure in the
 form of an invalid factorization or being unable to return anything.
-When new techniques implemented in a high level language are depdent on
-low level language libraries, it has a big impact on the portability and
-usability of the new work. This problem has had an impact of the field
-of fast direct solvers for boundary integral equations which often
-depend on a legacy Fortran interpolatory decomposition library
+When new techniques implemented in a high level language are dependent
+on low level language libraries, it has a big impact on the portability
+and usability of the new work. For example, this problem has impacted of
+the field of fast direct solvers for boundary integral equations which
+often depend on a legacy Fortran interpolatory decomposition library
 (Martinsson et al. 2008).
 
 Currently, there are two related routines in widely available,
@@ -213,29 +212,31 @@ SciPy's \texttt{id\_decomp} found in the
 compare the performance are available in the \emph{compare} folder of
 our repository. To illustrate the performance of librla, a subset of the
 provided examples are presented here. The experiments were run on a
-macbook pro with an M4 processor and 64 GB of RAM in the virtual
-environment created by \texttt{setup\_venv.sh}. The results in this
-manuscript are for a subset of the experiments in the comparison codes.
-Here the following matrices are considered: Hilbert matrices, a matrix
-where the spectrum decays \(~1/k\) for integer \(k\) between 1 and the
-size of the matrix, and a matrix from a Gaussian mixture model (Dong et
-al. 2025). Table 1 reports a subset of results obtained by running
+MacBook Pro with an M4 processor and 64 GB of RAM in the virtual
+environment created by \texttt{setup\_venv.sh}. The experiments consider
+the following matrices: Hilbert matrices, a matrix where the spectrum
+decays \(\sim1/k\) for integer \(k\) between 1 and the size of the
+matrix, and a matrix from a Gaussian mixture model (Dong et al. 2025).
+Table 1 reports a subset of results obtained by running
 \texttt{compare\_svd\_torch.py}. For a sequence of matrices, rank 15
-approximate singular value decompositions are computed. The Pytorch
-\texttt{svd\_lowrank} software only runs in a fixed rank modes and the
-only factorization option is SVD. The results demonstrate that the
-timings are comparable. Table 2 reports a subset of the result obtained
-by running \texttt{compare\_id\_scipy.py}. The inteporlatory
-decomposition in SciPy allows the user to input a desire rank or
-tolerance. The results in the table include both types of experiments.
-Table 2 also reports the ratio of time it takes librla to compute the
-factorization over the time it takes SciPy under the title
+approximate singular value decompositions are computed. This comparison
+is only for the fixed rank factorizations as that is the only option
+available in the Pytorch \texttt{svd\_lowrank} software. Additionally,
+the singular value decomposition is the only factorization available in
+Pytorch. The results demonstrate that the timings are comparable. Table
+2 reports a subset of the result obtained by running
+\texttt{compare\_id\_scipy.py}. The Interpolatory decomposition is the
+only factorization available in SciPy and it allows the user to input a
+desire rank or tolerance. The results in the table include both types of
+experiments. Table 2 also reports the ratio of time it takes librla to
+compute the factorization over the time it takes SciPy under the title
 \emph{speedup}. The results illustrate the benefits of using the
 \texttt{librla} package.
 
 In addition to the performance in terms of speed, the library
 \texttt{librla} has an additional feature in that it is the only package
-that provides the user the option of three different factorizations.
+that provides the user the option of three different factorizations: QR,
+SVD and interpolatory decomposition.
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.3421}}
@@ -243,9 +244,9 @@ that provides the user the option of three different factorizations.
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1447}}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1316}}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2105}}@{}}
-\caption{Table reporting time in seconds for creating rank 15
-factorizations of different matrices using Pytorch and
-librla.}\tabularnewline
+\caption{The table reports the relative error and the time in seconds
+for creating rank 15 factorizations of different matrices using Pytorch
+and librla.}\tabularnewline
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\raggedright
 Problem
@@ -290,9 +291,10 @@ Gaussian mixture model & 400 x 400 & 0.0016s & 0.0014s & 7.096e-01 \\
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0882}}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0882}}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1569}}@{}}
-\caption{Table reporting time in seconds for creating low factorizations
-of different matrices using SciPy and librla. Examples involved fixed
-rank or tolerance approximations.}\tabularnewline
+\caption{The table reports the relative error and the time in seconds
+for creating low factorizations of different matrices using SciPy and
+librla. The examples involve fixed rank or tolerance
+approximations.}\tabularnewline
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\raggedright
 Problem
