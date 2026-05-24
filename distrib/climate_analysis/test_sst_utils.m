@@ -12,7 +12,7 @@ classdef test_sst_utils
 %   test_sst_utils.print_north_test(s, n_samples, n_modes);
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: NIST-PD
+% SPDX-License-Identifier: MIT
 % Version: 1.0.1
 % Date: April 22, 2026
 % Assisted by: Claude Code (Anthropic)

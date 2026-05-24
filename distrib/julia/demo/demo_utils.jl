@@ -4,7 +4,7 @@ demo_utils.jl - Shared utilities for librla demos
 Matrix generators and helper functions used across all demos.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: NIST-PD
+SPDX-License-Identifier: MIT
 Assisted by: Claude Code (Anthropic)
 """
 

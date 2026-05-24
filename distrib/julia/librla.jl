@@ -30,7 +30,7 @@ U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
 # Author
 Adrianna Gillman, Zydrunas Gimbutas
 
-# SPDX-License-Identifier: NIST-PD
+# SPDX-License-Identifier: MIT
 
 # Version
 1.0.1

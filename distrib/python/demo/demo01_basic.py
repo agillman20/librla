@@ -14,7 +14,7 @@ where piv[:k] selects the "skeleton" columns and T is the interpolation matrix.
 Try changing the CONFIGURATION parameters below to experiment!
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: NIST-PD
+SPDX-License-Identifier: MIT
 Version: 1.0.1
 Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)
