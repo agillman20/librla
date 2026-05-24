@@ -4,7 +4,7 @@
 % Matrix generators and helper functions used across all test files.
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
-% SPDX-License-Identifier: NIST-PD
+% SPDX-License-Identifier: MIT
 % Assisted by: Claude Code (Anthropic)
 %==========================================================================
 

@@ -25,7 +25,7 @@ Requirements
   Pkg.add(["Downloads", "NCDatasets", "Dates"])
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: NIST-PD
+SPDX-License-Identifier: MIT
 Version: 1.0.1
 Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)

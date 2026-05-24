@@ -3,7 +3,7 @@ test_image_id.jl - Compare low-rank image compression methods from librla.
 
 Description
 -----------
-This script compares low-rank approximation methods on RGB images:
+This script compares low-rank factorization methods on RGB images:
 
   1. Randomized SVD (svd_sketch)
   2. Interpolative Decomposition (id_sketch)
@@ -27,7 +27,7 @@ Requirements
 See also: librla.id_sketch, librla.svd_sketch, librla.qr_sketch
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: NIST-PD
+SPDX-License-Identifier: MIT
 Version: 1.0.1
 Date: April 22, 2026
 Assisted by: Claude Code (Anthropic)

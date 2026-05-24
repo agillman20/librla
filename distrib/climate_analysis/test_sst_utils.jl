@@ -4,7 +4,7 @@ test_sst_utils.jl - Utilities for SST/EOF climate analysis
 Statistical tests and helper functions for EOF analysis of climate data.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
-SPDX-License-Identifier: NIST-PD
+SPDX-License-Identifier: MIT
 Assisted by: Claude Code (Anthropic)
 """
 

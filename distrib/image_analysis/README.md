@@ -8,7 +8,7 @@ They also illustrate that while the error in the approximation can be of the sam
 
 ### test_image_id (Method Comparison)
 
-Compares five low-rank approximation methods on RGB images (reshaped to m x 3n matrix):
+Compares five low-rank factorization methods on RGB images (reshaped to m x 3n matrix):
 
 | Method | Description |
 |--------|-------------|
