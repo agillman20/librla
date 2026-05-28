@@ -154,8 +154,6 @@ distrib/
 │       ├── demo_utils.jl  # Demo utilities (includes hilbert matrix)
 │       └── demo*.jl       # Demo suite (demo01-demo05)
 ├── compare/               # External library comparisons
-├── climate_analysis/      # Climate data analysis examples
-├── image_analysis/        # Image compression examples
 └── notes/                 # AI-generated notes and attribution
 ```
 
@@ -203,11 +201,9 @@ Additional resources provided for users are:
 - The folder '/distrib/compare' provides codes that compare 'librla' with other randomized linear algebra packages:
   - `compare_id_scipy.py` - Python: librla vs SciPy (ID)
   - `compare_svd_torch.py` - Python: librla vs PyTorch (SVD)
-- The folder '/distrib/image_analysis' provides codes that illustrate the use of the different randomized methods for image compression.
-- The folder '/distrib/climate_analysis' provides codes that illustrate the use of randomized methods for data compression.
+- The repo [librla_appliations](https://github.com/agillman20/librla_applications) contains examples of using 'librla' for data compression. The examples are taken from common applications of interest and are taken from the randomized linear algebra literature.
 - The folder '/distrib/notes' contains AI-generated notes, attribution, and pseudocode documentation.
 
-The folders contain documentation.  The last two folders illustrate the use of 'librla' for common applications of interest.  The examples considered are taken from the randomized linear algebra literature.
 
 ## References
 
