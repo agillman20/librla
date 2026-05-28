@@ -98,6 +98,8 @@ The library \texttt{librla}, written natively in Python, Julia and Matlab, provi
 
 The avialability of efficient and stable randomized factorization techniques has the potential to impact various research areas.  For example, the \texttt{librla} library allows for the fast direct solvers the authors develop to be easily shared with collaborators.  Additionally, the \texttt{librla} library allows for easy reproducibility of the solver work as it is no longer dependent on platform dependent wrappers on FORTRAN code.  Other areas that can experience similar benefits include reduced order modeling and data compression.
 
+Thus far, the \texttt{librla} library has been used in \cite{Fisher:2025} to create low rank factorization for the accelerated direct solver.  The library is also being utilized in other ongoing work by the authors.  Since the \texttt{librla} library has just been released for public use, there is not much documentation of the use of the library.  
+
 
 # AI usage disclosure
 
