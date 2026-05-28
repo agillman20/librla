@@ -1,7 +1,7 @@
 The codes in the demo file are written to teach people how to call the different routines and to better understand how the algorithms work.  The hope is that they aid in the users know how to utilize the package for their particular needs.
 
 
-- 'demo01_basic' shows how to the Interpolatory Decomposition with randomized or deterministic methods.
+- demo01_basic shows how to the Interpolatory Decomposition with randomized or deterministic methods.
 
 - demo02_svd shows how to use the SVD and QR subroutines.
 
@@ -9,5 +9,5 @@ The codes in the demo file are written to teach people how to call the different
 
 - demo04_power shows how to use the power iteration and oversampling.  It also illustrates the benefit of using both when you care about the accuracy of the singular values.
 
-- 'demo05_methods shows how different the impact of using different options for creating the interpolation matrix can impact the stability of the interpolation matrix.
+- demo05_methods shows how different the impact of using different options for creating the interpolation matrix can impact the stability of the interpolation matrix.
 
