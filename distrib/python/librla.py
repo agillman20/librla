@@ -411,7 +411,7 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     elif method == 'svd':
         T = _compute_T_svd(R, k, rtol_for_svd)
     elif method == 'fast':
-        T = _compute_T_fast(R, k)
+        T = _compute_T_fast(R, k, rtol_for_svd)
 
     return k, piv, T
 
@@ -503,7 +503,7 @@ def id_qrpiv(A, rtol, *, method='fast'):
     elif method == 'svd':
         T = _compute_T_svd(R, k, rtol_for_svd)
     elif method == 'fast':
-        T = _compute_T_fast(R, k)
+        T = _compute_T_fast(R, k, rtol_for_svd)
 
     return k, piv, T
 
@@ -804,8 +804,15 @@ def _compute_T_svd(R, k, rtol_for_svd):
 
     U, s, Vh = linalg.svd(R11, full_matrices=False)
 
-    # Filter small singular values
-    keep = s >= rtol_for_svd * np.max(s)
+    # Filter small singular values. Floor the relative threshold at machine
+    # precision so a rank-deficient R11 (e.g. requested rank exceeds the true
+    # rank) drops near-zero singular values instead of inverting them, which
+    # would otherwise produce Inf/NaN. An all-zero R11 yields T = 0.
+    smax = s.max() if s.size else 0.0
+    if smax == 0:
+        return np.zeros_like(R12)
+    tol = max(rtol_for_svd, np.finfo(R.real.dtype).eps)
+    keep = s >= tol * smax
     if not np.any(keep):
         T = np.zeros_like(R12)
     else:
@@ -815,8 +822,9 @@ def _compute_T_svd(R, k, rtol_for_svd):
     return T
 
 
-def _compute_T_fast(R, k):
-    """Compute T using fast triangular solve."""
+def _compute_T_fast(R, k, rtol_for_svd):
+    """Compute T using fast triangular solve, falling back to the SVD-based
+    minimum-norm solve when R11 is (near-)singular."""
     n = R.shape[1]
 
     if k == 0:
@@ -824,6 +832,14 @@ def _compute_T_fast(R, k):
 
     R11 = R[:k, :k]
     R12 = R[:k, k:]
+
+    # R11 is upper-triangular from QR; if it is (near-)singular the fast
+    # triangular solve would divide by ~0 (Inf/NaN). Detect via the diagonal
+    # and fall back to the SVD-based minimum-norm solve, which stays finite
+    # and lets the decomposition still reconstruct A.
+    d = np.abs(np.diag(R11))
+    if d.min() <= np.finfo(R.real.dtype).eps * d.max():
+        return _compute_T_svd(R, k, rtol_for_svd)
 
     from scipy.linalg import solve_triangular
     T = solve_triangular(np.triu(R11), R12, lower=False,

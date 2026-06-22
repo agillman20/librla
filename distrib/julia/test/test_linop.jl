@@ -177,6 +177,40 @@ function check_power_iter(errors)
 end
 
 
+function check_overrank_id(errors)
+    # Regression: ID in rank mode with the requested rank exceeding the true
+    # rank (singular R11). Every T-method must stay finite, return shape
+    # (k, n-k), and still reconstruct A — in particular the all-zero matrix,
+    # where R11 is exactly singular (fast used to crash, svd used to give NaN).
+    println("\n--- ID over-rank (requested rank > true rank) ---")
+    cases = [("zeros", zeros(40, 20), 5),
+             ("rank3", randn(40, 3) * randn(3, 20), 8)]
+    for (lbl, A, r) in cases
+        m, n = size(A)
+        normA = max(norm(A), 1.0)
+        for (fname, fn) in [("id_sketch", id_sketch), ("id_qrpiv", id_qrpiv)]
+            for meth in ["fast", "svd", "lstsq"]
+                ok = false
+                err = NaN
+                try
+                    k, piv, T = fn(A, Float64(r); method=meth)
+                    Arec = zeros(eltype(A), m, n)
+                    Arec[:, piv[1:k]] = A[:, piv[1:k]]
+                    Arec[:, piv[(k+1):end]] = A[:, piv[1:k]] * T
+                    err = norm(A - Arec) / normA
+                    ok = (size(T) == (k, n - k)) && all(isfinite, T) && (err < 1e-8)
+                catch
+                    ok = false
+                end
+                status = ok ? "PASS" : "FAIL"
+                @printf("  [%s] %-6s %-9s %-5s rec_err=%.1e\n", status, lbl, fname, meth, err)
+                ok || push!(errors, "overrank-id $lbl $fname $meth")
+            end
+        end
+    end
+end
+
+
 function test()
     Random.seed!(17)
     errors = String[]
@@ -205,6 +239,7 @@ function test()
 
     check_rng_kwarg(errors)
     check_power_iter(errors)
+    check_overrank_id(errors)
 
     println()
     println("="^72)

@@ -452,7 +452,7 @@ function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, metho
     elseif method == "svd"
         T = _compute_T_svd(R, k, rtol_for_svd)
     elseif method == "fast"
-        T = _compute_T_fast(R, k)
+        T = _compute_T_fast(R, k, rtol_for_svd)
     end
 
     return k, piv, T
@@ -543,7 +543,7 @@ function id_qrpiv(A, rtol; method="fast")
     elseif method == "svd"
         T = _compute_T_svd(R, k, rtol_for_svd)
     elseif method == "fast"
-        T = _compute_T_fast(R, k)
+        T = _compute_T_fast(R, k, rtol_for_svd)
     end
 
     return k, piv, T
@@ -806,8 +806,16 @@ function _compute_T_svd(R, k, rtol_for_svd)
     s = F.S
     Vh = F.Vt
 
-    # Filter small singular values
-    keep = s .>= rtol_for_svd * maximum(s)
+    # Filter small singular values. Floor the relative threshold at machine
+    # precision so a rank-deficient R11 (e.g. requested rank exceeds the true
+    # rank) drops near-zero singular values instead of inverting them, which
+    # would otherwise produce Inf/NaN. An all-zero R11 yields T = 0.
+    smax = isempty(s) ? zero(eltype(s)) : maximum(s)
+    if smax == 0
+        return zeros(eltype(R), size(R12)...)
+    end
+    tol = max(rtol_for_svd, eps(real(eltype(R))))
+    keep = s .>= tol * smax
     if !any(keep)
         T = zeros(eltype(R), size(R12)...)
     else
@@ -819,11 +827,12 @@ function _compute_T_svd(R, k, rtol_for_svd)
 end
 
 """
-    _compute_T_fast(R, k)
+    _compute_T_fast(R, k, rtol_for_svd)
 
-Compute T using fast triangular solve.
+Compute T using fast triangular solve, falling back to the SVD-based
+minimum-norm solve when R11 is (near-)singular.
 """
-function _compute_T_fast(R, k)
+function _compute_T_fast(R, k, rtol_for_svd)
     m_r, n = size(R)
 
     if k == 0
@@ -832,6 +841,16 @@ function _compute_T_fast(R, k)
 
     R11 = R[1:k, 1:k]
     R12 = R[1:k, (k+1):end]
+
+    # R11 is upper-triangular from QR; if it is (near-)singular the fast
+    # triangular solve would divide by ~0 (crash or Inf/NaN). Detect via the
+    # diagonal and fall back to the SVD-based minimum-norm solve, which stays
+    # finite and lets the decomposition still reconstruct A.
+    d = abs.(diag(R11))
+    if minimum(d) <= eps(real(eltype(R))) * maximum(d)
+        return _compute_T_svd(R, k, rtol_for_svd)
+    end
+
     T = R11 \ R12
 
     return T

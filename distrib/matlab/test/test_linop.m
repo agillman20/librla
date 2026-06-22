@@ -58,6 +58,7 @@ function exit_code = test_linop()
   end
 
   errors = check_power_iter(errors);
+  errors = check_overrank_id(errors);
 
   fprintf('\n======================================================================\n');
   if ~isempty(errors)
@@ -211,6 +212,47 @@ function errors = check_power_iter(errors)
             status, k, n, variants{vi}, err);
     if ~ok
       errors{end+1} = sprintf('power_iter largeblock %s (%s)', variants{vi}, msg);
+    end
+  end
+end
+
+
+function errors = check_overrank_id(errors)
+  % Regression: ID in rank mode with the requested rank exceeding the true
+  % rank (singular R11). Every T-method must stay finite, return shape
+  % (k, n-k), and still reconstruct A -- in particular the all-zero matrix,
+  % where R11 is exactly singular (fast gave a warning + NaN before the guard).
+  fprintf('\n--- ID over-rank (requested rank > true rank) ---\n');
+  % fast/lstsq legitimately warn on rank-deficient input in MATLAB; we assert
+  % the results are finite and reconstruct, not that no warning is raised.
+  ws = warning('off', 'all');
+  restore_warn = onCleanup(@() warning(ws));
+  labels = {'zeros', 'rank3'};
+  As = {zeros(40,20), randn(40,3)*randn(3,20)};
+  rs = {5, 8};
+  fns = {@librla.id_sketch, @librla.id_qrpiv}; fnames = {'id_sketch','id_qrpiv '};
+  meths = {'fast','svd','lstsq'};
+  for ci = 1:numel(labels)
+    A = As{ci}; r = rs{ci}; [m,n] = size(A); normA = max(norm(A,'fro'), 1.0);
+    for fi = 1:2
+      for mi = 1:3
+        ok = false; err = NaN;
+        try
+          [k, piv, T] = fns{fi}(A, r, 'method', meths{mi});
+          Arec = zeros(m, n);
+          Arec(:, piv(1:k))     = A(:, piv(1:k));
+          Arec(:, piv(k+1:end)) = A(:, piv(1:k)) * T;
+          err = norm(A - Arec, 'fro') / normA;
+          ok = isequal(size(T), [k, n-k]) && all(isfinite(T(:))) && (err < 1e-8);
+        catch
+          ok = false;
+        end
+        status = iif(ok, 'PASS', 'FAIL');
+        fprintf('  [%s] %-6s %-9s %-5s rec_err=%.1e\n', status, labels{ci}, fnames{fi}, meths{mi}, err);
+        if ~ok
+          errors{end+1} = sprintf('overrank-id %s %s %s', labels{ci}, fnames{fi}, meths{mi});
+        end
+      end
     end
   end
 end

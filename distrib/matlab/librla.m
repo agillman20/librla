@@ -468,7 +468,7 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
   elseif strcmp(method, 'svd')
       T = librla.compute_T_svd(R, k, rtol_for_svd);
   elseif strcmp(method, 'fast')
-      T = librla.compute_T_fast(R, k);
+      T = librla.compute_T_fast(R, k, rtol_for_svd);
   end
 end
 
@@ -560,7 +560,7 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
   elseif strcmp(method, 'svd')
       T = librla.compute_T_svd(R, k, rtol_for_svd);
   elseif strcmp(method, 'fast')
-      T = librla.compute_T_fast(R, k);
+      T = librla.compute_T_fast(R, k, rtol_for_svd);
   end
 end
 
@@ -741,8 +741,17 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   [U, S, V] = svd(R11, 'econ');
   s = diag(S);
 
-  % Filter small singular values
-  keep = s >= rtol_for_svd * max(s);
+  % Filter small singular values. Floor the relative threshold at machine
+  % precision so a rank-deficient R11 (e.g. requested rank exceeds the true
+  % rank) drops near-zero singular values instead of inverting them, which
+  % would otherwise produce Inf/NaN. An all-zero R11 yields T = 0.
+  smax = max(s);
+  if isempty(smax) || smax == 0
+      T = zeros(size(R12), class(R));
+      return;
+  end
+  tol = max(rtol_for_svd, eps(class(R)));
+  keep = s >= tol * smax;
   if ~any(keep)
       T = zeros(size(R12), class(R));
   else
@@ -751,8 +760,9 @@ function T = compute_T_svd(R, k, rtol_for_svd)
   end
 end
 
-function T = compute_T_fast(R, k)
-% Compute T using fast triangular solve
+function T = compute_T_fast(R, k, rtol_for_svd)
+% Compute T using fast triangular solve, falling back to the SVD-based
+% minimum-norm solve when R11 is (near-)singular
   [~, n] = size(R);
 
   if k == 0
@@ -762,6 +772,17 @@ function T = compute_T_fast(R, k)
 
   R11 = R(1:k, 1:k);
   R12 = R(1:k, (k+1):end);
+
+  % R11 is upper-triangular from QR; if it is (near-)singular the fast
+  % triangular solve would divide by ~0 (warning + Inf/NaN). Detect via the
+  % diagonal and fall back to the SVD-based minimum-norm solve, which stays
+  % finite and lets the decomposition still reconstruct A.
+  d = abs(diag(R11));
+  if min(d) <= eps(class(R)) * max(d)
+      T = librla.compute_T_svd(R, k, rtol_for_svd);
+      return;
+  end
+
   T = R11 \ R12;
 end
 

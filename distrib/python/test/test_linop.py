@@ -153,6 +153,36 @@ def check_power_iter(errors):
             errors.append(f"power_iter largeblock {variant} ({msg})")
 
 
+def check_overrank_id(errors):
+    """Regression: ID in rank mode with the requested rank exceeding the true
+    rank (singular R11). Every T-method must stay finite, return shape
+    (k, n-k), and still reconstruct A -- in particular the all-zero matrix,
+    where R11 is exactly singular (fast used to crash, svd used to give NaN)."""
+    print("\n--- ID over-rank (requested rank > true rank) ---")
+    cases = [("zeros", np.zeros((40, 20)), 5),
+             ("rank3", np.random.randn(40, 3) @ np.random.randn(3, 20), 8)]
+    for lbl, A, r in cases:
+        m, n = A.shape
+        normA = max(np.linalg.norm(A, 'fro'), 1.0)
+        for fname, fn in [("id_sketch", id_sketch), ("id_qrpiv", id_qrpiv)]:
+            for meth in ['fast', 'svd', 'lstsq']:
+                ok = False
+                err = float('nan')
+                try:
+                    k, piv, T = fn(A, float(r), method=meth)
+                    Arec = np.zeros((m, n), dtype=A.dtype)
+                    Arec[:, piv[:k]] = A[:, piv[:k]]
+                    Arec[:, piv[k:]] = A[:, piv[:k]] @ T
+                    err = np.linalg.norm(A - Arec, 'fro') / normA
+                    ok = (T.shape == (k, n - k)) and np.all(np.isfinite(T)) and (err < 1e-8)
+                except Exception:
+                    ok = False
+                status = 'PASS' if ok else 'FAIL'
+                print(f"  [{status}] {lbl:<6s} {fname:<9s} {meth:<5s} rec_err={err:.1e}")
+                if not ok:
+                    errors.append(f"overrank-id {lbl} {fname} {meth}")
+
+
 def main():
     np.random.seed(17)
     errors = []
@@ -186,6 +216,7 @@ def main():
             check_id(M, k, label, errors)
 
     check_power_iter(errors)
+    check_overrank_id(errors)
 
     # ------------------------------------------------------------------
     # Summary
