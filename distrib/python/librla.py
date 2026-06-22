@@ -645,7 +645,11 @@ def _rmatvec(A, x):
             return result
     else:
         if _is_linop(A):
-            return A.applyT(x) if hasattr(A, 'applyT') else A.conj().T @ x
+            if hasattr(A, 'applyT'):
+                return A.applyT(x)
+            # scipy LinearOperators expose the adjoint via rmatvec; they have
+            # no .conj()/.T, so do not fall back to A.conj().T @ x here.
+            return A.rmatvec(x)
         else:
             return A.conj().T @ x
 
