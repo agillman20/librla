@@ -57,6 +57,8 @@ function exit_code = test_linop()
     end
   end
 
+  errors = check_power_iter(errors);
+
   fprintf('\n======================================================================\n');
   if ~isempty(errors)
     fprintf('[FAIL] %d check(s) failed:\n', length(errors));
@@ -174,6 +176,41 @@ function errors = check_id(M, k, lbl, errors)
       if ~ok
         errors{end+1} = sprintf('%s method=%s %s', fns{fi}, methods{mi}, lbl);
       end
+    end
+  end
+end
+
+
+function errors = check_power_iter(errors)
+  % Regression: rank mode with power_iter >= 1 where block_size = rank +
+  % extra_samples exceeds n. The intermediate sketch inside power_iteration
+  % has n rows, so block_size > n must not overrun its QR Q-factor (this was
+  % a BoundsError in the Julia port before the min(rows, cols) cap was added).
+  fprintf('\n--- power_iter, rank + extra_samples > n ---\n');
+  m = 50; n = 10; k = 6;            % block_size = k + 12 = 18 > n = 10
+  M = randn(m, k) * randn(k, n);    % exact rank k
+  normM = norm(M, 'fro');
+  variants = {'dense', 'explicit', 'matfree'};
+  As = {M, LinearOperator.from_matrix(M), wrap_matfree(M)};
+  for vi = 1:3
+    ok = false; err = NaN; msg = '';
+    try
+      [Q0, ~, ~]   = librla.orth_sketch(As{vi}, k, 'power_iter', 2);
+      [U, s, V]    = librla.svd_sketch (As{vi}, k, 'power_iter', 2);
+      err = norm(M - U * diag(s) * V', 'fro') / normM;
+      [Q, ~, ~]    = librla.qr_sketch  (As{vi}, k, 'power_iter', 2);
+      [kk, ~, ~]   = librla.id_sketch  (As{vi}, k, 'power_iter', 2);
+      ok = (size(Q0, 2) == k) && (length(s) == k) && (err < 1e-8) && ...
+           (size(Q, 2) == k) && (kk == k);
+      if ~ok; msg = 'wrong shape/err'; end
+    catch e
+      msg = e.message;
+    end
+    status = iif(ok, 'PASS', 'FAIL');
+    fprintf('  [%s] power_iter=2 orth/svd/qr/id rank=%d (n=%d) %-9s err=%.1e\n', ...
+            status, k, n, variants{vi}, err);
+    if ~ok
+      errors{end+1} = sprintf('power_iter largeblock %s (%s)', variants{vi}, msg);
     end
   end
 end

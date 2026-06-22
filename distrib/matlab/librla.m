@@ -202,7 +202,7 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   rng_param = p_parser.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator');
+  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Rank mode vs tolerance mode
@@ -316,7 +316,7 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   rng_param = p.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator');
+  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Handle wide matrices via transpose

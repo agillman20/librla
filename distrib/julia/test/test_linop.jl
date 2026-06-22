@@ -142,6 +142,41 @@ function check_rng_kwarg(errors)
 end
 
 
+function check_power_iter(errors)
+    # Regression: rank mode with power_iter >= 1 where block_size = rank +
+    # extra_samples exceeds n. The intermediate sketch inside _power_iteration
+    # has n rows, so block_size > n must not overrun its QR Q-factor (this was
+    # a BoundsError before the min(rows, cols) cap was added).
+    println("\n--- power_iter, rank + extra_samples > n ---")
+    m, n, k = 50, 10, 6              # block_size = k + 12 = 18 > n = 10
+    M = randn(m, k) * randn(k, n)    # exact rank k
+    normM = norm(M)
+    for (variant, A) in [("dense", M),
+                         ("explicit", from_matrix(M)),
+                         ("matfree",  wrap_matfree(M))]
+        ok = false
+        err = NaN
+        msg = ""
+        try
+            Q0, flag, _ = orth_sketch(A, Float64(k); power_iter=2)
+            U, s, Vt = svd_sketch(A, Float64(k); power_iter=2)
+            err = norm(M - U * Diagonal(s) * Vt) / normM
+            Q, R, p = qr_sketch(A, Float64(k); power_iter=2)
+            kk, piv, T = id_sketch(A, Float64(k); power_iter=2)
+            ok = (size(Q0, 2) == k) && (length(s) == k) && (err < 1e-8) &&
+                 (size(Q, 2) == k) && (kk == k)
+            ok || (msg = "wrong shape/err")
+        catch e
+            msg = string(typeof(e))
+        end
+        status = ok ? "PASS" : "FAIL"
+        @printf("  [%s] power_iter=2 orth/svd/qr/id rank=%d (n=%d) %-9s err=%.1e\n",
+                status, k, n, variant, err)
+        ok || push!(errors, "power_iter largeblock $variant ($msg)")
+    end
+end
+
+
 function test()
     Random.seed!(17)
     errors = String[]
@@ -169,6 +204,7 @@ function test()
     end
 
     check_rng_kwarg(errors)
+    check_power_iter(errors)
 
     println()
     println("="^72)

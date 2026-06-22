@@ -562,7 +562,9 @@ function _power_iteration(A, x, power_iter::Int)
     for i = 1:power_iter
         x = _rmatvec(A, _matvec(A, x))
         F = qr(x, ColumnNorm())
-        x = F.Q[:, 1:size(x, 2)]  # thin Q
+        # thin Q has min(rows, cols) columns; cap the slice so block_size > rows
+        # (e.g. rank + extra_samples > n) does not overrun the available columns
+        x = F.Q[:, 1:min(size(x, 1), size(x, 2))]
     end
     return x
 end

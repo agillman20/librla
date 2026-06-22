@@ -119,6 +119,40 @@ def check_id(M, k, label, errors):
                 errors.append(f"{fn_name} method={method} {label}")
 
 
+def check_power_iter(errors):
+    """Regression: rank mode with power_iter >= 1 where block_size =
+    rank + extra_samples exceeds n. The intermediate sketch inside
+    _power_iteration has n rows, so block_size > n must not overrun
+    its QR Q-factor (a BoundsError in the Julia port before the fix)."""
+    print("\n--- power_iter, rank + extra_samples > n ---")
+    m, n, k = 50, 10, 6              # block_size = k + 12 = 18 > n = 10
+    M = np.random.randn(m, k) @ np.random.randn(k, n)   # exact rank k
+    normM = np.linalg.norm(M, 'fro')
+    for variant, A in [('dense', M),
+                       ('explicit', aslinearoperator(M)),
+                       ('matfree',  wrap_matfree(M))]:
+        ok = False
+        err = float('nan')
+        msg = ''
+        try:
+            Q0, flag, _ = orth_sketch(A, float(k), power_iter=2)
+            U, s, Vh = svd_sketch(A, float(k), power_iter=2)
+            err = np.linalg.norm(M - U @ np.diag(s) @ Vh, 'fro') / normM
+            Q, R, p = qr_sketch(A, float(k), power_iter=2)
+            kk, piv, T = id_sketch(A, float(k), power_iter=2)
+            ok = (Q0.shape[1] == k and len(s) == k and err < 1e-8
+                  and Q.shape[1] == k and kk == k)
+            if not ok:
+                msg = 'wrong shape/err'
+        except Exception as e:
+            msg = type(e).__name__
+        status = 'PASS' if ok else 'FAIL'
+        print(f"  [{status}] power_iter=2 orth/svd/qr/id rank={k} (n={n}) "
+              f"{variant:<9s} err={err:.1e}")
+        if not ok:
+            errors.append(f"power_iter largeblock {variant} ({msg})")
+
+
 def main():
     np.random.seed(17)
     errors = []
@@ -150,6 +184,8 @@ def main():
         # id_sketch needs method parameter, id_qrpiv only on square-ish m>=n cases
         if m >= n:
             check_id(M, k, label, errors)
+
+    check_power_iter(errors)
 
     # ------------------------------------------------------------------
     # Summary
