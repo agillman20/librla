@@ -40,8 +40,9 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 ### MATLAB/Octave
 
 ```matlab
-% Create a test matrix
-A = demo_utils.hilbert(1000, 500);
+% Create a test matrix (Hilbert matrix, ill-conditioned)
+[I, J] = ndgrid(1:1000, 1:500);
+A = 1.0 ./ (I + J - 1);
 
 % Orthonormal basis
 [Q, flag, diagR] = librla.orth_sketch(A, 1e-6);

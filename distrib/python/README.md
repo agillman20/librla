@@ -51,10 +51,9 @@ Here is an example using the library.
 ```python
 import numpy as np
 from librla import orth_sketch, qr_sketch, svd_sketch, id_sketch
-from demo_utils import hilbert
 
 # Create a test matrix (Hilbert matrix is ill-conditioned)
-A = hilbert(1000, 500)
+A = 1.0 / (np.arange(1, 1001)[:, None] + np.arange(1, 501) - 1)
 
 # Orthonormal basis with relative tolerance
 Q, flag, diagR = orth_sketch(A, rtol=1e-6)
@@ -223,7 +222,6 @@ export PYTHONPATH="/path/to/distrib/python:$PYTHONPATH"
 **Option 3: Copy files to your project**
 ```bash
 cp distrib/python/librla.py your_project/
-cp distrib/python/hilbert.py your_project/  # Optional utilities
 ```
 
 **Troubleshooting:**

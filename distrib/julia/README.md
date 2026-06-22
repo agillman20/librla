@@ -42,11 +42,10 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 
 ```julia
 include("librla.jl")
-include("demo_utils.jl")
 using .librla
 
-# Create a test matrix
-A = demo_utils.hilbert(1000, 500)
+# Create a test matrix (Hilbert matrix, ill-conditioned)
+A = [1.0 / (i + j - 1) for i in 1:1000, j in 1:500]
 
 # Orthonormal basis
 Q, flag, diagR = orth_sketch(A, 1e-6)
