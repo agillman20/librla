@@ -59,6 +59,7 @@ function exit_code = test_linop()
 
   errors = check_power_iter(errors);
   errors = check_overrank_id(errors);
+  errors = check_zero_tol_rank(errors);
 
   fprintf('\n======================================================================\n');
   if ~isempty(errors)
@@ -213,6 +214,25 @@ function errors = check_power_iter(errors)
     if ~ok
       errors{end+1} = sprintf('power_iter largeblock %s (%s)', variants{vi}, msg);
     end
+  end
+end
+
+
+function errors = check_zero_tol_rank(errors)
+  % Regression: in tolerance mode a zero matrix has rank 0. svd_sketch must
+  % agree with qr_sketch / id_sketch (rank_from_svals needs the same
+  % s(1) <= 0 guard that rank_from_diag has).
+  fprintf('\n--- zero matrix rank in tolerance mode ---\n');
+  A = zeros(100, 60);
+  [~, s, ~] = librla.svd_sketch(A, 1e-6);
+  [Q, ~, ~] = librla.qr_sketch(A, 1e-6);
+  [k, ~, ~] = librla.id_sketch(A, 1e-6);
+  ksvd = numel(s); kqr = size(Q, 2); kid = k;
+  ok = (ksvd == 0) && (kqr == 0) && (kid == 0);
+  status = iif(ok, 'PASS', 'FAIL');
+  fprintf('  [%s] zero 100x60 rtol=1e-6: svd k=%d, qr k=%d, id k=%d\n', status, ksvd, kqr, kid);
+  if ~ok
+    errors{end+1} = sprintf('zero-tol-rank svd=%d qr=%d id=%d', ksvd, kqr, kid);
   end
 end
 

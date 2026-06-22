@@ -735,7 +735,7 @@ def _power_iteration(A, x, power_iter=0):
 # --------------------------------------------------------------
 def _rank_from_svals(s, rtol):
     """Return the numerical rank given singular values `s`."""
-    if s.size == 0:
+    if s.size == 0 or s[0] <= 0:
         return 0
     return int(np.sum(s >= rtol * s[0]))
 

@@ -629,7 +629,7 @@ end
 
 function rank = rank_from_svals(s, rtol)
 % RANK_FROM_SVALS - Determine numerical rank from singular values
-  if isempty(s)
+  if isempty(s) || s(1) <= 0
       rank = 0;
   else
       rank = sum(s >= rtol * s(1));

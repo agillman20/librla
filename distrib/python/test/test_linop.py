@@ -153,6 +153,23 @@ def check_power_iter(errors):
             errors.append(f"power_iter largeblock {variant} ({msg})")
 
 
+def check_zero_tol_rank(errors):
+    """Regression: in tolerance mode a zero matrix has rank 0. svd_sketch must
+    agree with qr_sketch / id_sketch (rank_from_svals needs the same
+    s[0] <= 0 guard that rank_from_diag has)."""
+    print("\n--- zero matrix rank in tolerance mode ---")
+    A = np.zeros((100, 60))
+    U, s, Vh = svd_sketch(A, 1e-6)
+    Q, R, p = qr_sketch(A, 1e-6)
+    k, piv, T = id_sketch(A, 1e-6)
+    ksvd, kqr, kid = len(s), Q.shape[1], k
+    ok = (ksvd == 0) and (kqr == 0) and (kid == 0)
+    status = 'PASS' if ok else 'FAIL'
+    print(f"  [{status}] zero 100x60 rtol=1e-6: svd k={ksvd}, qr k={kqr}, id k={kid}")
+    if not ok:
+        errors.append(f"zero-tol-rank svd={ksvd} qr={kqr} id={kid}")
+
+
 def check_overrank_id(errors):
     """Regression: ID in rank mode with the requested rank exceeding the true
     rank (singular R11). Every T-method must stay finite, return shape
@@ -217,6 +234,7 @@ def main():
 
     check_power_iter(errors)
     check_overrank_id(errors)
+    check_zero_tol_rank(errors)
 
     # ------------------------------------------------------------------
     # Summary

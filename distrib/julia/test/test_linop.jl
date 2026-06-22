@@ -177,6 +177,24 @@ function check_power_iter(errors)
 end
 
 
+function check_zero_tol_rank(errors)
+    # Regression: in tolerance mode a zero matrix has rank 0. svd_sketch must
+    # agree with qr_sketch / id_sketch (rank_from_svals needs the same
+    # s[1] <= 0 guard that rank_from_diag has).
+    println("\n--- zero matrix rank in tolerance mode ---")
+    A = zeros(100, 60)
+    U, s, Vt = svd_sketch(A, 1e-6)
+    Q, R, p = qr_sketch(A, 1e-6)
+    k, piv, T = id_sketch(A, 1e-6)
+    ksvd, kqr, kid = length(s), size(Q, 2), k
+    ok = (ksvd == 0) && (kqr == 0) && (kid == 0)
+    status = ok ? "PASS" : "FAIL"
+    @printf("  [%s] zero 100x60 rtol=1e-6: svd k=%d, qr k=%d, id k=%d\n",
+            status, ksvd, kqr, kid)
+    ok || push!(errors, "zero-tol-rank svd=$ksvd qr=$kqr id=$kid")
+end
+
+
 function check_overrank_id(errors)
     # Regression: ID in rank mode with the requested rank exceeding the true
     # rank (singular R11). Every T-method must stay finite, return shape
@@ -240,6 +258,7 @@ function test()
     check_rng_kwarg(errors)
     check_power_iter(errors)
     check_overrank_id(errors)
+    check_zero_tol_rank(errors)
 
     println()
     println("="^72)

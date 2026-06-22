@@ -654,7 +654,7 @@ end
 Determine numerical rank from singular values.
 """
 function _rank_from_svals(s, rtol)
-    if isempty(s)
+    if isempty(s) || s[1] <= 0
         return 0
     else
         return sum(s .>= rtol * s[1])
