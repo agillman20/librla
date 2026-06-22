@@ -124,9 +124,10 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, rng=None):
         y = _matvec(A, x)
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
+        # Tolerance check (cross-multiplied form of diagR[-1]/diagR[0] <= rtol,
+        # avoiding the division; diagR is sorted decreasing so diagR[0] is the max)
         diagR = np.abs(R.diagonal())
-        d = diagR[-1] / diagR[0] if diagR.size > 0 and diagR[0] > 0 else 0.0
-        if d <= rtol:
+        if diagR.size == 0 or diagR[-1] <= rtol * diagR[0]:
             return Q, 0, diagR
 
         block_size = min(block_size * 4, min(m, n))

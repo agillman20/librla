@@ -150,14 +150,10 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Check tolerance
+        # Check tolerance (cross-multiplied form of diagR[end]/diagR[1] <= rtol,
+        # avoiding the division; diagR is sorted decreasing so diagR[1] is the max)
         diagR = abs.(diag(R))
-        if isempty(diagR) || diagR[1] == 0
-            d = zero(eltype(diagR)) 
-        else
-            d = diagR[end] / diagR[1]
-        end
-        if d <= rtol
+        if isempty(diagR) || diagR[end] <= rtol * diagR[1]
             flag = 0
             Q = F.Q[:, 1:size(y, 2)]  # thin Q, not full m×m
             return Q, flag, diagR

@@ -132,14 +132,10 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
 
-      % Check tolerance
+      % Check tolerance (cross-multiplied form of diagR(end)/diagR(1) <= rtol,
+      % avoiding the division; diagR is sorted decreasing so diagR(1) is the max)
       diagR = abs(diag(R));
-      if isempty(diagR) || diagR(1) == 0
-          d = 0.0;
-      else
-          d = diagR(end) / diagR(1);
-      end
-      if d <= rtol
+      if isempty(diagR) || diagR(end) <= rtol * diagR(1)
           flag = 0;
           return;
       end
