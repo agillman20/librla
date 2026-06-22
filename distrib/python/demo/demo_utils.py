@@ -5,8 +5,8 @@ Matrix generators and helper functions used across all demos.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT
-Version: 1.0.1
-Date: April 22, 2026
+Version: 1.0.2
+Date: June 22, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
