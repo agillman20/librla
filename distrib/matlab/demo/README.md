@@ -10,4 +10,3 @@ The codes in the demo file are written to teach people how to call the different
 - demo04_power shows how to use the power iteration and oversampling.  It also illustrates the benefit of using both when you care about the accuracy of the singular values.
 
 - demo05_methods shows how different the impact of using different options for creating the interpolation matrix can impact the stability of the interpolation matrix.
-

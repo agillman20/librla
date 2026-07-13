@@ -11,8 +11,8 @@
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
-# Version: 1.0.2
-# Date: June 22, 2026
+# Version: 1.1.0
+# Date: July 13, 2026
 # Assisted by: Claude Code (Anthropic)
 
 module TestOrth
@@ -79,6 +79,15 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
     println("\n--- orth_sketch (randomized) ---")
 
     t_sketch = @elapsed Q, flag, diagR = orth_sketch(A, rtol_or_rank)
+
+    # Rank mode: orth_sketch returns the oversampled basis (rank +
+    # extra_samples columns) so that qr_sketch/svd_sketch can truncate after
+    # projection; the quantity under test here is the requested-rank basis,
+    # so truncate before measuring (the buffer contract itself is checked
+    # separately in run_buffer_tests)
+    if rtol_or_rank >= 1
+        Q = Q[:, 1:min(Int(floor(rtol_or_rank)), size(Q, 2))]
+    end
 
     k = size(Q, 2)
 
@@ -189,11 +198,9 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
         passed = quality_ok && orth_ok
     else
         # Rank mode: span error should be within threshold of optimal
-        if span_err_ref == 0
-            passed = orth_ok
-        else
-            passed = ((span_err / max(span_err_ref, 1e-15)) < quality_threshold) && orth_ok
-        end
+        quality_ok = (span_err_ref == 0) ||
+                     ((span_err / max(span_err_ref, 1e-15)) < quality_threshold)
+        passed = quality_ok && orth_ok
     end
 
     return ComparisonResult(
@@ -210,14 +217,91 @@ function run_test_case(A::Matrix{T}, rtol_or_rank::Float64, name::String) where 
 end
 
 
-function print_summary(results::Vector{ComparisonResult})
+function run_buffer_tests()
+    """Directed tests for the extra_samples buffer contract in orth_sketch.
+
+    Tolerance mode must accept a sketch only when at least extra_samples + 1
+    of its pivoted column norms are at or below rtol times the largest;
+    rank mode must return rank + extra_samples columns. extra_samples=0 is
+    the legacy check.
+
+    Returns (passed, total).
+    """
+    println("\n\n", "="^70)
+    println("EXTRA_SAMPLES BUFFER TESTS")
+    println("Buffered tolerance check and oversampled rank-mode basis")
+    println("="^70)
+
+    checks = Bool[]
+
+    function check(name, cond)
+        println("  [", cond ? "PASS" : "FAIL", "] ", name)
+        push!(checks, cond)
+    end
+
+    rng = MersenneTwister(7)
+    rtol = 1e-6
+    s_buf = 12  # default extra_samples
+
+    # Rapidly decaying spectrum with rank well inside the first block
+    m, n, r = 300, 250, 25
+    U = Matrix(qr(randn(rng, m, r)).Q)
+    V = Matrix(qr(randn(rng, n, r)).Q)
+    svals = 10.0 .^ range(0, -10, length=r)
+    A = (U .* svals') * V'
+
+    Q, flag, diagR = orth_sketch(A, rtol; rng=rng)
+    below = count(diagR .<= rtol * diagR[1])
+    check("tolerance mode: flag == 0", flag == 0)
+    check("tolerance mode: > extra_samples trailing columns below rtol",
+          below >= s_buf + 1)
+    check("tolerance mode: buffered acceptance holds at diagR[end-s]",
+          length(diagR) > s_buf && diagR[end-s_buf] <= rtol * diagR[1])
+
+    # Legacy escape hatch: extra_samples=0 reproduces the last-column check
+    Q0, flag0, diagR0 = orth_sketch(A, rtol; extra_samples=0, rng=rng)
+    check("legacy extra_samples=0: flag == 0", flag0 == 0)
+    check("legacy extra_samples=0: last-column check",
+          !isempty(diagR0) && diagR0[end] <= rtol * diagR0[1])
+
+    # Rank mode returns the oversampled basis (buffer included)
+    Qr, flagr, _ = orth_sketch(A, 20.0; rng=rng)
+    check("rank mode: returns rank + extra_samples columns",
+          flagr == 0 && size(Qr, 2) == 32)
+    Qr0, flagr0, _ = orth_sketch(A, 20.0; extra_samples=0, rng=rng)
+    check("rank mode extra_samples=0: returns rank columns",
+          flagr0 == 0 && size(Qr0, 2) == 20)
+
+    # Boundary window: rtol-rank within extra_samples of the block edge
+    # (42 - 12 <= 35 <= 42 - 1) must force one x4 growth round, while the
+    # legacy check accepts the bufferless first block
+    rb = 35
+    Ub = Matrix(qr(randn(rng, m, rb)).Q)
+    Vb = Matrix(qr(randn(rng, n, rb)).Q)
+    Ab = Ub * Vb'  # step spectrum: 35 unit singular values, then zero
+    Qb, flagb, _ = orth_sketch(Ab, rtol; rng=rng)
+    check("boundary rank 35: buffered check grows to next block",
+          flagb == 0 && size(Qb, 2) == 168)
+    Qb0, flagb0, _ = orth_sketch(Ab, rtol; extra_samples=0, rng=rng)
+    check("boundary rank 35: legacy check accepts first block",
+          flagb0 == 0 && size(Qb0, 2) == 42)
+
+    passed = count(checks)
+    total = length(checks)
+    @printf("\nBuffer tests: %d/%d passed\n", passed, total)
+    return passed, total
+end
+
+
+function print_summary(results::Vector{ComparisonResult}, buffer_passed::Int, buffer_total::Int)
     println()
     println("="^80)
     println("TEST SUMMARY - ", length(results), " tests completed")
     println("="^80)
 
-    passed_count = sum([r.passed for r in results])
-    total_count = length(results)
+    # Overall pass/fail (comparison cases + directed buffer checks)
+    passed_count = sum([r.passed for r in results]) + buffer_passed
+    total_count = length(results) + buffer_total
     pass_rate = 100.0 * passed_count / total_count
 
     println()
@@ -231,6 +315,9 @@ function print_summary(results::Vector{ComparisonResult})
             if !r.passed
                 println("  [FAIL] ", r.name)
             end
+        end
+        if buffer_passed != buffer_total
+            println("  [FAIL] extra_samples buffer tests (", buffer_passed, "/", buffer_total, ")")
         end
     end
 
@@ -408,12 +495,17 @@ function test()
     A24 = make_mat(300, 300, "snn")
     push!(results, run_test_case(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
 
-    # Summary
-    print_summary(results)
+    # -------------------------------------------------------------------------
+    # EXTRA_SAMPLES BUFFER TESTS (directed assertions)
+    # -------------------------------------------------------------------------
+    buffer_passed, buffer_total = run_buffer_tests()
 
-    # Final status
-    passed_count = sum([r.passed for r in results])
-    total_count = length(results)
+    # Summary
+    print_summary(results, buffer_passed, buffer_total)
+
+    # Final status (comparison cases + directed buffer checks)
+    passed_count = sum([r.passed for r in results]) + buffer_passed
+    total_count = length(results) + buffer_total
     if passed_count < total_count
         println("\n[FAIL] ", total_count - passed_count, " tests failed")
         println("\nFailed tests:")
@@ -421,6 +513,9 @@ function test()
             if !r.passed
                 println("  - ", r.name)
             end
+        end
+        if buffer_passed != buffer_total
+            println("  - extra_samples buffer tests (", buffer_passed, "/", buffer_total, ")")
         end
         return 1
     else

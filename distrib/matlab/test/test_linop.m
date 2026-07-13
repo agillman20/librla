@@ -14,8 +14,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.0.2
-% Date: June 22, 2026
+% Version: 1.1.0
+% Date: July 13, 2026
 % Assisted by: Claude Code (Anthropic)
 
 function exit_code = test_linop()
@@ -86,6 +86,9 @@ end
 
 
 function errors = check_orth(M, k, lbl, errors)
+  % Rank mode returns the oversampled basis: rank + extra_samples (12)
+  % buffer columns, capped by the number of rows
+  k_exp = min(k + 12, size(M, 1));
   variants = {'dense', 'explicit', 'matfree'};
   As = {M, LinearOperator.from_matrix(M), wrap_matfree(M)};
   for vi = 1:3
@@ -95,7 +98,7 @@ function errors = check_orth(M, k, lbl, errors)
     else
       ortho = 0.0;
     end
-    ok = (flag == 0) && (size(Q, 2) == k) && (ortho < 1e-10);
+    ok = (flag == 0) && (size(Q, 2) == k_exp) && (ortho < 1e-10);
     status = iif(ok, 'PASS', 'FAIL');
     fprintf('  [%s] orth_sketch %-26s %-9s flag=%d ortho=%.1e k=%d\n', ...
             status, lbl, variants{vi}, flag, ortho, size(Q, 2));
@@ -202,7 +205,10 @@ function errors = check_power_iter(errors)
       err = norm(M - U * diag(s) * V', 'fro') / normM;
       [Q, ~, ~]    = librla.qr_sketch  (As{vi}, k, 'power_iter', 2);
       [kk, ~, ~]   = librla.id_sketch  (As{vi}, k, 'power_iter', 2);
-      ok = (size(Q0, 2) == k) && (length(s) == k) && (err < 1e-8) && ...
+      % orth_sketch returns the oversampled basis (rank + extra_samples,
+      % capped at n by the power-iteration orthonormalization), so only
+      % require >= k columns; svd/qr/id truncate to exactly k.
+      ok = (size(Q0, 2) >= k) && (length(s) == k) && (err < 1e-8) && ...
            (size(Q, 2) == k) && (kk == k);
       if ~ok; msg = 'wrong shape/err'; end
     catch e

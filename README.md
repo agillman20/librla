@@ -106,12 +106,19 @@ All sketching functions support these optional parameters:
 |-----------|---------|-------------|
 | `block_size` | 42 | Initial sketch size for tolerance mode |
 | `power_iter` | 0 | Number of power iterations for accuracy |
-| `extra_samples` | 12 | Oversampling for rank mode |
+| `extra_samples` | 12 | Oversampling / buffer beyond the target rank (both modes) |
 
 
 The use of oversampling and power iteration are useful for increasing accuracy especially of the singular
 values. In practice, power iteration provides more improvement than oversampling.  Thus if the application 
 of the operator is not expensive, the use of power iteration is recommended.
+
+In rank mode, `extra_samples` is classical oversampling: `rank + extra_samples` columns are
+sketched and the result is truncated to `rank` after projection. In tolerance mode, it is a
+buffer requirement: a sketch is accepted only when at least `extra_samples + 1` of its pivoted
+column norms fall at or below `rtol` times the largest, so the accepted basis always
+oversamples the numerical rank.
+Setting `extra_samples=0` reproduces the legacy last-column stopping test.
 
 For `id_sketch` and `id_qrpiv` only:
 

@@ -165,7 +165,7 @@ All sketching functions support these optional parameters:
 |-----------|---------|-------------|
 | `block_size` | 42 | Initial sketch size for tolerance mode |
 | `power_iter` | 0 | Number of power iterations for accuracy |
-| `extra_samples` | 12 | Oversampling for rank mode |
+| `extra_samples` | 12 | Oversampling / buffer beyond the target rank (both modes) |
 
 For `id_sketch` and `id_qrpiv` only:
 

@@ -33,10 +33,10 @@ Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
 
 # Version
-1.0.2
+1.1.0
 
 # Date
-June 22, 2026
+July 13, 2026
 
 # Assisted by
 Claude Code (Anthropic)
@@ -62,7 +62,7 @@ export LinearOperator, from_matrix, matvec, rmatvec
 # --------------------------------------------------------------
 
 """
-    orth_sketch(A, rtol; block_size=42, power_iter=0)
+    orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
 
 Approximate orthonormal basis for column space using randomized sketching.
 
@@ -72,28 +72,45 @@ of A. The approach is particularly efficient for matrices with rapidly
 decaying singular values.
 
 The algorithm has two modes:
-- Tolerance mode (rtol < 1): Adaptively grows the sketch size until the
-  smallest column norm falls below rtol times the largest norm
-- Rank mode (rtol >= 1): Performs a single sketch and returns the
-  requested number of columns (rtol interpreted as target rank)
+- Tolerance mode (rtol < 1): Adaptively grows the sketch size until it
+  covers the numerical rank at rtol with at least extra_samples columns
+  to spare, i.e. diagR[end-extra_samples] <= rtol * diagR[1].
+- Rank mode (rtol >= 1): Performs a single sketch of
+  floor(rtol) + extra_samples columns (rtol interpreted as target rank)
+
+In both modes the returned basis includes at least extra_samples buffer
+columns beyond the target rank (rank mode) or the rtol-rank of the sketch
+(tolerance mode): callers that want the target rank exactly truncate after
+projecting, as qr_sketch/svd_sketch do. The buffer guarantees the sketch
+oversamples the numerical rank, so the accepted tolerance test is a
+max-norm statistic over extra_samples + 1 sketch columns rather than the
+single smallest one.
 
 # Arguments
 - `A`: Input matrix (m×n) or LinearOperator
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
-- `block_size`: Initial number of random test vectors (default: 42)
+- `block_size`: Initial number of random test vectors in tolerance mode
+  (default: 42). Ignored in rank mode.
 - `power_iter`: Number of power iterations to improve accuracy (default: 0)
   Setting power_iter=1 or 2 can improve results for matrices
   with slowly decaying singular values
+- `extra_samples`: Number of buffer columns beyond the target rank
+  (default: 12). Rank mode samples floor(rtol) + extra_samples columns;
+  tolerance mode accepts a sketch only when at least extra_samples + 1 of
+  its pivoted column norms are at or below rtol times the largest.
+  extra_samples=0 reproduces the legacy last-column tolerance check.
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
-- `Q`: Orthonormal matrix (m×k) spanning approximate range of A
+- `Q`: Orthonormal matrix (m×k) spanning approximate range of A, including
+  the extra_samples buffer columns
 - `flag`: Exit status:
   - 0: Success, Q contains valid orthonormal basis
   - 1: Early termination (tolerance mode only). Occurs when:
     (a) rtol < machine epsilon (tolerance too tight), or
     (b) sketch size grew to min(m,n) without meeting tolerance,
-        indicating matrix is effectively full-rank at this tolerance
+        indicating matrix is effectively full-rank (within extra_samples
+        columns) at this tolerance
     When flag=1, Q is empty (m×0).
 - `diagR`: Diagonal elements from pivoted QR factorization, representing
   column norms of the sketched matrix (sorted in decreasing order)
@@ -103,26 +120,25 @@ Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
 fall back to deterministic (full) QR or SVD when orth_sketch terminates
 early, so users of those functions do not need to handle flag=1 explicitly.
 """
-function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
+function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
     is_complex_op = _is_complex_type(A)
     dtype = _get_dtype(A)
 
-    # Rank mode (rtol >= 1): single sketch with rank filtering
+    # Rank mode (rtol >= 1): single oversampled sketch, buffer included
     if rtol >= 1
-        kmax = Int(floor(rtol))
+        block_size = Int(floor(rtol)) + extra_samples
         x = _uniform_omega(n, block_size, is_complex_op, dtype, rng)
         x = _power_iteration(A, x, power_iter)
         y = _matvec(A, x)
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Use requested rank directly (capped at available columns)
         diagR = abs.(diag(R))
-        rank = min(kmax, size(R, 1))  # R has min(m, block_size) rows
 
-        # Materialize only needed columns of Q (thin, not full m×m)
-        Q = F.Q[:, 1:rank]
+        # Materialize thin Q including the buffer columns (not full m×m);
+        # R has min(m, block_size) rows
+        Q = F.Q[:, 1:size(R, 1)]
         flag = 0
         return Q, flag, diagR
     end
@@ -150,10 +166,12 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, rng=nothing)
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Check tolerance (cross-multiplied form of diagR[end]/diagR[1] <= rtol,
-        # avoiding the division; diagR is sorted decreasing so diagR[1] is the max)
+        # Buffered tolerance check (cross-multiplied form of
+        # diagR[end-extra_samples]/diagR[1] <= rtol, avoiding the division;
+        # diagR is sorted decreasing so diagR[1] is the max)
         diagR = abs.(diag(R))
-        if isempty(diagR) || diagR[end] <= rtol * diagR[1]
+        if isempty(diagR) || (length(diagR) > extra_samples &&
+                              diagR[end-extra_samples] <= rtol * diagR[1])
             flag = 0
             Q = F.Q[:, 1:size(y, 2)]  # thin Q, not full m×m
             return Q, flag, diagR
@@ -190,8 +208,10 @@ much smaller than min(m,n).
   - Rank mode: return k leading columns
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
-- `extra_samples`: Oversampling for rank mode (default: 12)
-  Rank mode uses block_size = rank + extra_samples
+- `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
+  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
+  sketch only when at least extra_samples + 1 of its pivoted column norms
+  are at or below rtol times the largest
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
@@ -210,15 +230,14 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-        block_size = kmax + extra_samples
     elseif is_matrix_free
         error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
-    # Compute sketch: in rank mode, request all oversampled columns
-    # for better accuracy (truncate to kmax after QR)
-    orth_rtol = rank_mode ? convert(typeof(rtol), block_size) : rtol
-    Qs, flag, _ = orth_sketch(A, orth_rtol; block_size=block_size, power_iter=power_iter, rng=rng)
+    # Compute sketch; the basis includes the extra_samples buffer columns
+    # for better accuracy (truncated to the target rank after QR)
+    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter,
+                              extra_samples=extra_samples, rng=rng)
 
     k = size(Qs, 2)
     if flag != 0
@@ -291,7 +310,10 @@ much smaller than min(m,n).
   - Rank mode: return k leading singular triplets
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
-- `extra_samples`: Oversampling for rank mode (default: 12)
+- `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
+  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
+  sketch only when at least extra_samples + 1 of its pivoted column norms
+  are at or below rtol times the largest
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
@@ -322,15 +344,14 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-        block_size = kmax + extra_samples
     elseif is_matrix_free
         error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
-    # Compute sketch: in rank mode, request all oversampled columns
-    # to get more accurate singular values (truncate to kmax after SVD)
-    orth_rtol = rank_mode ? convert(typeof(rtol), block_size) : rtol
-    Qs, flag, _ = orth_sketch(A, orth_rtol; block_size=block_size, power_iter=power_iter, rng=rng)
+    # Compute sketch; the basis includes the extra_samples buffer columns
+    # to get more accurate singular values (truncated to the target rank after SVD)
+    Qs, flag, _ = orth_sketch(A, rtol; block_size=block_size, power_iter=power_iter,
+                              extra_samples=extra_samples, rng=rng)
 
     k = size(Qs, 2)
     if flag != 0
@@ -406,7 +427,10 @@ This function uses qr_sketch() to identify the column permutation.
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
-- `extra_samples`: Oversampling for rank mode (default: 12)
+- `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
+  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
+  sketch only when at least extra_samples + 1 of its pivoted column norms
+  are at or below rtol times the largest
 - `method`: Method for computing T matrix (default: "fast")
   - "fast": Triangular solve R11 \\ R12 (fastest)
   - "svd": SVD-based pseudoinverse

@@ -17,8 +17,8 @@ Requires:
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT
-Version: 1.0.2
-Date: June 22, 2026
+Version: 1.1.0
+Date: July 13, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -107,6 +107,14 @@ def run_test_case(A, rtol_or_rank, name):
     t0 = time.perf_counter()
     Q, flag, diagR = orth_sketch(A, rtol=float(rtol_or_rank))
     t_sketch = time.perf_counter() - t0
+
+    # Rank mode: orth_sketch returns the oversampled basis (rank +
+    # extra_samples columns) so that qr_sketch/svd_sketch can truncate after
+    # projection; the quantity under test here is the requested-rank basis,
+    # so truncate before measuring (the buffer contract itself is checked
+    # separately in run_buffer_tests)
+    if rtol_or_rank >= 1:
+        Q = Q[:, :min(int(rtol_or_rank), Q.shape[1])]
 
     k = Q.shape[1]
 
@@ -214,6 +222,79 @@ def run_test_case(A, rtol_or_rank, name):
         t_sketch=t_sketch,
         passed=passed
     )
+
+
+def run_buffer_tests():
+    """Directed tests for the extra_samples buffer contract in orth_sketch.
+
+    Tolerance mode must accept a sketch only when at least extra_samples + 1
+    of its pivoted column norms are at or below rtol times the largest;
+    rank mode must return
+    rank + extra_samples columns. extra_samples=0 is the legacy check.
+
+    Returns (passed, total).
+    """
+    print("\n\n" + "="*70)
+    print("EXTRA_SAMPLES BUFFER TESTS")
+    print("Buffered tolerance check and oversampled rank-mode basis")
+    print("="*70)
+
+    checks = []
+
+    def check(name, cond):
+        print(f"  [{'PASS' if cond else 'FAIL'}] {name}")
+        checks.append(cond)
+
+    rng = np.random.default_rng(7)
+    rtol = 1e-6
+    s_buf = 12  # default extra_samples
+
+    # Rapidly decaying spectrum with rank well inside the first block
+    m, n, r = 300, 250, 25
+    U, _ = np.linalg.qr(rng.standard_normal((m, r)))
+    V, _ = np.linalg.qr(rng.standard_normal((n, r)))
+    A = (U * np.logspace(0, -10, r)) @ V.T
+
+    Q, flag, diagR = orth_sketch(A, rtol, rng=rng)
+    below = int(np.sum(diagR <= rtol * diagR[0]))
+    check("tolerance mode: flag == 0", flag == 0)
+    check("tolerance mode: > extra_samples trailing columns below rtol",
+          below >= s_buf + 1)
+    check("tolerance mode: buffered acceptance holds at diagR[-1-s]",
+          diagR.size > s_buf and diagR[-1 - s_buf] <= rtol * diagR[0])
+
+    # Legacy escape hatch: extra_samples=0 reproduces the last-column check
+    Q0, flag0, diagR0 = orth_sketch(A, rtol, extra_samples=0, rng=rng)
+    check("legacy extra_samples=0: flag == 0", flag0 == 0)
+    check("legacy extra_samples=0: last-column check",
+          diagR0.size > 0 and diagR0[-1] <= rtol * diagR0[0])
+
+    # Rank mode returns the oversampled basis (buffer included)
+    Qr, flagr, _ = orth_sketch(A, 20, rng=rng)
+    check("rank mode: returns rank + extra_samples columns",
+          flagr == 0 and Qr.shape[1] == 32)
+    Qr0, flagr0, _ = orth_sketch(A, 20, extra_samples=0, rng=rng)
+    check("rank mode extra_samples=0: returns rank columns",
+          flagr0 == 0 and Qr0.shape[1] == 20)
+
+    # Boundary window: rtol-rank within extra_samples of the block edge
+    # (42 - 12 <= 35 <= 42 - 1) must force one x4 growth round, while the
+    # legacy check accepts the bufferless first block
+    rb = 35
+    Ub, _ = np.linalg.qr(rng.standard_normal((m, rb)))
+    Vb, _ = np.linalg.qr(rng.standard_normal((n, rb)))
+    Ab = Ub @ Vb.T  # step spectrum: 35 unit singular values, then zero
+    Qb, flagb, _ = orth_sketch(Ab, rtol, rng=rng)
+    check("boundary rank 35: buffered check grows to next block",
+          flagb == 0 and Qb.shape[1] == 168)
+    Qb0, flagb0, _ = orth_sketch(Ab, rtol, extra_samples=0, rng=rng)
+    check("boundary rank 35: legacy check accepts first block",
+          flagb0 == 0 and Qb0.shape[1] == 42)
+
+    passed = sum(bool(c) for c in checks)
+    total = len(checks)
+    print(f"\nBuffer tests: {passed}/{total} passed")
+    return passed, total
 
 
 def main():
@@ -369,6 +450,11 @@ def main():
     A24 = make_mat(300, 300, 'snn')
     results.append(run_test_case(A24, 1e-3, "SNN (Sparse Neural Network, 300x300)"))
 
+    # -------------------------------------------------------------------------
+    # EXTRA_SAMPLES BUFFER TESTS (directed assertions)
+    # -------------------------------------------------------------------------
+    buffer_passed, buffer_total = run_buffer_tests()
+
     # =========================================================================
     # PRINT SUMMARY
     # =========================================================================
@@ -376,9 +462,9 @@ def main():
     print(f"TEST SUMMARY - {len(results)} tests completed")
     print("="*80)
 
-    # Overall pass/fail
-    passed_tests = sum(1 for r in results if r.passed)
-    total_tests = len(results)
+    # Overall pass/fail (comparison cases + directed buffer checks)
+    passed_tests = sum(1 for r in results if r.passed) + buffer_passed
+    total_tests = len(results) + buffer_total
     pass_rate = 100.0 * passed_tests / total_tests
 
     print()
@@ -391,6 +477,8 @@ def main():
         for r in results:
             if not r.passed:
                 print(f"  [FAIL] {r.name}")
+        if buffer_passed != buffer_total:
+            print(f"  [FAIL] extra_samples buffer tests ({buffer_passed}/{buffer_total})")
 
     # Performance summary
     print()
@@ -433,7 +521,8 @@ def main():
     print("="*80)
 
     # Return exit code based on pass/fail
-    return 0 if all(r.passed for r in results) else 1
+    all_ok = all(r.passed for r in results) and buffer_passed == buffer_total
+    return 0 if all_ok else 1
 
 
 if __name__ == '__main__':

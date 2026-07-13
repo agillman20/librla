@@ -165,7 +165,7 @@ All functions accept:
 |-----------|---------|-------------|
 | `block_size` | 42 | Initial sketch size |
 | `power_iter` | 0 | Power iterations for accuracy |
-| `extra_samples` | 12 | Oversampling for rank mode |
+| `extra_samples` | 12 | Oversampling / buffer beyond the target rank (both modes; 0 = legacy last-column tolerance check) |
 
 ## Cross-Language Consistency
 

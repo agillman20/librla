@@ -14,8 +14,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.0.2
-% Date: June 22, 2026
+% Version: 1.1.0
+% Date: July 13, 2026
 % Assisted by: Claude Code (Anthropic)
 
 function exit_code = test_orth()
@@ -174,21 +174,29 @@ results(end+1) = run_test_case(A23, 1e-3, 'GMM (Gaussian Mixture Model, 400x400)
 A24 = test_utils.make_mat(300, 300, 'snn');
 results(end+1) = run_test_case(A24, 1e-3, 'SNN (Sparse Neural Network, 300x300)');
 
+% -------------------------------------------------------------------------
+% EXTRA_SAMPLES BUFFER TESTS
+% -------------------------------------------------------------------------
+[buffer_passed, buffer_total] = run_buffer_tests();
+
 % =========================================================================
 % Summary
 % =========================================================================
 print_summary(results);
 
-% Final status
-passed_count = sum([results.passed]);
-total_count = length(results);
+% Final status (comparison cases + directed buffer checks)
+passed_count = sum([results.passed]) + buffer_passed;
+total_count = length(results) + buffer_total;
 if passed_count < total_count
     fprintf('\n[FAIL] %d tests failed\n', total_count - passed_count);
     fprintf('\nFailed tests:\n');
-    for i = 1:total_count
+    for i = 1:length(results)
         if ~results(i).passed
             fprintf('  - %s\n', results(i).name);
         end
+    end
+    if buffer_passed ~= buffer_total
+        fprintf('  - extra_samples buffer tests (%d/%d)\n', buffer_passed, buffer_total);
     end
     exit_code = 1;
 else
@@ -221,6 +229,15 @@ fprintf('\n--- orth_sketch (randomized) ---\n');
 tic;
 [Q, flag, diagR] = librla.orth_sketch(A, rtol_or_rank);
 t_sketch = toc;
+
+% Rank mode: orth_sketch returns the oversampled basis (rank +
+% extra_samples columns) so that qr_sketch/svd_sketch can truncate after
+% projection; the quantity under test here is the requested-rank basis,
+% so truncate before measuring (the buffer contract itself is checked
+% separately in run_buffer_tests)
+if rtol_or_rank >= 1
+    Q = Q(:, 1:min(floor(rtol_or_rank), size(Q, 2)));
+end
 
 k = size(Q, 2);
 
@@ -336,10 +353,11 @@ if rtol_or_rank < 1
 else
     % Rank mode: span error should be within threshold of optimal
     if span_err_ref == 0
-        passed = orth_ok;
+        quality_ok = true;
     else
-        passed = ((span_err / max(span_err_ref, 1e-15)) < quality_threshold) && orth_ok;
+        quality_ok = (span_err / max(span_err_ref, 1e-15)) < quality_threshold;
     end
+    passed = quality_ok && orth_ok;
 end
 
 % Create result struct
@@ -353,6 +371,83 @@ result = struct(...
     'flag', flag, ...
     't_sketch', t_sketch, ...
     'passed', passed);
+end
+
+
+function [passed, total] = run_buffer_tests()
+% Directed tests for the extra_samples buffer contract in orth_sketch.
+%
+% Tolerance mode must accept a sketch only when at least extra_samples + 1
+% of its pivoted column norms are at or below rtol times the largest;
+% rank mode must return rank + extra_samples columns. extra_samples=0 is
+% the legacy check.
+
+fprintf('\n\n======================================================================\n');
+fprintf('EXTRA_SAMPLES BUFFER TESTS\n');
+fprintf('Buffered tolerance check and oversampled rank-mode basis\n');
+fprintf('======================================================================\n');
+
+checks = [];
+
+rng(7);
+rtol = 1e-6;
+s_buf = 12;  % default extra_samples
+
+% Rapidly decaying spectrum with rank well inside the first block
+m = 300; n = 250; r = 25;
+[U, ~] = qr(randn(m, r), 0);
+[V, ~] = qr(randn(n, r), 0);
+A = U * diag(logspace(0, -10, r)) * V';
+
+[~, flag, diagR] = librla.orth_sketch(A, rtol);
+below = sum(diagR <= rtol * diagR(1));
+checks(end+1) = buffer_check('tolerance mode: flag == 0', flag == 0);
+checks(end+1) = buffer_check('tolerance mode: > extra_samples trailing columns below rtol', ...
+                             below >= s_buf + 1);
+checks(end+1) = buffer_check('tolerance mode: buffered acceptance holds at diagR(end-12)', ...
+                             numel(diagR) > s_buf && diagR(end - s_buf) <= rtol * diagR(1));
+
+% Legacy escape hatch: extra_samples=0 reproduces the last-column check
+[~, flag0, diagR0] = librla.orth_sketch(A, rtol, 'extra_samples', 0);
+checks(end+1) = buffer_check('legacy extra_samples=0: flag == 0', flag0 == 0);
+checks(end+1) = buffer_check('legacy extra_samples=0: last-column check', ...
+                             ~isempty(diagR0) && diagR0(end) <= rtol * diagR0(1));
+
+% Rank mode returns the oversampled basis (buffer included)
+[Qr, flagr, ~] = librla.orth_sketch(A, 20);
+checks(end+1) = buffer_check('rank mode: returns rank + extra_samples columns', ...
+                             flagr == 0 && size(Qr, 2) == 32);
+[Qr0, flagr0, ~] = librla.orth_sketch(A, 20, 'extra_samples', 0);
+checks(end+1) = buffer_check('rank mode extra_samples=0: returns rank columns', ...
+                             flagr0 == 0 && size(Qr0, 2) == 20);
+
+% Boundary window: rtol-rank within extra_samples of the block edge
+% (42 - 12 <= 35 <= 42 - 1) must force one x4 growth round, while the
+% legacy check accepts the bufferless first block
+rb = 35;
+[Ub, ~] = qr(randn(m, rb), 0);
+[Vb, ~] = qr(randn(n, rb), 0);
+Ab = Ub * Vb';  % step spectrum: 35 unit singular values, then zero
+[Qb, flagb, ~] = librla.orth_sketch(Ab, rtol);
+checks(end+1) = buffer_check('boundary rank 35: buffered check grows to next block', ...
+                             flagb == 0 && size(Qb, 2) == 168);
+[Qb0, flagb0, ~] = librla.orth_sketch(Ab, rtol, 'extra_samples', 0);
+checks(end+1) = buffer_check('boundary rank 35: legacy check accepts first block', ...
+                             flagb0 == 0 && size(Qb0, 2) == 42);
+
+passed = sum(checks);
+total = numel(checks);
+fprintf('\nBuffer tests: %d/%d passed\n', passed, total);
+end
+
+
+function ok = buffer_check(name, cond)
+ok = logical(cond);
+if ok
+    fprintf('  [PASS] %s\n', name);
+else
+    fprintf('  [FAIL] %s\n', name);
+end
 end
 
 

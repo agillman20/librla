@@ -11,8 +11,8 @@
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
-# Version: 1.0.2
-# Date: June 22, 2026
+# Version: 1.1.0
+# Date: July 13, 2026
 # Assisted by: Claude Code (Anthropic)
 
 module TestLinop
@@ -38,12 +38,15 @@ end
 
 
 function check_orth(M, k, label, errors)
+    # Rank mode returns the oversampled basis: rank + extra_samples (12)
+    # buffer columns, capped by the number of rows
+    k_expected = min(k + 12, size(M, 1))
     for (variant, A) in [("dense", M),
                          ("explicit", from_matrix(M)),
                          ("matfree",  wrap_matfree(M))]
         Q, flag, _ = orth_sketch(A, Float64(k))
         ortho = size(Q, 2) > 0 ? norm(Q' * Q - I) : 0.0
-        ok = (flag == 0) && (size(Q, 2) == k) && (ortho < 1e-10)
+        ok = (flag == 0) && (size(Q, 2) == k_expected) && (ortho < 1e-10)
         status = ok ? "PASS" : "FAIL"
         @printf("  [%s] orth_sketch %-26s %-9s flag=%d ortho=%.1e k=%d\n",
                 status, label, variant, flag, ortho, size(Q, 2))
@@ -163,7 +166,10 @@ function check_power_iter(errors)
             err = norm(M - U * Diagonal(s) * Vt) / normM
             Q, R, p = qr_sketch(A, Float64(k); power_iter=2)
             kk, piv, T = id_sketch(A, Float64(k); power_iter=2)
-            ok = (size(Q0, 2) == k) && (length(s) == k) && (err < 1e-8) &&
+            # orth_sketch returns the oversampled basis; the buffer is capped
+            # at n by the power-iteration orthonormalization, so only require
+            # at least k columns here. svd/qr/id must still return exactly k.
+            ok = (size(Q0, 2) >= k) && (length(s) == k) && (err < 1e-8) &&
                  (size(Q, 2) == k) && (kk == k)
             ok || (msg = "wrong shape/err")
         catch e

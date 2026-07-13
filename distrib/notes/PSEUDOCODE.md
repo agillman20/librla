@@ -6,20 +6,26 @@ Pseudocode for the randomized linear algebra algorithms in librla.
 
 Approximate orthonormal basis for column space via randomized sketching.
 
-```
-function orth_sketch(A, rtol, block_size, power_iter):
-    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol (tolerance or rank), block_size, power_iter
-    Output: Q (orthonormal basis), flag, diagR
+In both modes the returned basis includes at least `extra_samples` buffer
+columns beyond the target rank (rank mode) or the rtol-rank of the sketch
+(tolerance mode); callers truncate after projecting. `extra_samples = 0`
+reproduces the legacy last-column tolerance check.
 
-    if rtol ≥ 1:  # Rank mode
-        k_max = floor(rtol)
+```
+function orth_sketch(A, rtol, block_size, power_iter, extra_samples):
+    Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol (tolerance or rank), block_size,
+           power_iter, extra_samples
+    Output: Q (orthonormal basis, buffer included), flag, diagR
+
+    if rtol ≥ 1:  # Rank mode: single oversampled sketch
+        block_size = floor(rtol) + extra_samples
         Ω = random_matrix(n, block_size)        # Uniform[-1,1]
         Ω = power_iteration(A, Ω, power_iter)   # Optional: (A^H A)^p Ω
         Y = A Ω
         Q, R, _ = qr_pivoted(Y)
-        return Q[:, 1:k_max], 0, |diag(R)|
+        return Q, 0, |diag(R)|                  # all columns; caller truncates
 
-    # Tolerance mode (rtol < 1): adaptive rank
+    # Tolerance mode (rtol < 1): adaptive rank with buffered acceptance
     # Restart with larger sketch (no accumulation across iterations)
     while true:
         Ω = random_matrix(n, block_size)
@@ -27,8 +33,12 @@ function orth_sketch(A, rtol, block_size, power_iter):
         Y = A Ω
         Q, R, _ = qr_pivoted(Y)
 
+        # Accept only when at least extra_samples + 1 column norms are at
+        # or below rtol × diagR[1]: diagR is sorted decreasing, so this
+        # tests the max residual of the extra_samples+1 trailing pivot columns
         diagR = |diag(R)|
-        if diagR[end] / diagR[1] ≤ rtol:
+        if length(diagR) > extra_samples and
+                diagR[end − extra_samples] / diagR[1] ≤ rtol:
             return Q, 0, diagR
 
         block_size = min(4 × block_size, min(m, n))
@@ -45,15 +55,11 @@ function qr_sketch(A, rtol, block_size, power_iter, extra_samples):
     Input: A ∈ ℝ^{m×n} or ℂ^{m×n}, rtol, block_size, power_iter, extra_samples
     Output: Q, R, p  such that A[:, p] ≈ Q R
 
-    if rtol ≥ 1:  # Rank mode
-        k_max = floor(rtol)
-        block_size = k_max + extra_samples
-    # Tolerance mode: block_size used as-is, orth_sketch grows adaptively
+    # Step 1: Sketch orthonormal basis for range(A); the basis includes the
+    # extra_samples buffer columns (truncated to the target rank in Step 4)
+    Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter, extra_samples)
 
-    # Step 1: Sketch orthonormal basis for range(A)
-    Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter)
-
-    if flag ≠ 0:  # Fallback to full QR
+    if flag ≠ 0:  # Fallback to full QR (tolerance mode only)
         Q, R, p = qr_pivoted(A)
         k = rank_from_diagonal(diag(R), rtol)
         return Q[:, 1:k], R[1:k, :], p
@@ -84,15 +90,11 @@ function svd_sketch(A, rtol, block_size, power_iter, extra_samples):
         Vt_tmp, s, Ut_tmp = svd_sketch(A^H, rtol, ...)
         return Ut_tmp^H, s, Vt_tmp^H
 
-    if rtol ≥ 1:  # Rank mode
-        k_max = floor(rtol)
-        block_size = k_max + extra_samples
-    # Tolerance mode: block_size used as-is, orth_sketch grows adaptively
+    # Step 1: Sketch orthonormal basis for range(A); the basis includes the
+    # extra_samples buffer columns (truncated to the target rank in Step 4)
+    Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter, extra_samples)
 
-    # Step 1: Sketch orthonormal basis for range(A)
-    Q_s, flag, _ = orth_sketch(A, rtol, block_size, power_iter)
-
-    if flag ≠ 0:  # Fallback to full SVD
+    if flag ≠ 0:  # Fallback to full SVD (tolerance mode only)
         U, s, V^H = svd(A)
         k = rank_from_diagonal(s, rtol)
         return U[:, 1:k], s[1:k], V^H[1:k, :]

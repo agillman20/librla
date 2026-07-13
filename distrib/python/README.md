@@ -44,7 +44,7 @@ For Python, it is often a good idea to run in a virtual environment.  A script n
 
 The package liblra can be used by either calling the .py file or using the following pip install command:
 
-```pip install librla==1.0.2```
+```pip install librla==1.1.0```
 
 Here is an example using the library.
 
@@ -180,7 +180,7 @@ All sketching functions support these optional parameters:
 |-----------|---------|-------------|
 | `block_size` | 42 | Initial sketch size for tolerance mode |
 | `power_iter` | 0 | Number of power iterations for accuracy |
-| `extra_samples` | 12 | Oversampling for rank mode |
+| `extra_samples` | 12 | Oversampling / buffer beyond the target rank (both modes) |
 
 For `id_sketch` and `id_qrpiv` only:
 

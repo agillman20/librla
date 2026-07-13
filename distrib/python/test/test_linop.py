@@ -13,8 +13,8 @@ Returns exit code 0 if all tests pass, 1 otherwise.
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT
-Version: 1.0.2
-Date: June 22, 2026
+Version: 1.1.0
+Date: July 13, 2026
 Assisted by: Claude Code (Anthropic)
 """
 import sys
@@ -86,7 +86,10 @@ def check_orth(M, k, label, errors):
         Q, flag, _ = orth_sketch(A, float(k))
         ortho = np.linalg.norm(Q.conj().T @ Q - np.eye(Q.shape[1]), 'fro') \
                 if Q.shape[1] > 0 else 0.0
-        ok = (flag == 0) and (Q.shape[1] == k) and (ortho < 1e-10)
+        # Rank mode returns the oversampled basis: rank + extra_samples (12)
+        # buffer columns, capped by the number of rows
+        expected = min(k + 12, M.shape[0])
+        ok = (flag == 0) and (Q.shape[1] == expected) and (ortho < 1e-10)
         status = 'PASS' if ok else 'FAIL'
         print(f"  [{status}] orth_sketch {label:<26s} {variant:<9s}"
               f" flag={flag} ortho={ortho:.1e} k={Q.shape[1]}")
@@ -140,7 +143,9 @@ def check_power_iter(errors):
             err = np.linalg.norm(M - U @ np.diag(s) @ Vh, 'fro') / normM
             Q, R, p = qr_sketch(A, float(k), power_iter=2)
             kk, piv, T = id_sketch(A, float(k), power_iter=2)
-            ok = (Q0.shape[1] == k and len(s) == k and err < 1e-8
+            # orth_sketch keeps the buffer columns (here capped at n by the
+            # power-iteration orthonormalization); svd/qr/id truncate to k
+            ok = (Q0.shape[1] >= k and len(s) == k and err < 1e-8
                   and Q.shape[1] == k and kk == k)
             if not ok:
                 msg = 'wrong shape/err'
