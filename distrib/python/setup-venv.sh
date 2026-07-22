@@ -5,4 +5,5 @@ source venv/bin/activate
 
 pip install --upgrade pip
 pip install numpy scipy
+pip install librla
 ###pip intall jupyter
