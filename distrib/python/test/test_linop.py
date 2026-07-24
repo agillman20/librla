@@ -205,6 +205,37 @@ def check_overrank_id(errors):
                     errors.append(f"overrank-id {lbl} {fname} {meth}")
 
 
+def check_wide_explicit_tol(errors):
+    """Regression: a wide *explicit* LinearOperator (aslinearoperator — has
+    the .A backing matrix) in tolerance mode. svd_sketch's m < n branch
+    recurses on the transpose, and _transpose_linop used to drop .A, so the
+    recursive call misclassified the operator as matrix-free and raised the
+    rank-mode-only ValueError. Tall explicit operators always worked."""
+    print("\n--- wide explicit LinearOperator in tolerance mode ---")
+    rtol = 1e-6
+    k_true = 8
+    for m, n in [(200, 100), (100, 200)]:   # tall (control) and wide (regression)
+        M = np.random.randn(m, k_true) @ np.random.randn(k_true, n)
+        normM = np.linalg.norm(M, 'fro')
+        shape_lbl = f"{'tall' if m >= n else 'wide'} {m}x{n}"
+        ok = False
+        err = float('nan')
+        msg = ''
+        try:
+            U, s, Vh = svd_sketch(aslinearoperator(M), rtol)
+            err = np.linalg.norm(M - U @ np.diag(s) @ Vh, 'fro') / normM
+            ok = (len(s) == k_true) and (err < 10 * rtol)
+            if not ok:
+                msg = 'wrong rank/err'
+        except Exception as e:
+            msg = type(e).__name__
+        status = 'PASS' if ok else 'FAIL'
+        print(f"  [{status}] svd_sketch explicit {shape_lbl} rtol={rtol:.0e}"
+              f" k={len(s) if ok else '-'} err={err:.1e} {msg}")
+        if not ok:
+            errors.append(f"wide-explicit-tol {shape_lbl} ({msg})")
+
+
 def main():
     np.random.seed(17)
     errors = []
@@ -240,6 +271,7 @@ def main():
     check_power_iter(errors)
     check_overrank_id(errors)
     check_zero_tol_rank(errors)
+    check_wide_explicit_tol(errors)
 
     # ------------------------------------------------------------------
     # Summary

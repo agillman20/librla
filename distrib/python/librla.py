@@ -575,24 +575,21 @@ def _is_complex(A):
     return np.issubdtype(dtype, np.complexfloating)
 
 def _transpose_linop(A):
-    """Transpose/adjoint of a LinearOperator or ndarray.
+    """Adjoint (conjugate transpose) of a LinearOperator or ndarray.
 
-    For LinearOperators: creates new LinearOperator with swapped matvec/rmatvec
+    For LinearOperators: delegates to scipy's A.H, so each operator class
+    adjoints itself — MatrixLinearOperator keeps its .A backing matrix,
+    custom operators get matvec/rmatvec swapped by scipy. The MATLAB-port
+    compatibility attributes are re-attached afterwards.
     For arrays: uses .conj().T
 
     This matches MATLAB's A' operator behavior.
     """
     if _is_linop(A):
-        # Create new scipy LinearOperator with swapped functions and dimensions
-        m, n = A.shape
-        A_T = LinearOperator(
-            shape=(n, m),
-            matvec=lambda x: _rmatvec(A, x),
-            rmatvec=lambda x: _matvec(A, x),
-            dtype=A.dtype
-        )
+        A_T = A.H
 
-        # Preserve custom attributes if they exist
+        # Preserve custom attributes if they exist (MATLAB-port shims;
+        # scipy's adjoint does not carry user-attached attributes)
         if hasattr(A, 'is_explicit'):
             A_T.is_explicit = A.is_explicit
         if hasattr(A, 'matrix'):
