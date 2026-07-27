@@ -44,7 +44,7 @@ For Python, it is often a good idea to run in a virtual environment.  A script n
 
 The package liblra can be used by either calling the .py file or using the following pip install command:
 
-```pip install librla==1.1.0```
+```pip install librla==1.2.0```
 
 Here is an example using the library.
 
@@ -166,11 +166,14 @@ def rmatvec(x):
 n = 1000
 A_op = LinearOperator(shape=(n, n), matvec=matvec, rmatvec=rmatvec, dtype=complex)
 
-# Use with librla (rank mode only for matrix-free operators)
+# Use with librla
 Q, flag, diagR = orth_sketch(A_op, 20)  # Rank-20 approximation
 ```
 
-**Note:** Matrix-free LinearOperators only support **rank mode** (rtol >= 1).
+**Note:** Matrix-free LinearOperators support both modes. In tolerance mode
+(rtol < 1) the deterministic fallback may materialize the operator as a dense
+matrix, one matvec per column (O(n) matvecs) — prefer rank mode when that cost
+is unacceptable.
 
 ## Optional Parameters
 

@@ -14,8 +14,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.1.0
-% Date: July 13, 2026
+% Version: 1.2.0
+% Date: July 26, 2026
 % Assisted by: Claude Code (Anthropic)
 
 function exit_code = test_linop()
@@ -60,6 +60,8 @@ function exit_code = test_linop()
   errors = check_power_iter(errors);
   errors = check_overrank_id(errors);
   errors = check_zero_tol_rank(errors);
+  errors = check_matfree_tol(errors);
+  errors = check_sparse_backed(errors);
 
   fprintf('\n======================================================================\n');
   if ~isempty(errors)
@@ -280,6 +282,129 @@ function errors = check_overrank_id(errors)
         end
       end
     end
+  end
+end
+
+
+function errors = check_matfree_tol(errors)
+% Regression: matrix-free LinearOperators in tolerance mode (previously
+% errored). The deterministic fallback now materializes the operator via
+% get_matrix, one matvec per column.
+  fprintf('\n--- matrix-free LinearOperator in tolerance mode ---\n');
+  rtol = 1e-6;
+  k_true = 8;
+  dims = [200, 100; 100, 200];   % tall and wide
+  for di = 1:2
+    m = dims(di, 1); n = dims(di, 2);
+    M = randn(m, k_true) * randn(k_true, n);
+    shape_lbl = sprintf('%s %dx%d', iif(m >= n, 'tall', 'wide'), m, n);
+    ok = false; err = NaN; msg = '';
+    try
+      [U, s, V] = librla.svd_sketch(wrap_matfree(M), rtol);
+      err = norm(M - U * diag(s) * V', 'fro') / norm(M, 'fro');
+      ok = (numel(s) == k_true) && (err < 10 * rtol);
+      if ~ok, msg = 'wrong rank/err'; end
+    catch e
+      msg = e.identifier;
+    end
+    fprintf('  [%s] svd_sketch matfree %s rtol=%.0e err=%.1e %s\n', ...
+            iif(ok, 'PASS', 'FAIL'), shape_lbl, rtol, err, msg);
+    if ~ok
+      errors{end+1} = sprintf('matfree-tol svd %s (%s)', shape_lbl, msg);
+    end
+  end
+
+  % Paths that fully materialize the operator: deterministic ID and the
+  % full-rank fallback of qr_sketch
+  M = randn(120, 5) * randn(5, 60);
+  [k, ~, ~] = librla.id_qrpiv(wrap_matfree(M), rtol);
+  ok = (k == 5);
+  fprintf('  [%s] id_qrpiv matfree tol k=%d (true 5)\n', iif(ok, 'PASS', 'FAIL'), k);
+  if ~ok, errors{end+1} = sprintf('matfree-tol id_qrpiv k=%d', k); end
+
+  [k, ~, T] = librla.id_sketch(wrap_matfree(M), rtol, 'method', 'lstsq');
+  ok = (k == 5) && all(isfinite(T(:)));
+  fprintf('  [%s] id_sketch lstsq matfree tol k=%d\n', iif(ok, 'PASS', 'FAIL'), k);
+  if ~ok, errors{end+1} = sprintf('matfree-tol id_sketch lstsq k=%d', k); end
+
+  Mf = randn(40, 30);   % full rank: forces the dense fallback
+  [Q, ~, ~] = librla.qr_sketch(wrap_matfree(Mf), 1e-14);
+  ok = isequal(size(Q), [40, 30]);
+  fprintf('  [%s] qr_sketch matfree full-rank fallback shape=%dx%d\n', ...
+          iif(ok, 'PASS', 'FAIL'), size(Q, 1), size(Q, 2));
+  if ~ok, errors{end+1} = 'matfree-tol qr fallback'; end
+end
+
+
+function errors = check_sparse_backed(errors)
+% Regression: sparse-backed operators (from_matrix of a sparse matrix) and
+% raw sparse matrices. get_matrix materializes them densely, so the dense
+% LAPACK paths (id_qrpiv, lstsq, full QR/SVD fallback) work, sparse qr's
+% fill-reducing (non-rank-revealing) ordering is never used, and outputs
+% are dense-typed.
+  fprintf('\n--- sparse-backed operators / raw sparse matrices ---\n');
+  % Genuinely rank-5 sparse matrix: product of two sparse factors
+  S = sprandn(120, 5, 0.4) * sprandn(5, 60, 0.4);
+  D = full(S);
+  A = LinearOperator.from_matrix(S);
+
+  labels = {'id_qrpiv tol       ', 'id_qrpiv rank      ', ...
+            'id_sketch lstsq tol', 'raw sparse id_qrpiv'};
+  calls  = {@() librla.id_qrpiv(A, 1e-6), @() librla.id_qrpiv(A, 5.0), ...
+            @() librla.id_sketch(A, 1e-6, 'method', 'lstsq'), ...
+            @() librla.id_qrpiv(S, 1e-6)};
+  for ci = 1:numel(calls)
+    ok = false; msg = '';
+    try
+      [k, piv, T] = calls{ci}();
+      ok = (k == 5) && ~issparse(k) && ~issparse(piv) && ~issparse(T);
+      msg = sprintf('k=%d dense-typed=%d', full(k), ...
+                    ~issparse(k) && ~issparse(piv) && ~issparse(T));
+    catch e
+      msg = e.identifier;
+    end
+    fprintf('  [%s] %s %s\n', iif(ok, 'PASS', 'FAIL'), labels{ci}, msg);
+    if ~ok
+      errors{end+1} = sprintf('sparse-backed %s (%s)', strtrim(labels{ci}), msg);
+    end
+  end
+
+  [U, s, V] = librla.svd_sketch(A, 1e-6);
+  err = norm(D - U * diag(s) * V', 'fro') / norm(D, 'fro');
+  ok = (numel(s) == 5) && (err < 1e-5);
+  fprintf('  [%s] svd_sketch sparse-backed tol k=%d err=%.1e\n', ...
+          iif(ok, 'PASS', 'FAIL'), numel(s), err);
+  if ~ok, errors{end+1} = sprintf('sparse-backed svd k=%d', numel(s)); end
+
+  % Full-rank sparse: forces the dense QR/SVD fallback
+  Sf = sparse(randn(40, 30));
+  Af = LinearOperator.from_matrix(Sf);
+  ok = false; msg = '';
+  try
+    [Q, ~, ~] = librla.qr_sketch(Af, 1e-14);
+    [~, s, ~] = librla.svd_sketch(Af, 1e-14);
+    ok = isequal(size(Q), [40, 30]) && (numel(s) == 30);
+    msg = sprintf('qr=%dx%d svd k=%d', size(Q, 1), size(Q, 2), numel(s));
+  catch e
+    msg = e.identifier;
+  end
+  fprintf('  [%s] full-rank sparse fallback %s\n', iif(ok, 'PASS', 'FAIL'), msg);
+  if ~ok, errors{end+1} = sprintf('sparse-backed fallback (%s)', msg); end
+
+  % Graded-spectrum sparse: tolerance-mode rank selection must match the
+  % dense answer (sparse qr's COLAMD ordering used to inflate k silently)
+  G = sparse(100, 50);
+  for i = 1:24
+    G = G + 10^(-(i-1)*0.5) * (sprandn(100, 1, 0.3) * sprandn(1, 50, 0.3));
+  end
+  [kd, ~, ~] = librla.id_qrpiv(full(G), 1e-6);
+  [ks, ~, ~] = librla.id_qrpiv(G, 1e-6);
+  ok = isequal(full(kd), full(ks));
+  fprintf('  [%s] graded sparse id_qrpiv k: dense=%d sparse=%d (must match)\n', ...
+          iif(ok, 'PASS', 'FAIL'), full(kd), full(ks));
+  if ~ok
+    errors{end+1} = sprintf('sparse-backed graded k dense=%d sparse=%d', ...
+                            full(kd), full(ks));
   end
 end
 

@@ -24,7 +24,8 @@ Use the LinearOperator type for matrix-free operators:
 ```julia
 include("LinearOperator.jl")
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
-U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
+U, s, Vt = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
+                                        # materialize A at O(n) matvec cost
 ```
 
 # Author
@@ -33,10 +34,10 @@ Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
 
 # Version
-1.1.0
+1.2.0
 
 # Date
-July 13, 2026
+July 26, 2026
 
 # Assisted by
 Claude Code (Anthropic)
@@ -62,7 +63,7 @@ export LinearOperator, from_matrix, matvec, rmatvec
 # --------------------------------------------------------------
 
 """
-    orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+    orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
 
 Approximate orthonormal basis for column space using randomized sketching.
 
@@ -119,6 +120,23 @@ single smallest one.
 Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
 fall back to deterministic (full) QR or SVD when orth_sketch terminates
 early, so users of those functions do not need to handle flag=1 explicitly.
+
+See also [`qr_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive basis to 1e-6 relative tolerance
+Q, flag, diagR = orth_sketch(A, 1e-6)
+
+# Rank-20 basis (returned with the extra_samples buffer columns)
+Q, flag, diagR = orth_sketch(A, 20)
+
+# Reproducible run with a seeded generator
+using Random
+Q, flag, diagR = orth_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
@@ -166,9 +184,8 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Buffered tolerance check (cross-multiplied form of
-        # diagR[end-extra_samples]/diagR[1] <= rtol, avoiding the division;
-        # diagR is sorted decreasing so diagR[1] is the max)
+        # Buffered tolerance test (diagR is sorted decreasing; the
+        # multiplied form stays valid when diagR[1] == 0)
         diagR = abs.(diag(R))
         if isempty(diagR) || (length(diagR) > extra_samples &&
                               diagR[end-extra_samples] <= rtol * diagR[1])
@@ -189,7 +206,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng
 end
 
 """
-    qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+    qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
 
 Compute truncated QR factorization with column pivoting via randomized sketching.
 
@@ -219,10 +236,27 @@ much smaller than min(m,n).
 - `R`: Upper triangular matrix (k×n)
 - `p`: Column permutation vector (1-based indexing), length n
   The decomposition satisfies A[:, p] ≈ Q*R
+
+See also [`orth_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref),
+[`id_qrpiv`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+Q, R, p = qr_sketch(A, 1e-6)
+
+# Fixed rank 20; two power iterations for a slowly decaying spectrum
+Q, R, p = qr_sketch(A, 20; power_iter=2)
+
+# Reproducible run with a seeded generator
+using Random
+Q, R, p = qr_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
-    is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
 
     # Rank mode vs tolerance mode
@@ -230,8 +264,6 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-    elseif is_matrix_free
-        error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
     # Compute sketch; the basis includes the extra_samples buffer columns
@@ -321,10 +353,27 @@ much smaller than min(m,n).
 - `s`: Singular values (length k), sorted descending
 - `Vt`: Right singular vectors conjugate-transposed (k×n), orthonormal rows
   The decomposition satisfies A ≈ U*diagm(s)*Vt
+
+See also [`orth_sketch`](@ref), [`qr_sketch`](@ref), [`id_sketch`](@ref),
+`LinearAlgebra.svd`.
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+U, s, Vt = svd_sketch(A, 1e-6)
+
+# Fixed rank 20; two power iterations for a slowly decaying spectrum
+U, s, Vt = svd_sketch(A, 20; power_iter=2)
+
+# Reproducible run with a seeded generator
+using Random
+U, s, Vt = svd_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
-    is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
 
     # Handle wide matrices via transpose. For a LinearOperator, adjoint returns
@@ -344,8 +393,6 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-    elseif is_matrix_free
-        error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
     # Compute sketch; the basis includes the extra_samples buffer columns
@@ -444,6 +491,24 @@ This function uses qr_sketch() to identify the column permutation.
   - piv[k+1:n] are indices of interpolated columns
 - `T`: Interpolation matrix (k×(n-k))
   The approximation is A[:, piv[k+1:n]] ≈ A[:, piv[1:k]] * T
+
+See also [`id_qrpiv`](@ref), [`qr_sketch`](@ref), [`svd_sketch`](@ref),
+[`orth_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+k, piv, T = id_sketch(A, 1e-6)
+
+# Fixed rank 20 with the most accurate T computation
+k, piv, T = id_sketch(A, 20; method="lstsq")
+
+# Reproducible run with a seeded generator
+using Random
+k, piv, T = id_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast", rng=nothing)
     if !(method in ["fast", "svd", "lstsq"])
@@ -510,14 +575,25 @@ id_sketch.
 - `k`: Rank
 - `piv`: Column permutation (1-based)
 - `T`: Interpolation matrix, size (k, n-k)
+
+See also [`id_sketch`](@ref), [`qr_sketch`](@ref), [`svd_sketch`](@ref),
+[`orth_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Deterministic ID to 1e-6 relative tolerance
+k, piv, T = id_qrpiv(A, 1e-6)
+
+# Fixed rank 20 with the most accurate T computation
+k, piv, T = id_qrpiv(A, 20; method="lstsq")
+```
 """
 function id_qrpiv(A, rtol; method="fast")
     if !(method in ["fast", "svd", "lstsq"])
         error("method must be one of: 'fast', 'svd', 'lstsq'")
     end
-
-    is_linop = isa(A, LinearOperator)
-    is_matrix_free = is_linop && (isnothing(A.matrix) || A.matrix === nothing)
 
     m, n = size(A)
 
@@ -544,7 +620,6 @@ function id_qrpiv(A, rtol; method="fast")
     end
 
     k = rank
-    Q = F.Q[:, 1:k]  # thin Q, not full m×m
 
     # Handle edge cases
     if k == 0
@@ -745,17 +820,33 @@ end
 """
     _get_matrix(A)
 
-Extract explicit matrix from LinearOperator or return matrix.
+Return A as a dense matrix, materializing it if necessary.
+
+Dense matrices and LinearOperators backed by a dense `Matrix` are returned
+directly; other raw `AbstractMatrix` types (sparse, `Adjoint`) are converted
+via `Matrix()`. LinearOperators without a dense backing matrix are
+materialized one column at a time via matvec, at an O(n)-matvec cost —
+callers are dense (LAPACK) algorithms, so a dense result is required.
 """
 function _get_matrix(A)
-    if hasproperty(A, :matrix)
-        if !isnothing(A.matrix)
+    if isa(A, LinearOperator)
+        if A.matrix isa Matrix
             return A.matrix
-        else
-            error("Cannot extract explicit matrix from matrix-free LinearOperator")
         end
+        # Materialize one column at a time via matvec (matrix-free or
+        # sparse/lazy-backed operators)
+        m, n = size(A)
+        T = eltype(A)
+        A_mat = Matrix{T}(undef, m, n)
+        e_j = zeros(T, n)
+        for j = 1:n
+            e_j[j] = one(T)
+            A_mat[:, j] = _matvec(A, e_j)
+            e_j[j] = zero(T)
+        end
+        return A_mat
     else
-        return A
+        return A isa Matrix ? A : Matrix(A)
     end
 end
 
@@ -771,32 +862,10 @@ function _compute_T_lstsq(A, R, piv, k)
         return zeros(eltype(R), k, n - k)
     end
 
-    is_linop = isa(A, LinearOperator)
-    is_matrix_free = is_linop && (isnothing(A.matrix) || A.matrix === nothing)
-
-    if is_matrix_free
-        # Extract skeleton columns via unit vectors
-        skeleton_cols = zeros(eltype(R), m, k)
-        for j = 1:k
-            e_j = zeros(eltype(R), n)
-            e_j[piv[j]] = one(eltype(R))
-            skeleton_cols[:, j] = _matvec(A, e_j)
-        end
-
-        remaining_cols = zeros(eltype(R), m, n - k)
-        for j = 1:(n - k)
-            e_j = zeros(eltype(R), n)
-            e_j[piv[k + j]] = one(eltype(R))
-            remaining_cols[:, j] = _matvec(A, e_j)
-        end
-
-        T = skeleton_cols \ remaining_cols
-    else
-        A_mat = _get_matrix(A)
-        cols = piv[1:k]
-        remaining = piv[(k+1):end]
-        T = A_mat[:, cols] \ A_mat[:, remaining]
-    end
+    A_mat = _get_matrix(A)
+    cols = piv[1:k]
+    remaining = piv[(k+1):end]
+    T = A_mat[:, cols] \ A_mat[:, remaining]
 
     return T
 end

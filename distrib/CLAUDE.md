@@ -81,7 +81,9 @@ All implementations support matrix-free computation through LinearOperator:
 | MATLAB | Custom `LinearOperator.m` class |
 | Julia | Custom `LinearOperator.jl` type |
 
-Matrix-free operators only support rank mode (rtol >= 1).
+Matrix-free operators support both modes; in tolerance mode the deterministic
+fallback may materialize the operator as a dense matrix (one matvec per column,
+O(n) matvecs).
 
 ## Language-Specific Details
 

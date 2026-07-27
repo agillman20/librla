@@ -20,12 +20,14 @@ classdef librla
 % MATRIX-FREE OPERATORS:
 %   Use the LinearOperator class for matrix-free operators:
 %     A = LinearOperator(matvec_fun, rmatvec_fun, m, n);
-%     [U, s, V] = librla.svd_sketch(A, rank);  % rank mode only: rtol >= 1
+%     [U, s, V] = librla.svd_sketch(A, rtol_or_rank);  % both modes; tolerance
+%                                                      % mode may materialize A
+%                                                      % at O(n) matvec cost
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.1.0
-% Date: July 13, 2026
+% Version: 1.2.0
+% Date: July 26, 2026
 % Assisted by: Claude Code (Anthropic)
 
 methods (Static)
@@ -40,10 +42,10 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   [___] = librla.orth_sketch(A, rtol, Name, Value)
 %
 % Description:
-%   This function uses random test matrix multiplication (A*Omega where Omega has
-%   i.i.d. uniform[-1,1] entries) followed by QR factorization to approximate
-%   the range of A. The approach is particularly efficient for matrices with
-%   rapidly decaying singular values.
+%   Q = librla.orth_sketch(A, rtol) approximates the range of A using random
+%   test matrix multiplication (A*Omega where Omega has i.i.d. uniform[-1,1]
+%   entries) followed by QR factorization. The approach is particularly
+%   efficient for matrices with rapidly decaying singular values.
 %
 %   The algorithm has two modes:
 %     - Tolerance mode (rtol < 1): Adaptively grows the sketch size until it
@@ -60,22 +62,36 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   tolerance test is a max-norm statistic over extra_samples + 1 sketch
 %   columns rather than the single smallest one.
 %
+%   [___] = librla.orth_sketch(A, rtol, Name, Value) specifies additional
+%   options using one or more name-value arguments. For example,
+%   librla.orth_sketch(A, 1e-6, 'block_size', 84) starts the adaptive
+%   sketch at 84 columns.
+%
 % Input Arguments:
-%   A             - Input matrix (m x n) or LinearOperator
-%   rtol          - Relative tolerance (< 1) or target rank (>= 1)
-%   block_size    - Initial number of random test vectors in tolerance mode
-%                   (default: 42). Ignored in rank mode.
-%   power_iter    - Number of power iterations to improve accuracy (default: 0)
-%                   Setting power_iter=1 or 2 can improve results for
-%                   matrices with slowly decaying singular values
-%   extra_samples - Number of buffer columns beyond the target rank
-%                   (default: 12). Rank mode samples floor(rtol) + extra_samples
-%                   columns; tolerance mode accepts a sketch only when at least
-%                   extra_samples + 1 of its pivoted column norms are at or
-%                   below rtol times the largest. extra_samples=0 reproduces
-%                   the legacy last-column check.
-%   rng           - Random number generator state or seed (default: [] uses current state)
-%                   Can be a seed (integer) or rng state struct from rng()
+%   A    - Input matrix (m x n) or LinearOperator
+%   rtol - Relative tolerance (< 1) or target rank (>= 1)
+%
+% Name-Value Arguments:
+%   'block_size'    - Initial number of random test vectors in tolerance mode;
+%                     ignored in rank mode
+%                     42 (default) | positive integer
+%                     Example: librla.orth_sketch(A, 1e-6, 'block_size', 84)
+%   'power_iter'    - Number of power iterations for accuracy. Setting 1 or 2
+%                     can improve results for slowly decaying spectra
+%                     0 (default) | nonnegative integer
+%                     Example: librla.orth_sketch(A, 20, 'power_iter', 2)
+%   'extra_samples' - Number of buffer columns beyond the target rank.
+%                     Rank mode samples floor(rtol) + extra_samples columns;
+%                     tolerance mode accepts a sketch only when at least
+%                     extra_samples + 1 of its pivoted column norms are at or
+%                     below rtol times the largest. extra_samples=0 reproduces
+%                     the legacy last-column check
+%                     12 (default) | nonnegative integer
+%                     Example: librla.orth_sketch(A, 20, 'extra_samples', 20)
+%   'rng'           - Random generator seed or state for reproducible sketches,
+%                     applied via MATLAB's rng function
+%                     [] (default, current state) | seed | settings struct from rng
+%                     Example: librla.orth_sketch(A, 1e-6, 'rng', 7)
 %
 % Output Arguments:
 %   Q     - Orthonormal matrix (m x k) spanning approximate range of A,
@@ -95,6 +111,18 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 %   Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
 %   fall back to deterministic (full) QR or SVD when orth_sketch terminates
 %   early, so users of those functions do not need to handle flag=1 explicitly.
+%
+% Examples:
+%   % Adaptive basis to 1e-6 relative tolerance
+%   [Q, flag, diagR] = librla.orth_sketch(A, 1e-6);
+%
+%   % Rank-20 basis (returned with the extra_samples buffer columns)
+%   Q = librla.orth_sketch(A, 20);
+%
+%   % Reproducible run with a seeded generator
+%   Q = librla.orth_sketch(A, 1e-6, 'rng', 7);
+%
+% See also: qr_sketch, svd_sketch, id_sketch, orth
 
 % Parse optional parameters
   p = inputParser;
@@ -148,9 +176,8 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
 
-      % Buffered tolerance check (cross-multiplied form of
-      % diagR(end-extra_samples)/diagR(1) <= rtol, avoiding the division;
-      % diagR is sorted decreasing so diagR(1) is the max)
+      % Buffered tolerance test (diagR is sorted decreasing; the
+      % multiplied form stays valid when diagR(1) == 0)
       diagR = abs(diag(R));
       if isempty(diagR) || (numel(diagR) > extra_samples && ...
                             diagR(end-extra_samples) <= rtol * diagR(1))
@@ -177,33 +204,62 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
 %   [Q, R, p] = librla.qr_sketch(A, rtol, Name, Value)
 %
 % Description:
-%   The algorithm sketches an orthonormal basis for the column space of A,
-%   projects A onto this basis, computes the QR of the smaller projected matrix,
-%   and then expands back to the original space. If the matrix is effectively
-%   full rank a deterministic QR is performed.
+%   [Q, R, p] = librla.qr_sketch(A, rtol) computes a truncated pivoted QR
+%   factorization of A. The algorithm sketches an orthonormal basis for the
+%   column space of A, projects A onto this basis, computes the QR of the
+%   smaller projected matrix, and then expands back to the original space.
+%   If the matrix is effectively full rank a deterministic QR is performed.
 %
 %   This is much faster than full QR for matrices where the target rank k is
 %   much smaller than min(m,n).
 %
+%   [Q, R, p] = librla.qr_sketch(A, rtol, Name, Value) specifies additional
+%   options using one or more name-value arguments. For example,
+%   librla.qr_sketch(A, 1e-6, 'power_iter', 2) runs two power iterations
+%   for better accuracy on slowly decaying spectra.
+%
 % Input Arguments:
-%   A             - Input matrix (m x n) or LinearOperator
-%   rtol          - Relative tolerance (< 1) or target rank (>= 1)
-%                   - Tolerance mode: keep columns with norm >= rtol * max_norm
-%                   - Rank mode: return k leading columns
-%   block_size    - Sketch size for tolerance mode (default: 42)
-%   power_iter    - Number of power iterations for accuracy (default: 0)
-%   extra_samples - Oversampling / buffer beyond the target rank (default: 12)
-%                   Rank mode sketches rank + extra_samples columns; tolerance
-%                   mode accepts a sketch only when at least extra_samples + 1
-%                   of its pivoted column norms are at or below rtol times
-%                   the largest
-%   rng           - Random number generator state or seed (default: [] uses current state)
+%   A    - Input matrix (m x n) or LinearOperator
+%   rtol - Relative tolerance (< 1) or target rank (>= 1)
+%          - Tolerance mode: keep columns with norm >= rtol * max_norm
+%          - Rank mode: return k leading columns
+%
+% Name-Value Arguments:
+%   'block_size'    - Initial sketch size in tolerance mode; ignored in rank mode
+%                     42 (default) | positive integer
+%                     Example: librla.qr_sketch(A, 1e-6, 'block_size', 84)
+%   'power_iter'    - Number of power iterations for accuracy
+%                     0 (default) | nonnegative integer
+%                     Example: librla.qr_sketch(A, 20, 'power_iter', 2)
+%   'extra_samples' - Oversampling / buffer beyond the target rank.
+%                     Rank mode sketches rank + extra_samples columns; tolerance
+%                     mode accepts a sketch only when at least extra_samples + 1
+%                     of its pivoted column norms are at or below rtol times
+%                     the largest
+%                     12 (default) | nonnegative integer
+%                     Example: librla.qr_sketch(A, 20, 'extra_samples', 20)
+%   'rng'           - Random generator seed or state for reproducible sketches,
+%                     applied via MATLAB's rng function
+%                     [] (default, current state) | seed | settings struct from rng
+%                     Example: librla.qr_sketch(A, 1e-6, 'rng', 7)
 %
 % Output Arguments:
 %   Q - Orthonormal matrix (m x k), k <= min(m,n)
 %   R - Upper triangular matrix (k x n)
 %   p - Column permutation vector (1-based indexing), length n
 %       The decomposition satisfies A(:, p) ≈ Q*R
+%
+% Examples:
+%   % Adaptive rank to 1e-6 relative tolerance
+%   [Q, R, p] = librla.qr_sketch(A, 1e-6);
+%
+%   % Fixed rank 20; two power iterations for a slowly decaying spectrum
+%   [Q, R, p] = librla.qr_sketch(A, 20, 'power_iter', 2);
+%
+%   % Reproducible run with a seeded generator
+%   [Q, R, p] = librla.qr_sketch(A, 1e-6, 'rng', 7);
+%
+% See also: orth_sketch, svd_sketch, id_sketch, id_qrpiv, qr
 
 % Parse optional parameters
   p_parser = inputParser;
@@ -219,7 +275,6 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   rng_param = p_parser.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Rank mode vs tolerance mode
@@ -227,8 +282,6 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   if rtol >= 1
       rank_mode = true;
       kmax = floor(rtol);
-  elseif is_matrix_free
-      error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
   % Compute sketch; the basis includes the extra_samples buffer columns
@@ -290,6 +343,7 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
 %   [U, s, V] = librla.svd_sketch(A, rtol, Name, Value)
 %
 % Description:
+%   [U, s, V] = librla.svd_sketch(A, rtol) computes a truncated SVD of A.
 %   The algorithm sketches an orthonormal basis for the column space of A,
 %   projects A onto this basis, computes the SVD of the smaller projected matrix,
 %   and then expands back to the original space. If the matrix is effectively
@@ -298,25 +352,53 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
 %   This is much faster than full SVD for matrices where the target rank k is
 %   much smaller than min(m,n).
 %
+%   [U, s, V] = librla.svd_sketch(A, rtol, Name, Value) specifies additional
+%   options using one or more name-value arguments. For example,
+%   librla.svd_sketch(A, 1e-6, 'power_iter', 2) runs two power iterations
+%   for better accuracy on slowly decaying spectra.
+%
 % Input Arguments:
-%   A             - Input matrix (m x n) or LinearOperator
-%   rtol          - Relative tolerance (< 1) or target rank (>= 1)
-%                   - Tolerance mode: keep singular values >= rtol * s(1)
-%                   - Rank mode: return k leading singular triplets
-%   block_size    - Sketch size for tolerance mode (default: 42)
-%   power_iter    - Number of power iterations for accuracy (default: 0)
-%   extra_samples - Oversampling / buffer beyond the target rank (default: 12)
-%                   Rank mode sketches rank + extra_samples columns; tolerance
-%                   mode accepts a sketch only when at least extra_samples + 1
-%                   of its pivoted column norms are at or below rtol times
-%                   the largest
-%   rng           - Random number generator state or seed (default: [] uses current state)
+%   A    - Input matrix (m x n) or LinearOperator
+%   rtol - Relative tolerance (< 1) or target rank (>= 1)
+%          - Tolerance mode: keep singular values >= rtol * s(1)
+%          - Rank mode: return k leading singular triplets
+%
+% Name-Value Arguments:
+%   'block_size'    - Initial sketch size in tolerance mode; ignored in rank mode
+%                     42 (default) | positive integer
+%                     Example: librla.svd_sketch(A, 1e-6, 'block_size', 84)
+%   'power_iter'    - Number of power iterations for accuracy
+%                     0 (default) | nonnegative integer
+%                     Example: librla.svd_sketch(A, 20, 'power_iter', 2)
+%   'extra_samples' - Oversampling / buffer beyond the target rank.
+%                     Rank mode sketches rank + extra_samples columns; tolerance
+%                     mode accepts a sketch only when at least extra_samples + 1
+%                     of its pivoted column norms are at or below rtol times
+%                     the largest
+%                     12 (default) | nonnegative integer
+%                     Example: librla.svd_sketch(A, 20, 'extra_samples', 20)
+%   'rng'           - Random generator seed or state for reproducible sketches,
+%                     applied via MATLAB's rng function
+%                     [] (default, current state) | seed | settings struct from rng
+%                     Example: librla.svd_sketch(A, 1e-6, 'rng', 7)
 %
 % Output Arguments:
 %   U - Left singular vectors (m x k), orthonormal columns
 %   s - Singular values (length k), sorted descending
 %   V - Right singular vectors (n x k), orthonormal columns
 %       The decomposition satisfies A ≈ U*diag(s)*V'
+%
+% Examples:
+%   % Adaptive rank to 1e-6 relative tolerance
+%   [U, s, V] = librla.svd_sketch(A, 1e-6);
+%
+%   % Fixed rank 20; two power iterations for a slowly decaying spectrum
+%   [U, s, V] = librla.svd_sketch(A, 20, 'power_iter', 2);
+%
+%   % Reproducible run with a seeded generator
+%   [U, s, V] = librla.svd_sketch(A, 1e-6, 'rng', 7);
+%
+% See also: orth_sketch, qr_sketch, id_sketch, id_qrpiv, svd, svds
 
 % Parse optional parameters
   p = inputParser;
@@ -332,7 +414,6 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   rng_param = p.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Handle wide matrices via transpose
@@ -346,8 +427,6 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   if rtol >= 1
       rank_mode = true;
       kmax = floor(rtol);
-  elseif is_matrix_free
-      error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
   % Compute sketch; the basis includes the extra_samples buffer columns
@@ -422,21 +501,38 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
 %
 %   This function uses qr_sketch() to identify the column permutation.
 %
+%   [k, piv, T] = librla.id_sketch(A, rtol, Name, Value) specifies additional
+%   options using one or more name-value arguments. For example,
+%   librla.id_sketch(A, 1e-6, 'method', 'lstsq') computes T by least squares
+%   from the original columns of A.
+%
 % Input Arguments:
-%   A             - Input matrix (m x n) or LinearOperator
-%   rtol          - Relative tolerance (< 1) or target rank (>= 1)
-%   block_size    - Sketch size for tolerance mode (default: 42)
-%   power_iter    - Number of power iterations for accuracy (default: 0)
-%   extra_samples - Oversampling / buffer beyond the target rank (default: 12)
-%                   Rank mode sketches rank + extra_samples columns; tolerance
-%                   mode accepts a sketch only when at least extra_samples + 1
-%                   of its pivoted column norms are at or below rtol times
-%                   the largest
-%   method        - Method for computing T matrix (default: 'fast')
-%            'fast'  - Triangular solve R11 \ R12 (fastest)
-%            'svd'   - SVD-based pseudoinverse
-%            'lstsq' - Least-squares from original A (most accurate, slowest)
-%   rng           - Random number generator state or seed (default: [] uses current state)
+%   A    - Input matrix (m x n) or LinearOperator
+%   rtol - Relative tolerance (< 1) or target rank (>= 1)
+%
+% Name-Value Arguments:
+%   'block_size'    - Initial sketch size in tolerance mode; ignored in rank mode
+%                     42 (default) | positive integer
+%                     Example: librla.id_sketch(A, 1e-6, 'block_size', 84)
+%   'power_iter'    - Number of power iterations for accuracy
+%                     0 (default) | nonnegative integer
+%                     Example: librla.id_sketch(A, 20, 'power_iter', 2)
+%   'extra_samples' - Oversampling / buffer beyond the target rank.
+%                     Rank mode sketches rank + extra_samples columns; tolerance
+%                     mode accepts a sketch only when at least extra_samples + 1
+%                     of its pivoted column norms are at or below rtol times
+%                     the largest
+%                     12 (default) | nonnegative integer
+%                     Example: librla.id_sketch(A, 20, 'extra_samples', 20)
+%   'method'        - Method for computing the interpolation matrix T
+%                     'fast' (default, triangular solve R11 \ R12) |
+%                     'svd' (SVD-based pseudoinverse) |
+%                     'lstsq' (least squares from original A; most accurate, slowest)
+%                     Example: librla.id_sketch(A, 1e-6, 'method', 'lstsq')
+%   'rng'           - Random generator seed or state for reproducible sketches,
+%                     applied via MATLAB's rng function
+%                     [] (default, current state) | seed | settings struct from rng
+%                     Example: librla.id_sketch(A, 1e-6, 'rng', 7)
 %
 % Output Arguments:
 %   k   - Rank of the approximation (number of skeleton columns)
@@ -445,6 +541,18 @@ function [k, piv, T] = id_sketch(A, rtol, varargin)
 %         piv(k+1:end) are indices of interpolated columns
 %   T   - Interpolation matrix (k x (n-k))
 %         The approximation is A(:, piv(k+1:end)) ≈ A(:, piv(1:k)) * T
+%
+% Examples:
+%   % Adaptive rank to 1e-6 relative tolerance
+%   [k, piv, T] = librla.id_sketch(A, 1e-6);
+%
+%   % Fixed rank 20 with the most accurate T computation
+%   [k, piv, T] = librla.id_sketch(A, 20, 'method', 'lstsq');
+%
+%   % Reproducible run with a seeded generator
+%   [k, piv, T] = librla.id_sketch(A, 1e-6, 'rng', 7);
+%
+% See also: id_qrpiv, qr_sketch, svd_sketch, orth_sketch
 
 % Parse optional parameters
   p = inputParser;
@@ -510,19 +618,36 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 %   sketching. It preserves LinearOperator support and uses the same T
 %   matrix computation logic as id_sketch.
 %
+%   [k, piv, T] = librla.id_qrpiv(A, rtol, Name, Value) specifies additional
+%   options using one or more name-value arguments. For example,
+%   librla.id_qrpiv(A, 1e-6, 'method', 'lstsq') computes T by least squares
+%   from the original columns of A.
+%
 % Input Arguments:
-%   A      - Input matrix or LinearOperator
-%   rtol   - Tolerance (< 1) or rank (>= 1)
-%   method - T computation method: 'fast', 'svd', 'lstsq' (default: 'fast')
-%            'fast'  - Triangular solve R11 \ R12 (fastest)
-%            'svd'   - SVD-based pseudoinverse
-%            'lstsq' - Least-squares from original A (most accurate, slowest)
+%   A    - Input matrix (m x n) or LinearOperator
+%   rtol - Relative tolerance (< 1) or target rank (>= 1)
+%
+% Name-Value Arguments:
+%   'method' - Method for computing the interpolation matrix T
+%              'fast' (default, triangular solve R11 \ R12) |
+%              'svd' (SVD-based pseudoinverse) |
+%              'lstsq' (least squares from original A; most accurate, slowest)
+%              Example: librla.id_qrpiv(A, 1e-6, 'method', 'lstsq')
 %
 % Output Arguments:
 %   k   - Rank
 %   piv - Column permutation (1-based)
 %   T   - Interpolation matrix, size (k, n-k)
 %         The approximation is A(:, piv(k+1:end)) ≈ A(:, piv(1:k)) * T
+%
+% Examples:
+%   % Deterministic ID to 1e-6 relative tolerance
+%   [k, piv, T] = librla.id_qrpiv(A, 1e-6);
+%
+%   % Fixed rank 20 with the most accurate T computation
+%   [k, piv, T] = librla.id_qrpiv(A, 20, 'method', 'lstsq');
+%
+% See also: id_sketch, qr_sketch, svd_sketch, orth_sketch
 
 % Parse optional parameters
   p = inputParser;
@@ -530,9 +655,6 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
   parse(p, varargin{:});
 
   method = p.Results.method;
-
-  is_linop = isa(A, 'LinearOperator');
-  is_matrix_free = is_linop && isempty(A.matrix);
 
   [m, n] = size(A);
 
@@ -545,7 +667,7 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   % Compute full QR with pivoting (deterministic)
   A_mat = librla.get_matrix(A);
-  [Q, R, piv] = qr(A_mat, 0);  % Economy size QR with pivoting
+  [~, R, piv] = qr(A_mat, 0);  % Economy size QR with pivoting; Q unused
 
   % Determine rank
   if rank_mode
@@ -684,15 +806,29 @@ function dtype_str = get_dtype_string(A)
 end
 
 function A_mat = get_matrix(A)
-% GET_MATRIX - Extract explicit matrix from LinearOperator or return matrix
+% GET_MATRIX - Return A as a dense matrix, materializing it if necessary
+%
+% Dense matrices pass through (full() is a no-op); sparse matrices and
+% sparse-backed operators are densified; matrix-free LinearOperators are
+% materialized one column at a time via matvec, at an O(n) matvec cost —
+% callers are dense (LAPACK) algorithms, so a dense result is required.
   if isa(A, 'LinearOperator')
       if ~isempty(A.matrix)
-          A_mat = A.matrix;
+          A_mat = full(A.matrix);
       else
-          error('Cannot extract explicit matrix from matrix-free LinearOperator');
+          % Materialize one column at a time via matvec
+          [m, n] = size(A);
+          dtype_str = librla.get_dtype_string(A);
+          A_mat = zeros(m, n, dtype_str);
+          e_j = zeros(n, 1, dtype_str);
+          for j = 1:n
+              e_j(j) = 1;
+              A_mat(:, j) = librla.matvec(A, e_j);
+              e_j(j) = 0;
+          end
       end
   else
-      A_mat = A;
+      A_mat = full(A);
   end
 end
 
@@ -705,32 +841,10 @@ function T = compute_T_lstsq(A, R, piv, k)
       return;
   end
 
-  is_linop = isa(A, 'LinearOperator');
-  is_matrix_free = is_linop && isempty(A.matrix);
-
-  if is_matrix_free
-      % Extract skeleton columns via unit vectors
-      skeleton_cols = zeros(m, k, class(R));
-      for j = 1:k
-          e_j = zeros(n, 1, class(R));
-          e_j(piv(j)) = 1.0;
-          skeleton_cols(:, j) = librla.matvec(A, e_j);
-      end
-
-      remaining_cols = zeros(m, n - k, class(R));
-      for j = 1:(n - k)
-          e_j = zeros(n, 1, class(R));
-          e_j(piv(k + j)) = 1.0;
-          remaining_cols(:, j) = librla.matvec(A, e_j);
-      end
-
-      T = skeleton_cols \ remaining_cols;
-  else
-      A_mat = librla.get_matrix(A);
-      cols = piv(1:k);
-      remaining = piv((k+1):end);
-      T = A_mat(:, cols) \ A_mat(:, remaining);
-  end
+  A_mat = librla.get_matrix(A);
+  cols = piv(1:k);
+  remaining = piv((k+1):end);
+  T = A_mat(:, cols) \ A_mat(:, remaining);
 end
 
 function T = compute_T_svd(R, k, rtol_for_svd)

@@ -24,12 +24,13 @@ Matrix-free operators:
 
         from scipy.sparse.linalg import LinearOperator
         A = LinearOperator((m, n), matvec=matvec_fun, rmatvec=rmatvec_fun)
-        U, s, Vh = svd_sketch(A, rank)  # rank mode only: rtol >= 1
+        U, s, Vh = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
+                                                # materialize A at O(n) matvec cost
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT
-Version: 1.1.0
-Date: July 13, 2026
+Version: 1.2.0
+Date: July 26, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -106,11 +107,34 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=N
         Diagonal elements from pivoted QR factorization, representing
         column norms of the sketched matrix (sorted in decreasing order)
 
-    Note
-    ----
+    See Also
+    --------
+    qr_sketch, svd_sketch, id_sketch
+
+    Notes
+    -----
     Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
     fall back to deterministic (full) QR or SVD when orth_sketch terminates
     early, so users of those functions do not need to handle flag=1 explicitly.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import orth_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive basis to 1e-6 relative tolerance:
+
+    >>> Q, flag, diagR = orth_sketch(A, 1e-6, rng=rng)
+    >>> flag
+    0
+
+    Rank-20 basis (returned with the extra_samples buffer columns):
+
+    >>> Q, flag, diagR = orth_sketch(A, 20, rng=rng)
+    >>> Q.shape
+    (200, 32)
     """
     m, n = A.shape
     dtype = _get_dtype(A)
@@ -140,9 +164,8 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=N
         y = _matvec(A, x)
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
-        # Buffered tolerance check (cross-multiplied form of
-        # diagR[-1 - extra_samples]/diagR[0] <= rtol, avoiding the division;
-        # diagR is sorted decreasing so diagR[0] is the max)
+        # Buffered tolerance test (diagR is sorted decreasing; the
+        # multiplied form stays valid when diagR[0] == 0)
         diagR = np.abs(R.diagonal())
         if diagR.size == 0 or (diagR.size > extra_samples
                                and diagR[-1 - extra_samples] <= rtol * diagR[0]):
@@ -198,22 +221,38 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=Non
     p : ndarray, shape (n,)
         Column permutation (0-based indexing).
         The decomposition satisfies A[:, p] ≈ Q @ R
+
+    See Also
+    --------
+    orth_sketch, svd_sketch, id_sketch, id_qrpiv
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import qr_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> Q, R, p = qr_sketch(A, 1e-6, rng=rng)
+    >>> Q.shape[1]
+    8
+
+    Fixed rank 8 with two power iterations for a slowly decaying spectrum:
+
+    >>> Q, R, p = qr_sketch(A, 8, power_iter=2, rng=rng)
+    >>> bool(np.linalg.norm(A[:, p] - Q @ R) < 1e-10 * np.linalg.norm(A))
+    True
     """
     m, n = A.shape
     dtype = _get_dtype(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-    is_linop = _is_linop(A)
 
     # Rank mode vs tolerance mode
     rank_mode = False
     if rtol >= 1:
         rank_mode = True
         kmax = int(np.floor(rtol))
-    elif is_matrix_free:
-        raise ValueError(
-            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
-            f"Got rtol={rtol}. Please specify target rank as rtol."
-        )
 
     # Compute sketch; the basis includes the extra_samples buffer columns
     # for better accuracy (truncated to the target rank after QR)
@@ -298,11 +337,32 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=No
     Vh : ndarray, shape (k, n)
         Right singular vectors (conjugate transpose), orthonormal rows
         The decomposition satisfies A ≈ U @ np.diag(s) @ Vh
+
+    See Also
+    --------
+    orth_sketch, qr_sketch, id_sketch, numpy.linalg.svd
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import svd_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> U, s, Vh = svd_sketch(A, 1e-6, rng=rng)
+    >>> len(s)
+    8
+
+    Fixed rank 8 with two power iterations for a slowly decaying spectrum:
+
+    >>> U, s, Vh = svd_sketch(A, 8, power_iter=2, rng=rng)
+    >>> bool(np.linalg.norm(A - U @ np.diag(s) @ Vh) < 1e-10 * np.linalg.norm(A))
+    True
     """
     m, n = A.shape
     dtype = _get_dtype(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-    is_linop = _is_linop(A)
 
     if m < n:
         A_T = _transpose_linop(A)
@@ -314,11 +374,6 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=No
     if rtol >= 1:
         rank_mode = True
         kmax = int(np.floor(rtol))
-    elif is_matrix_free:
-        raise ValueError(
-            "Matrix-free LinearOperator only supported in rank mode (rtol >= 1). "
-            f"Got rtol={rtol}. Please specify target rank as rtol."
-        )
 
     # Compute sketch; the basis includes the extra_samples buffer columns
     # to get more accurate singular values (truncated to the target rank after SVD)
@@ -410,6 +465,30 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     T : ndarray, shape (k, n-k)
         Interpolation matrix
         The approximation is A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+
+    See Also
+    --------
+    id_qrpiv, qr_sketch, svd_sketch, orth_sketch
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import id_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> k, piv, T = id_sketch(A, 1e-6, rng=rng)
+    >>> k
+    8
+
+    Fixed rank 8 with the most accurate T computation:
+
+    >>> k, piv, T = id_sketch(A, 8, method='lstsq', rng=rng)
+    >>> bool(np.linalg.norm(A[:, piv[k:]] - A[:, piv[:k]] @ T)
+    ...      < 1e-10 * np.linalg.norm(A))
+    True
     """
     valid_methods = {'fast', 'svd', 'lstsq'}
     if method not in valid_methods:
@@ -483,13 +562,34 @@ def id_qrpiv(A, rtol, *, method='fast'):
         Column permutation
     T : ndarray, shape (k, n-k)
         Interpolation matrix
+
+    See Also
+    --------
+    id_sketch, qr_sketch, svd_sketch, orth_sketch
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import id_qrpiv
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Deterministic ID to 1e-6 relative tolerance:
+
+    >>> k, piv, T = id_qrpiv(A, 1e-6)
+    >>> k
+    8
+
+    Fixed rank 8 with the most accurate T computation:
+
+    >>> k, piv, T = id_qrpiv(A, 8, method='lstsq')
+    >>> bool(np.linalg.norm(A[:, piv[k:]] - A[:, piv[:k]] @ T)
+    ...      < 1e-10 * np.linalg.norm(A))
+    True
     """
     valid_methods = {'fast', 'svd', 'lstsq'}
     if method not in valid_methods:
         raise ValueError(f"method must be one of {valid_methods}, got '{method}'")
-
-    is_linop = _is_linop(A)
-    is_matrix_free = _is_matrix_free_linop(A)
 
     m, n = A.shape
     dtype = A.dtype if hasattr(A, 'dtype') else np.float64
@@ -575,49 +675,42 @@ def _is_complex(A):
     return np.issubdtype(dtype, np.complexfloating)
 
 def _transpose_linop(A):
-    """Transpose/adjoint of a LinearOperator or ndarray.
+    """Adjoint (conjugate transpose) of a LinearOperator or ndarray.
 
-    For LinearOperators: creates new LinearOperator with swapped matvec/rmatvec
+    For LinearOperators: delegates to scipy's A.H, so each operator class
+    adjoints itself — MatrixLinearOperator keeps its .A backing matrix,
+    custom operators get matvec/rmatvec swapped by scipy.
     For arrays: uses .conj().T
 
     This matches MATLAB's A' operator behavior.
     """
     if _is_linop(A):
-        # Create new scipy LinearOperator with swapped functions and dimensions
-        m, n = A.shape
-        A_T = LinearOperator(
-            shape=(n, m),
-            matvec=lambda x: _rmatvec(A, x),
-            rmatvec=lambda x: _matvec(A, x),
-            dtype=A.dtype
-        )
-
-        # Preserve custom attributes if they exist
-        if hasattr(A, 'is_explicit'):
-            A_T.is_explicit = A.is_explicit
-        if hasattr(A, 'matrix'):
-            A_T.matrix = A.matrix.conj().T if A.matrix is not None else None
-
-        return A_T
+        return A.H
     else:
         return A.conj().T
 
 def _get_matrix(A):
-    """Extract explicit matrix from LinearOperator or return array.
+    """Return A as a dense matrix, materializing it if necessary.
 
-    For LinearOperators: extracts A.A if available (scipy's MatrixLinearOperator or custom)
-    For arrays: returns A directly
-
-    Raises ValueError if A is a matrix-free LinearOperator.
+    Dense arrays and LinearOperators backed by a dense ndarray are returned
+    directly. Anything else (matrix-free operators, sparse-backed operators,
+    sparse matrices) is materialized one column at a time via matvec, at an
+    O(n)-matvec cost — callers are dense (LAPACK) algorithms, so a dense
+    result is required.
     """
-    if _is_linop(A):
-        # LinearOperators with .A attribute (scipy's MatrixLinearOperator or custom)
-        if hasattr(A, 'A') and A.A is not None:
-            return A.A
-        else:
-            raise ValueError('Cannot extract explicit matrix from matrix-free LinearOperator')
-    else:
+    if isinstance(A, np.ndarray):
         return A
+    if _is_linop(A) and hasattr(A, 'A') and isinstance(A.A, np.ndarray):
+        return A.A
+    m, n = A.shape
+    dtype = _get_dtype(A)
+    A_mat = np.empty((m, n), dtype=dtype)
+    e_j = np.zeros(n, dtype=dtype)
+    for j in range(n):
+        e_j[j] = 1
+        A_mat[:, j] = _matvec(A, e_j)
+        e_j[j] = 0
+    return A_mat
 
 def _matvec(A, x):
     """Matrix-vector or matrix-matrix product for both ndarray and LinearOperator.
@@ -785,28 +878,10 @@ def _compute_T_lstsq(A, R, piv, k):
     if k == 0 or k >= n:
         return np.zeros((k, n - k), dtype=R.dtype)
 
-    is_linop = _is_linop(A)
-    is_matrix_free = _is_matrix_free_linop(A)
-
-    if is_matrix_free:
-        skeleton_cols = np.zeros((m, k), dtype=R.dtype)
-        for j in range(k):
-            e_j = np.zeros(n, dtype=R.dtype)
-            e_j[piv[j]] = 1.0
-            skeleton_cols[:, j] = A @ e_j
-
-        remaining_cols = np.zeros((m, n - k), dtype=R.dtype)
-        for j in range(n - k):
-            e_j = np.zeros(n, dtype=R.dtype)
-            e_j[piv[k + j]] = 1.0
-            remaining_cols[:, j] = A @ e_j
-
-        T, _, _, _ = linalg.lstsq(skeleton_cols, remaining_cols)
-    else:
-        A_mat = _get_matrix(A)
-        cols = piv[:k]
-        remaining = piv[k:]
-        T, _, _, _ = linalg.lstsq(A_mat[:, cols], A_mat[:, remaining])
+    A_mat = _get_matrix(A)
+    cols = piv[:k]
+    remaining = piv[k:]
+    T, _, _, _ = linalg.lstsq(A_mat[:, cols], A_mat[:, remaining])
 
     return T
 

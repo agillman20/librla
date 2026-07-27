@@ -96,7 +96,9 @@ U, s, Vh = svd_sketch(A, 20, power_iter=2)
 
 ## Linear Operators
 
- Matrix-free LinearOperators only support **rank mode** (rtol >= 1).
+ Matrix-free LinearOperators support both modes; in tolerance mode (rtol < 1)
+ the deterministic fallback may materialize the operator as a dense matrix,
+ one matvec per column (O(n) matvecs).
 
 ## Optional Parameters
 
