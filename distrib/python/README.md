@@ -166,11 +166,14 @@ def rmatvec(x):
 n = 1000
 A_op = LinearOperator(shape=(n, n), matvec=matvec, rmatvec=rmatvec, dtype=complex)
 
-# Use with librla (rank mode only for matrix-free operators)
+# Use with librla
 Q, flag, diagR = orth_sketch(A_op, 20)  # Rank-20 approximation
 ```
 
-**Note:** Matrix-free LinearOperators only support **rank mode** (rtol >= 1).
+**Note:** Matrix-free LinearOperators support both modes. In tolerance mode
+(rtol < 1) the deterministic fallback may materialize the operator as a dense
+matrix, one matvec per column (O(n) matvecs) — prefer rank mode when that cost
+is unacceptable.
 
 ## Optional Parameters
 

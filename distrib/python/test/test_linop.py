@@ -19,6 +19,7 @@ Assisted by: Claude Code (Anthropic)
 """
 import sys
 import numpy as np
+import scipy.sparse as sp
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 
 sys.path.insert(0, '..')
@@ -236,6 +237,117 @@ def check_wide_explicit_tol(errors):
             errors.append(f"wide-explicit-tol {shape_lbl} ({msg})")
 
 
+def check_matfree_tol(errors):
+    """Regression: matrix-free LinearOperators in tolerance mode (previously
+    raised ValueError). The deterministic fallback now materializes the
+    operator via _get_matrix, one matvec per column."""
+    print("\n--- matrix-free LinearOperator in tolerance mode ---")
+    rtol = 1e-6
+    k_true = 8
+    for m, n in [(200, 100), (100, 200)]:   # tall and wide
+        M = np.random.randn(m, k_true) @ np.random.randn(k_true, n)
+        shape_lbl = f"{'tall' if m >= n else 'wide'} {m}x{n}"
+        ok = False
+        err = float('nan')
+        msg = ''
+        try:
+            U, s, Vh = svd_sketch(wrap_matfree(M), rtol)
+            err = np.linalg.norm(M - U @ np.diag(s) @ Vh, 'fro') / np.linalg.norm(M, 'fro')
+            ok = (len(s) == k_true) and (err < 10 * rtol)
+            if not ok:
+                msg = 'wrong rank/err'
+        except Exception as e:
+            msg = type(e).__name__
+        status = 'PASS' if ok else 'FAIL'
+        print(f"  [{status}] svd_sketch matfree {shape_lbl} rtol={rtol:.0e}"
+              f" err={err:.1e} {msg}")
+        if not ok:
+            errors.append(f"matfree-tol svd {shape_lbl} ({msg})")
+
+    # Paths that fully materialize the operator: deterministic ID and the
+    # full-rank fallback of qr_sketch
+    M = np.random.randn(120, 5) @ np.random.randn(5, 60)
+    k, piv, T = id_qrpiv(wrap_matfree(M), rtol)
+    rec_ok = k == 5
+    print(f"  [{'PASS' if rec_ok else 'FAIL'}] id_qrpiv matfree tol k={k} (true 5)")
+    if not rec_ok:
+        errors.append(f"matfree-tol id_qrpiv k={k}")
+
+    k, piv, T = id_sketch(wrap_matfree(M), rtol, method='lstsq')
+    lst_ok = k == 5 and np.all(np.isfinite(T))
+    print(f"  [{'PASS' if lst_ok else 'FAIL'}] id_sketch lstsq matfree tol k={k}")
+    if not lst_ok:
+        errors.append(f"matfree-tol id_sketch lstsq k={k}")
+
+    Mf = np.random.randn(40, 30)   # full rank: forces the dense fallback
+    Q, R, p = qr_sketch(wrap_matfree(Mf), 1e-14)
+    fb_ok = Q.shape == (40, 30)
+    print(f"  [{'PASS' if fb_ok else 'FAIL'}] qr_sketch matfree full-rank fallback"
+          f" shape={Q.shape}")
+    if not fb_ok:
+        errors.append(f"matfree-tol qr fallback shape={Q.shape}")
+
+
+def check_sparse_backed(errors):
+    """Regression: sparse-backed operators (aslinearoperator of scipy.sparse)
+    and raw sparse matrices. _get_matrix materializes them densely, so the
+    dense LAPACK paths (id_qrpiv, lstsq, full QR/SVD fallback) no longer
+    crash on a sparse .A."""
+    print("\n--- sparse-backed operators / raw sparse matrices ---")
+    # Genuinely rank-5 sparse matrix: product of two sparse factors
+    Usp = sp.random(120, 5, density=0.4, random_state=1, format='csr')
+    Vsp = sp.random(5, 60, density=0.4, random_state=2, format='csr')
+    S = (Usp @ Vsp).tocsr()
+    D = S.toarray()
+    normD = np.linalg.norm(D, 'fro')
+    A = aslinearoperator(S)
+
+    cases = [
+        ('id_qrpiv tol       ', lambda: id_qrpiv(A, 1e-6)[0], 5),
+        ('id_qrpiv rank      ', lambda: id_qrpiv(A, 5.0)[0], 5),
+        ('id_sketch lstsq tol', lambda: id_sketch(A, 1e-6, method='lstsq')[0], 5),
+        ('raw sparse id_qrpiv', lambda: id_qrpiv(S, 1e-6)[0], 5),
+    ]
+    for lbl, fn, expect in cases:
+        ok = False
+        msg = ''
+        try:
+            k = fn()
+            ok = k == expect
+            msg = f"k={k}"
+        except Exception as e:
+            msg = type(e).__name__
+        status = 'PASS' if ok else 'FAIL'
+        print(f"  [{status}] {lbl} {msg}")
+        if not ok:
+            errors.append(f"sparse-backed {lbl.strip()} ({msg})")
+
+    U, s, Vh = svd_sketch(A, 1e-6)
+    err = np.linalg.norm(D - U @ np.diag(s) @ Vh, 'fro') / normD
+    svd_ok = (len(s) == 5) and (err < 1e-5)
+    print(f"  [{'PASS' if svd_ok else 'FAIL'}] svd_sketch sparse-backed tol"
+          f" k={len(s)} err={err:.1e}")
+    if not svd_ok:
+        errors.append(f"sparse-backed svd k={len(s)}")
+
+    # Full-rank sparse: forces the dense QR/SVD fallback
+    Sf = sp.csr_matrix(np.random.randn(40, 30))
+    Af = aslinearoperator(Sf)
+    ok = False
+    msg = ''
+    try:
+        Q, R, p = qr_sketch(Af, 1e-14)
+        U, s, Vh = svd_sketch(Af, 1e-14)
+        ok = Q.shape == (40, 30) and len(s) == 30
+        msg = f"qr={Q.shape} svd k={len(s)}"
+    except Exception as e:
+        msg = type(e).__name__
+    status = 'PASS' if ok else 'FAIL'
+    print(f"  [{status}] full-rank sparse fallback {msg}")
+    if not ok:
+        errors.append(f"sparse-backed fallback ({msg})")
+
+
 def main():
     np.random.seed(17)
     errors = []
@@ -272,6 +384,8 @@ def main():
     check_overrank_id(errors)
     check_zero_tol_rank(errors)
     check_wide_explicit_tol(errors)
+    check_matfree_tol(errors)
+    check_sparse_backed(errors)
 
     # ------------------------------------------------------------------
     # Summary

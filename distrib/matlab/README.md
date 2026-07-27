@@ -155,7 +155,10 @@ A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
 [Q, flag, diagR] = librla.orth_sketch(A_op, 20);
 ```
 
-**Note:** Matrix-free LinearOperators only support **rank mode** (rtol >= 1).
+**Note:** Matrix-free LinearOperators support both modes. In tolerance mode
+(rtol < 1) the deterministic fallback may materialize the operator as a dense
+matrix, one matvec per column (O(n) matvecs) — prefer rank mode when that cost
+is unacceptable.
 
 ## Optional Parameters
 

@@ -20,6 +20,7 @@ module TestLinop
 using LinearAlgebra
 using Printf
 using Random
+using SparseArrays
 
 include(joinpath(@__DIR__, "..", "librla.jl"))
 
@@ -235,6 +236,111 @@ function check_overrank_id(errors)
 end
 
 
+function check_matfree_tol(errors)
+    # Regression: matrix-free LinearOperators in tolerance mode (previously
+    # raised). The deterministic fallback now materializes the operator via
+    # _get_matrix, one matvec per column.
+    println("\n--- matrix-free LinearOperator in tolerance mode ---")
+    rtol = 1e-6
+    k_true = 8
+    for (m, n) in [(200, 100), (100, 200)]   # tall and wide
+        M = randn(m, k_true) * randn(k_true, n)
+        shape_lbl = (m >= n ? "tall" : "wide") * " $(m)x$(n)"
+        ok = false
+        err = NaN
+        msg = ""
+        try
+            U, s, Vt = svd_sketch(wrap_matfree(M), rtol)
+            err = norm(M - U * diagm(s) * Vt) / norm(M)
+            ok = (length(s) == k_true) && (err < 10 * rtol)
+            ok || (msg = "wrong rank/err")
+        catch e
+            msg = string(typeof(e))
+        end
+        status = ok ? "PASS" : "FAIL"
+        @printf("  [%s] svd_sketch matfree %s rtol=%.0e err=%.1e %s\n",
+                status, shape_lbl, rtol, err, msg)
+        ok || push!(errors, "matfree-tol svd $shape_lbl ($msg)")
+    end
+
+    # Paths that fully materialize the operator: deterministic ID and the
+    # full-rank fallback of qr_sketch
+    M = randn(120, 5) * randn(5, 60)
+    k, piv, T = id_qrpiv(wrap_matfree(M), rtol)
+    ok = k == 5
+    @printf("  [%s] id_qrpiv matfree tol k=%d (true 5)\n", ok ? "PASS" : "FAIL", k)
+    ok || push!(errors, "matfree-tol id_qrpiv k=$k")
+
+    k, piv, T = id_sketch(wrap_matfree(M), rtol; method="lstsq")
+    ok = k == 5 && all(isfinite, T)
+    @printf("  [%s] id_sketch lstsq matfree tol k=%d\n", ok ? "PASS" : "FAIL", k)
+    ok || push!(errors, "matfree-tol id_sketch lstsq k=$k")
+
+    Mf = randn(40, 30)   # full rank: forces the dense fallback
+    Q, R, p = qr_sketch(wrap_matfree(Mf), 1e-14)
+    ok = size(Q) == (40, 30)
+    @printf("  [%s] qr_sketch matfree full-rank fallback shape=%s\n",
+            ok ? "PASS" : "FAIL", string(size(Q)))
+    ok || push!(errors, "matfree-tol qr fallback shape=$(size(Q))")
+end
+
+
+function check_sparse_backed(errors)
+    # Regression: sparse-backed operators (from_matrix of a SparseMatrixCSC)
+    # and raw sparse matrices. _get_matrix materializes them densely, so the
+    # dense LAPACK paths (id_qrpiv, lstsq, full QR/SVD fallback) no longer
+    # crash on a sparse backing matrix.
+    println("\n--- sparse-backed operators / raw sparse matrices ---")
+    # Genuinely rank-5 sparse matrix: product of two sparse factors
+    S = sprandn(120, 5, 0.4) * sprandn(5, 60, 0.4)
+    D = Matrix(S)
+    A = from_matrix(S)
+
+    cases = [
+        ("id_qrpiv tol       ", () -> id_qrpiv(A, 1e-6)[1], 5),
+        ("id_qrpiv rank      ", () -> id_qrpiv(A, 5.0)[1], 5),
+        ("id_sketch lstsq tol", () -> id_sketch(A, 1e-6; method="lstsq")[1], 5),
+        ("raw sparse id_qrpiv", () -> id_qrpiv(S, 1e-6)[1], 5),
+    ]
+    for (lbl, fn, expect) in cases
+        ok = false
+        msg = ""
+        try
+            k = fn()
+            ok = k == expect
+            msg = "k=$k"
+        catch e
+            msg = string(typeof(e))
+        end
+        @printf("  [%s] %s %s\n", ok ? "PASS" : "FAIL", lbl, msg)
+        ok || push!(errors, "sparse-backed $(strip(lbl)) ($msg)")
+    end
+
+    U, s, Vt = svd_sketch(A, 1e-6)
+    err = norm(D - U * diagm(s) * Vt) / norm(D)
+    ok = (length(s) == 5) && (err < 1e-5)
+    @printf("  [%s] svd_sketch sparse-backed tol k=%d err=%.1e\n",
+            ok ? "PASS" : "FAIL", length(s), err)
+    ok || push!(errors, "sparse-backed svd k=$(length(s))")
+
+    # Full-rank sparse: forces the dense QR/SVD fallback
+    Sf = sparse(randn(40, 30))
+    Af = from_matrix(Sf)
+    ok = false
+    msg = ""
+    try
+        Q, R, p = qr_sketch(Af, 1e-14)
+        U, s, Vt = svd_sketch(Af, 1e-14)
+        ok = size(Q) == (40, 30) && length(s) == 30
+        msg = "qr=$(size(Q)) svd k=$(length(s))"
+    catch e
+        msg = string(typeof(e))
+    end
+    @printf("  [%s] full-rank sparse fallback %s\n", ok ? "PASS" : "FAIL", msg)
+    ok || push!(errors, "sparse-backed fallback ($msg)")
+end
+
+
 function test()
     Random.seed!(17)
     errors = String[]
@@ -265,6 +371,8 @@ function test()
     check_power_iter(errors)
     check_overrank_id(errors)
     check_zero_tol_rank(errors)
+    check_matfree_tol(errors)
+    check_sparse_backed(errors)
 
     println()
     println("="^72)

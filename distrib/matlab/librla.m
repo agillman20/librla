@@ -20,7 +20,9 @@ classdef librla
 % MATRIX-FREE OPERATORS:
 %   Use the LinearOperator class for matrix-free operators:
 %     A = LinearOperator(matvec_fun, rmatvec_fun, m, n);
-%     [U, s, V] = librla.svd_sketch(A, rank);  % rank mode only: rtol >= 1
+%     [U, s, V] = librla.svd_sketch(A, rank);  % both modes; tolerance mode
+%                                              % may materialize A at O(n)
+%                                              % matvec cost
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
@@ -219,7 +221,6 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   rng_param = p_parser.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Rank mode vs tolerance mode
@@ -227,8 +228,6 @@ function [Q, R, p] = qr_sketch(A, rtol, varargin)
   if rtol >= 1
       rank_mode = true;
       kmax = floor(rtol);
-  elseif is_matrix_free
-      error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
   % Compute sketch; the basis includes the extra_samples buffer columns
@@ -332,7 +331,6 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   rng_param = p.Results.rng;
 
   [m, n] = size(A);
-  is_matrix_free = isa(A, 'LinearOperator') && isempty(A.matrix);
   dtype_str = librla.get_dtype_string(A);
 
   % Handle wide matrices via transpose
@@ -346,8 +344,6 @@ function [U, s, V] = svd_sketch(A, rtol, varargin)
   if rtol >= 1
       rank_mode = true;
       kmax = floor(rtol);
-  elseif is_matrix_free
-      error('Matrix-free operators only supported in rank mode (rtol >= 1)');
   end
 
   % Compute sketch; the basis includes the extra_samples buffer columns
@@ -531,9 +527,6 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   method = p.Results.method;
 
-  is_linop = isa(A, 'LinearOperator');
-  is_matrix_free = is_linop && isempty(A.matrix);
-
   [m, n] = size(A);
 
   % Determine rank mode vs tolerance mode
@@ -684,15 +677,29 @@ function dtype_str = get_dtype_string(A)
 end
 
 function A_mat = get_matrix(A)
-% GET_MATRIX - Extract explicit matrix from LinearOperator or return matrix
+% GET_MATRIX - Return A as a dense matrix, materializing it if necessary
+%
+% Dense matrices pass through (full() is a no-op); sparse matrices and
+% sparse-backed operators are densified; matrix-free LinearOperators are
+% materialized one column at a time via matvec, at an O(n) matvec cost —
+% callers are dense (LAPACK) algorithms, so a dense result is required.
   if isa(A, 'LinearOperator')
       if ~isempty(A.matrix)
-          A_mat = A.matrix;
+          A_mat = full(A.matrix);
       else
-          error('Cannot extract explicit matrix from matrix-free LinearOperator');
+          % Materialize one column at a time via matvec
+          [m, n] = size(A);
+          dtype_str = librla.get_dtype_string(A);
+          A_mat = zeros(m, n, dtype_str);
+          e_j = zeros(n, 1, dtype_str);
+          for j = 1:n
+              e_j(j) = 1;
+              A_mat(:, j) = librla.matvec(A, e_j);
+              e_j(j) = 0;
+          end
       end
   else
-      A_mat = A;
+      A_mat = full(A);
   end
 end
 
@@ -705,32 +712,10 @@ function T = compute_T_lstsq(A, R, piv, k)
       return;
   end
 
-  is_linop = isa(A, 'LinearOperator');
-  is_matrix_free = is_linop && isempty(A.matrix);
-
-  if is_matrix_free
-      % Extract skeleton columns via unit vectors
-      skeleton_cols = zeros(m, k, class(R));
-      for j = 1:k
-          e_j = zeros(n, 1, class(R));
-          e_j(piv(j)) = 1.0;
-          skeleton_cols(:, j) = librla.matvec(A, e_j);
-      end
-
-      remaining_cols = zeros(m, n - k, class(R));
-      for j = 1:(n - k)
-          e_j = zeros(n, 1, class(R));
-          e_j(piv(k + j)) = 1.0;
-          remaining_cols(:, j) = librla.matvec(A, e_j);
-      end
-
-      T = skeleton_cols \ remaining_cols;
-  else
-      A_mat = librla.get_matrix(A);
-      cols = piv(1:k);
-      remaining = piv((k+1):end);
-      T = A_mat(:, cols) \ A_mat(:, remaining);
-  end
+  A_mat = librla.get_matrix(A);
+  cols = piv(1:k);
+  remaining = piv((k+1):end);
+  T = A_mat(:, cols) \ A_mat(:, remaining);
 end
 
 function T = compute_T_svd(R, k, rtol_for_svd)

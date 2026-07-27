@@ -24,7 +24,8 @@ Use the LinearOperator type for matrix-free operators:
 ```julia
 include("LinearOperator.jl")
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
-U, s, Vt = svd_sketch(A, rank)  # rank mode only: rtol >= 1
+U, s, Vt = svd_sketch(A, rank)  # both modes; tolerance mode may
+                                # materialize A at O(n) matvec cost
 ```
 
 # Author
@@ -222,7 +223,6 @@ much smaller than min(m,n).
 """
 function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
-    is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
 
     # Rank mode vs tolerance mode
@@ -230,8 +230,6 @@ function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=n
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-    elseif is_matrix_free
-        error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
     # Compute sketch; the basis includes the extra_samples buffer columns
@@ -324,7 +322,6 @@ much smaller than min(m,n).
 """
 function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
-    is_matrix_free = _is_matrix_free_linop(A)
     dtype = _get_dtype(A)
 
     # Handle wide matrices via transpose. For a LinearOperator, adjoint returns
@@ -344,8 +341,6 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
     if rtol >= 1
         rank_mode = true
         kmax = floor(Int, rtol)
-    elseif is_matrix_free
-        error("Matrix-free operators only supported in rank mode (rtol >= 1)")
     end
 
     # Compute sketch; the basis includes the extra_samples buffer columns
@@ -515,9 +510,6 @@ function id_qrpiv(A, rtol; method="fast")
     if !(method in ["fast", "svd", "lstsq"])
         error("method must be one of: 'fast', 'svd', 'lstsq'")
     end
-
-    is_linop = isa(A, LinearOperator)
-    is_matrix_free = is_linop && (isnothing(A.matrix) || A.matrix === nothing)
 
     m, n = size(A)
 
@@ -745,17 +737,33 @@ end
 """
     _get_matrix(A)
 
-Extract explicit matrix from LinearOperator or return matrix.
+Return A as a dense matrix, materializing it if necessary.
+
+Dense matrices and LinearOperators backed by a dense `Matrix` are returned
+directly; other raw `AbstractMatrix` types (sparse, `Adjoint`) are converted
+via `Matrix()`. LinearOperators without a dense backing matrix are
+materialized one column at a time via matvec, at an O(n)-matvec cost —
+callers are dense (LAPACK) algorithms, so a dense result is required.
 """
 function _get_matrix(A)
-    if hasproperty(A, :matrix)
-        if !isnothing(A.matrix)
+    if isa(A, LinearOperator)
+        if A.matrix isa Matrix
             return A.matrix
-        else
-            error("Cannot extract explicit matrix from matrix-free LinearOperator")
         end
+        # Materialize one column at a time via matvec (matrix-free or
+        # sparse/lazy-backed operators)
+        m, n = size(A)
+        T = eltype(A)
+        A_mat = Matrix{T}(undef, m, n)
+        e_j = zeros(T, n)
+        for j = 1:n
+            e_j[j] = one(T)
+            A_mat[:, j] = _matvec(A, e_j)
+            e_j[j] = zero(T)
+        end
+        return A_mat
     else
-        return A
+        return A isa Matrix ? A : Matrix(A)
     end
 end
 
@@ -771,32 +779,10 @@ function _compute_T_lstsq(A, R, piv, k)
         return zeros(eltype(R), k, n - k)
     end
 
-    is_linop = isa(A, LinearOperator)
-    is_matrix_free = is_linop && (isnothing(A.matrix) || A.matrix === nothing)
-
-    if is_matrix_free
-        # Extract skeleton columns via unit vectors
-        skeleton_cols = zeros(eltype(R), m, k)
-        for j = 1:k
-            e_j = zeros(eltype(R), n)
-            e_j[piv[j]] = one(eltype(R))
-            skeleton_cols[:, j] = _matvec(A, e_j)
-        end
-
-        remaining_cols = zeros(eltype(R), m, n - k)
-        for j = 1:(n - k)
-            e_j = zeros(eltype(R), n)
-            e_j[piv[k + j]] = one(eltype(R))
-            remaining_cols[:, j] = _matvec(A, e_j)
-        end
-
-        T = skeleton_cols \ remaining_cols
-    else
-        A_mat = _get_matrix(A)
-        cols = piv[1:k]
-        remaining = piv[(k+1):end]
-        T = A_mat[:, cols] \ A_mat[:, remaining]
-    end
+    A_mat = _get_matrix(A)
+    cols = piv[1:k]
+    remaining = piv[(k+1):end]
+    T = A_mat[:, cols] \ A_mat[:, remaining]
 
     return T
 end
