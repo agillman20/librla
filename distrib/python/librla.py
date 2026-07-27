@@ -107,11 +107,34 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=N
         Diagonal elements from pivoted QR factorization, representing
         column norms of the sketched matrix (sorted in decreasing order)
 
-    Note
-    ----
+    See Also
+    --------
+    qr_sketch, svd_sketch, id_sketch
+
+    Notes
+    -----
     Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
     fall back to deterministic (full) QR or SVD when orth_sketch terminates
     early, so users of those functions do not need to handle flag=1 explicitly.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import orth_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive basis to 1e-6 relative tolerance:
+
+    >>> Q, flag, diagR = orth_sketch(A, 1e-6, rng=rng)
+    >>> flag
+    0
+
+    Rank-20 basis (returned with the extra_samples buffer columns):
+
+    >>> Q, flag, diagR = orth_sketch(A, 20, rng=rng)
+    >>> Q.shape
+    (200, 32)
     """
     m, n = A.shape
     dtype = _get_dtype(A)
@@ -199,6 +222,29 @@ def qr_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=Non
     p : ndarray, shape (n,)
         Column permutation (0-based indexing).
         The decomposition satisfies A[:, p] ≈ Q @ R
+
+    See Also
+    --------
+    orth_sketch, svd_sketch, id_sketch, id_qrpiv
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import qr_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> Q, R, p = qr_sketch(A, 1e-6, rng=rng)
+    >>> Q.shape[1]
+    8
+
+    Fixed rank 8 with two power iterations for a slowly decaying spectrum:
+
+    >>> Q, R, p = qr_sketch(A, 8, power_iter=2, rng=rng)
+    >>> bool(np.linalg.norm(A[:, p] - Q @ R) < 1e-10 * np.linalg.norm(A))
+    True
     """
     m, n = A.shape
     dtype = _get_dtype(A)
@@ -292,6 +338,29 @@ def svd_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=No
     Vh : ndarray, shape (k, n)
         Right singular vectors (conjugate transpose), orthonormal rows
         The decomposition satisfies A ≈ U @ np.diag(s) @ Vh
+
+    See Also
+    --------
+    orth_sketch, qr_sketch, id_sketch, numpy.linalg.svd
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import svd_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> U, s, Vh = svd_sketch(A, 1e-6, rng=rng)
+    >>> len(s)
+    8
+
+    Fixed rank 8 with two power iterations for a slowly decaying spectrum:
+
+    >>> U, s, Vh = svd_sketch(A, 8, power_iter=2, rng=rng)
+    >>> bool(np.linalg.norm(A - U @ np.diag(s) @ Vh) < 1e-10 * np.linalg.norm(A))
+    True
     """
     m, n = A.shape
     dtype = _get_dtype(A)
@@ -397,6 +466,30 @@ def id_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, method=
     T : ndarray, shape (k, n-k)
         Interpolation matrix
         The approximation is A[:, piv[k:]] ≈ A[:, piv[:k]] @ T
+
+    See Also
+    --------
+    id_qrpiv, qr_sketch, svd_sketch, orth_sketch
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import id_sketch
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Adaptive rank to 1e-6 relative tolerance:
+
+    >>> k, piv, T = id_sketch(A, 1e-6, rng=rng)
+    >>> k
+    8
+
+    Fixed rank 8 with the most accurate T computation:
+
+    >>> k, piv, T = id_sketch(A, 8, method='lstsq', rng=rng)
+    >>> bool(np.linalg.norm(A[:, piv[k:]] - A[:, piv[:k]] @ T)
+    ...      < 1e-10 * np.linalg.norm(A))
+    True
     """
     valid_methods = {'fast', 'svd', 'lstsq'}
     if method not in valid_methods:
@@ -470,6 +563,30 @@ def id_qrpiv(A, rtol, *, method='fast'):
         Column permutation
     T : ndarray, shape (k, n-k)
         Interpolation matrix
+
+    See Also
+    --------
+    id_sketch, qr_sketch, svd_sketch, orth_sketch
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from librla import id_qrpiv
+    >>> rng = np.random.default_rng(7)
+    >>> A = rng.standard_normal((200, 8)) @ rng.standard_normal((8, 100))
+
+    Deterministic ID to 1e-6 relative tolerance:
+
+    >>> k, piv, T = id_qrpiv(A, 1e-6)
+    >>> k
+    8
+
+    Fixed rank 8 with the most accurate T computation:
+
+    >>> k, piv, T = id_qrpiv(A, 8, method='lstsq')
+    >>> bool(np.linalg.norm(A[:, piv[k:]] - A[:, piv[:k]] @ T)
+    ...      < 1e-10 * np.linalg.norm(A))
+    True
     """
     valid_methods = {'fast', 'svd', 'lstsq'}
     if method not in valid_methods:

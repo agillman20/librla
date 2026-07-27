@@ -63,7 +63,7 @@ export LinearOperator, from_matrix, matvec, rmatvec
 # --------------------------------------------------------------
 
 """
-    orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+    orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
 
 Approximate orthonormal basis for column space using randomized sketching.
 
@@ -120,6 +120,23 @@ single smallest one.
 Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
 fall back to deterministic (full) QR or SVD when orth_sketch terminates
 early, so users of those functions do not need to handle flag=1 explicitly.
+
+See also [`qr_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive basis to 1e-6 relative tolerance
+Q, flag, diagR = orth_sketch(A, 1e-6)
+
+# Rank-20 basis (returned with the extra_samples buffer columns)
+Q, flag, diagR = orth_sketch(A, 20)
+
+# Reproducible run with a seeded generator
+using Random
+Q, flag, diagR = orth_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
@@ -190,7 +207,7 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng
 end
 
 """
-    qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12)
+    qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
 
 Compute truncated QR factorization with column pivoting via randomized sketching.
 
@@ -220,6 +237,24 @@ much smaller than min(m,n).
 - `R`: Upper triangular matrix (k×n)
 - `p`: Column permutation vector (1-based indexing), length n
   The decomposition satisfies A[:, p] ≈ Q*R
+
+See also [`orth_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref),
+[`id_qrpiv`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+Q, R, p = qr_sketch(A, 1e-6)
+
+# Fixed rank 20; two power iterations for a slowly decaying spectrum
+Q, R, p = qr_sketch(A, 20; power_iter=2)
+
+# Reproducible run with a seeded generator
+using Random
+Q, R, p = qr_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function qr_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
@@ -319,6 +354,24 @@ much smaller than min(m,n).
 - `s`: Singular values (length k), sorted descending
 - `Vt`: Right singular vectors conjugate-transposed (k×n), orthonormal rows
   The decomposition satisfies A ≈ U*diagm(s)*Vt
+
+See also [`orth_sketch`](@ref), [`qr_sketch`](@ref), [`id_sketch`](@ref),
+`LinearAlgebra.svd`.
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+U, s, Vt = svd_sketch(A, 1e-6)
+
+# Fixed rank 20; two power iterations for a slowly decaying spectrum
+U, s, Vt = svd_sketch(A, 20; power_iter=2)
+
+# Reproducible run with a seeded generator
+using Random
+U, s, Vt = svd_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=nothing)
     m, n = size(A)
@@ -439,6 +492,24 @@ This function uses qr_sketch() to identify the column permutation.
   - piv[k+1:n] are indices of interpolated columns
 - `T`: Interpolation matrix (k×(n-k))
   The approximation is A[:, piv[k+1:n]] ≈ A[:, piv[1:k]] * T
+
+See also [`id_qrpiv`](@ref), [`qr_sketch`](@ref), [`svd_sketch`](@ref),
+[`orth_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Adaptive rank to 1e-6 relative tolerance
+k, piv, T = id_sketch(A, 1e-6)
+
+# Fixed rank 20 with the most accurate T computation
+k, piv, T = id_sketch(A, 20; method="lstsq")
+
+# Reproducible run with a seeded generator
+using Random
+k, piv, T = id_sketch(A, 1e-6; rng=MersenneTwister(7))
+```
 """
 function id_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, method="fast", rng=nothing)
     if !(method in ["fast", "svd", "lstsq"])
@@ -505,6 +576,20 @@ id_sketch.
 - `k`: Rank
 - `piv`: Column permutation (1-based)
 - `T`: Interpolation matrix, size (k, n-k)
+
+See also [`id_sketch`](@ref), [`qr_sketch`](@ref), [`svd_sketch`](@ref),
+[`orth_sketch`](@ref).
+
+# Examples
+```julia
+A = randn(200, 8) * randn(8, 100)
+
+# Deterministic ID to 1e-6 relative tolerance
+k, piv, T = id_qrpiv(A, 1e-6)
+
+# Fixed rank 20 with the most accurate T computation
+k, piv, T = id_qrpiv(A, 20; method="lstsq")
+```
 """
 function id_qrpiv(A, rtol; method="fast")
     if !(method in ["fast", "svd", "lstsq"])
