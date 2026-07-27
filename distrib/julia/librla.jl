@@ -74,17 +74,17 @@ decaying singular values.
 
 The algorithm has two modes:
 - Tolerance mode (rtol < 1): Adaptively grows the sketch size until it
-  covers the numerical rank at rtol with at least extra_samples columns
-  to spare, i.e. diagR[end-extra_samples] <= rtol * diagR[1].
-- Rank mode (rtol >= 1): Performs a single sketch of
-  floor(rtol) + extra_samples columns (rtol interpreted as target rank)
+  covers the numerical rank at rtol with at least `extra_samples` columns
+  to spare, i.e. `diagR[end-extra_samples] <= rtol * diagR[1]`.
+- Rank mode (`rtol >= 1`): Performs a single sketch of
+  `floor(rtol) + extra_samples` columns (`rtol` interpreted as target rank)
 
-In both modes the returned basis includes at least extra_samples buffer
+In both modes the returned basis includes at least `extra_samples` buffer
 columns beyond the target rank (rank mode) or the rtol-rank of the sketch
 (tolerance mode): callers that want the target rank exactly truncate after
-projecting, as qr_sketch/svd_sketch do. The buffer guarantees the sketch
+projecting, as `qr_sketch`/`svd_sketch` do. The buffer guarantees the sketch
 oversamples the numerical rank, so the accepted tolerance test is a
-max-norm statistic over extra_samples + 1 sketch columns rather than the
+max-norm statistic over `extra_samples + 1` sketch columns rather than the
 single smallest one.
 
 # Arguments
@@ -93,13 +93,13 @@ single smallest one.
 - `block_size`: Initial number of random test vectors in tolerance mode
   (default: 42). Ignored in rank mode.
 - `power_iter`: Number of power iterations to improve accuracy (default: 0)
-  Setting power_iter=1 or 2 can improve results for matrices
+  Setting `power_iter=1` or `2` can improve results for matrices
   with slowly decaying singular values
 - `extra_samples`: Number of buffer columns beyond the target rank
-  (default: 12). Rank mode samples floor(rtol) + extra_samples columns;
-  tolerance mode accepts a sketch only when at least extra_samples + 1 of
+  (default: 12). Rank mode samples `floor(rtol) + extra_samples` columns;
+  tolerance mode accepts a sketch only when at least `extra_samples + 1` of
   its pivoted column norms are at or below rtol times the largest.
-  extra_samples=0 reproduces the legacy last-column tolerance check.
+  `extra_samples=0` reproduces the legacy last-column tolerance check.
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
@@ -108,18 +108,18 @@ single smallest one.
 - `flag`: Exit status:
   - 0: Success, Q contains valid orthonormal basis
   - 1: Early termination (tolerance mode only). Occurs when:
-    (a) rtol < machine epsilon (tolerance too tight), or
+    (a) `rtol` < machine epsilon (tolerance too tight), or
     (b) sketch size grew to min(m,n) without meeting tolerance,
-        indicating matrix is effectively full-rank (within extra_samples
+        indicating matrix is effectively full-rank (within `extra_samples`
         columns) at this tolerance
     When flag=1, Q is empty (m×0).
 - `diagR`: Diagonal elements from pivoted QR factorization, representing
   column norms of the sketched matrix (sorted in decreasing order)
 
 # Note
-Higher-level functions (qr_sketch, svd_sketch, id_sketch) automatically
+Higher-level functions (`qr_sketch`, `svd_sketch`, `id_sketch`) automatically
 fall back to deterministic (full) QR or SVD when orth_sketch terminates
-early, so users of those functions do not need to handle flag=1 explicitly.
+early, so users of those functions do not need to handle `flag=1` explicitly.
 
 See also [`qr_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref).
 
@@ -226,16 +226,16 @@ much smaller than min(m,n).
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
 - `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
-  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
-  sketch only when at least extra_samples + 1 of its pivoted column norms
-  are at or below rtol times the largest
+  Rank mode sketches `rank + extra_samples` columns; tolerance mode accepts a
+  sketch only when at least `extra_samples + 1` of its pivoted column norms
+  are at or below `rtol` times the largest
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `Q`: Orthonormal matrix (m×k), k ≤ min(m,n)
 - `R`: Upper triangular matrix (k×n)
 - `p`: Column permutation vector (1-based indexing), length n
-  The decomposition satisfies A[:, p] ≈ Q*R
+  The decomposition satisfies `A[:, p] ≈ Q*R`
 
 See also [`orth_sketch`](@ref), [`svd_sketch`](@ref), [`id_sketch`](@ref),
 [`id_qrpiv`](@ref).
@@ -343,16 +343,16 @@ much smaller than min(m,n).
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
 - `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
-  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
-  sketch only when at least extra_samples + 1 of its pivoted column norms
-  are at or below rtol times the largest
+  Rank mode sketches `rank + extra_samples` columns; tolerance mode accepts a
+  sketch only when at least `extra_samples + 1` of its pivoted column norms
+  are at or below `rtol` times the largest.
 - `rng`: Random number generator (default: nothing uses Random.default_rng())
 
 # Returns
 - `U`: Left singular vectors (m×k), orthonormal columns
 - `s`: Singular values (length k), sorted descending
 - `Vt`: Right singular vectors conjugate-transposed (k×n), orthonormal rows
-  The decomposition satisfies A ≈ U*diagm(s)*Vt
+  The decomposition satisfies `A ≈ U*diagm(s)*Vt`
 
 See also [`orth_sketch`](@ref), [`qr_sketch`](@ref), [`id_sketch`](@ref),
 `LinearAlgebra.svd`.
@@ -467,7 +467,7 @@ where piv is a column permutation and T is a k×(n-k) interpolation matrix.
 The selected columns (skeleton) capture the essential features of A, while
 T provides the coefficients to reconstruct the other columns.
 
-This function uses qr_sketch() to identify the column permutation.
+This function uses `qr_sketch` to identify the column permutation.
 
 # Arguments
 - `A`: Input matrix (m×n) or LinearOperator
@@ -475,8 +475,8 @@ This function uses qr_sketch() to identify the column permutation.
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
 - `extra_samples`: Oversampling / buffer beyond the target rank (default: 12)
-  Rank mode sketches rank + extra_samples columns; tolerance mode accepts a
-  sketch only when at least extra_samples + 1 of its pivoted column norms
+  Rank mode sketches `rank + extra_samples` columns; tolerance mode accepts a
+  sketch only when at least `extra_samples + 1` of its pivoted column norms
   are at or below rtol times the largest
 - `method`: Method for computing T matrix (default: "fast")
   - "fast": Triangular solve R11 \\ R12 (fastest)
@@ -490,7 +490,7 @@ This function uses qr_sketch() to identify the column permutation.
   - piv[1:k] are indices of skeleton columns
   - piv[k+1:n] are indices of interpolated columns
 - `T`: Interpolation matrix (k×(n-k))
-  The approximation is A[:, piv[k+1:n]] ≈ A[:, piv[1:k]] * T
+  The approximation is `A[:, piv[k+1:n]] ≈ A[:, piv[1:k]] * T`
 
 See also [`id_qrpiv`](@ref), [`qr_sketch`](@ref), [`svd_sketch`](@ref),
 [`orth_sketch`](@ref).
@@ -557,11 +557,11 @@ where piv is a column permutation and T is a k×(n-k) interpolation matrix.
 The selected columns (skeleton) capture the essential features of A, while
 T provides the coefficients to reconstruct the other columns.
 
-This function provides a deterministic alternative to id_sketch by
+This function provides a deterministic alternative to `id_sketch` by
 computing the interpolative decomposition using only QR with column
 pivoting (LAPACK geqp3), without any randomized sketching. It preserves
 LinearOperator support and uses the same T matrix computation logic as
-id_sketch.
+`id_sketch`.
 
 # Arguments
 - `A`: Input matrix or LinearOperator
