@@ -563,23 +563,13 @@ def _transpose_linop(A):
 
     For LinearOperators: delegates to scipy's A.H, so each operator class
     adjoints itself — MatrixLinearOperator keeps its .A backing matrix,
-    custom operators get matvec/rmatvec swapped by scipy. The MATLAB-port
-    compatibility attributes are re-attached afterwards.
+    custom operators get matvec/rmatvec swapped by scipy.
     For arrays: uses .conj().T
 
     This matches MATLAB's A' operator behavior.
     """
     if _is_linop(A):
-        A_T = A.H
-
-        # Preserve custom attributes if they exist (MATLAB-port shims;
-        # scipy's adjoint does not carry user-attached attributes)
-        if hasattr(A, 'is_explicit'):
-            A_T.is_explicit = A.is_explicit
-        if hasattr(A, 'matrix'):
-            A_T.matrix = A.matrix.conj().T if A.matrix is not None else None
-
-        return A_T
+        return A.H
     else:
         return A.conj().T
 
