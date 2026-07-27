@@ -176,9 +176,8 @@ function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
       y = librla.matvec(A, x);
       [Q, R, ~] = qr(y, 0);
 
-      % Buffered tolerance check (cross-multiplied form of
-      % diagR(end-extra_samples)/diagR(1) <= rtol, avoiding the division;
-      % diagR is sorted decreasing so diagR(1) is the max)
+      % Buffered tolerance test (diagR is sorted decreasing; the
+      % multiplied form stays valid when diagR(1) == 0)
       diagR = abs(diag(R));
       if isempty(diagR) || (numel(diagR) > extra_samples && ...
                             diagR(end-extra_samples) <= rtol * diagR(1))

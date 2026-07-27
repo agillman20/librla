@@ -184,9 +184,8 @@ function orth_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng
         F = qr(y, ColumnNorm())
         R = F.R
 
-        # Buffered tolerance check (cross-multiplied form of
-        # diagR[end-extra_samples]/diagR[1] <= rtol, avoiding the division;
-        # diagR is sorted decreasing so diagR[1] is the max)
+        # Buffered tolerance test (diagR is sorted decreasing; the
+        # multiplied form stays valid when diagR[1] == 0)
         diagR = abs.(diag(R))
         if isempty(diagR) || (length(diagR) > extra_samples &&
                               diagR[end-extra_samples] <= rtol * diagR[1])

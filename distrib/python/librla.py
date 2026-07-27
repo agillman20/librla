@@ -164,9 +164,8 @@ def orth_sketch(A, rtol, *, block_size=42, power_iter=0, extra_samples=12, rng=N
         y = _matvec(A, x)
         Q, R, _ = linalg.qr(y, mode='economic', pivoting=True)
 
-        # Buffered tolerance check (cross-multiplied form of
-        # diagR[-1 - extra_samples]/diagR[0] <= rtol, avoiding the division;
-        # diagR is sorted decreasing so diagR[0] is the max)
+        # Buffered tolerance test (diagR is sorted decreasing; the
+        # multiplied form stays valid when diagR[0] == 0)
         diagR = np.abs(R.diagonal())
         if diagR.size == 0 or (diagR.size > extra_samples
                                and diagR[-1 - extra_samples] <= rtol * diagR[0]):
