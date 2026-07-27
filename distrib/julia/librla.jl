@@ -620,7 +620,6 @@ function id_qrpiv(A, rtol; method="fast")
     end
 
     k = rank
-    Q = F.Q[:, 1:k]  # thin Q, not full m×m
 
     # Handle edge cases
     if k == 0

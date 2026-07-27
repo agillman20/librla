@@ -667,7 +667,7 @@ function [k, piv, T] = id_qrpiv(A, rtol, varargin)
 
   % Compute full QR with pivoting (deterministic)
   A_mat = librla.get_matrix(A);
-  [Q, R, piv] = qr(A_mat, 0);  % Economy size QR with pivoting
+  [~, R, piv] = qr(A_mat, 0);  % Economy size QR with pivoting; Q unused
 
   % Determine rank
   if rank_mode
