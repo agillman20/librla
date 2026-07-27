@@ -52,8 +52,8 @@ classdef LinearOperator
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.1.0
-% Date: July 13, 2026
+% Version: 1.2.0
+% Date: July 26, 2026
 % Assisted by: Claude Code (Anthropic)
 
 properties (SetAccess = private)

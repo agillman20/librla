@@ -44,7 +44,7 @@ For Python, it is often a good idea to run in a virtual environment.  A script n
 
 The package liblra can be used by either calling the .py file or using the following pip install command:
 
-```pip install librla==1.1.0```
+```pip install librla==1.2.0```
 
 Here is an example using the library.
 
