@@ -24,8 +24,8 @@ Matrix-free operators:
 
         from scipy.sparse.linalg import LinearOperator
         A = LinearOperator((m, n), matvec=matvec_fun, rmatvec=rmatvec_fun)
-        U, s, Vh = svd_sketch(A, rank)  # both modes; tolerance mode may
-                                        # materialize A at O(n) matvec cost
+        U, s, Vh = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
+                                                # materialize A at O(n) matvec cost
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT

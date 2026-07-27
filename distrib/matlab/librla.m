@@ -20,9 +20,9 @@ classdef librla
 % MATRIX-FREE OPERATORS:
 %   Use the LinearOperator class for matrix-free operators:
 %     A = LinearOperator(matvec_fun, rmatvec_fun, m, n);
-%     [U, s, V] = librla.svd_sketch(A, rank);  % both modes; tolerance mode
-%                                              % may materialize A at O(n)
-%                                              % matvec cost
+%     [U, s, V] = librla.svd_sketch(A, rtol_or_rank);  % both modes; tolerance
+%                                                      % mode may materialize A
+%                                                      % at O(n) matvec cost
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT

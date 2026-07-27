@@ -24,8 +24,8 @@ Use the LinearOperator type for matrix-free operators:
 ```julia
 include("LinearOperator.jl")
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
-U, s, Vt = svd_sketch(A, rank)  # both modes; tolerance mode may
-                                # materialize A at O(n) matvec cost
+U, s, Vt = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
+                                        # materialize A at O(n) matvec cost
 ```
 
 # Author
