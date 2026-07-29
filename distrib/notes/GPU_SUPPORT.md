@@ -6,10 +6,10 @@ This document analyzes GPU support for key linear algebra operations used in lib
 
 | Operation | CUDA (NVIDIA) | Metal (Apple) | MPS (PyTorch) |
 |-----------|---------------|---------------|---------------|
-| QR with pivoting | JAX only | No | No |
+| QR with pivoting* | JAX only | No | No |
 | SVD | Yes | Partial | Yes |
 | Matrix multiply | Yes | Yes | Yes |
-| float64 support | Yes | No | Yes |
+| float64 support | Yes | No | No |
 
 *PyTorch pivoted QR is in development (CPU-only PR as of March 2026). JAX supports pivoted QR on GPU.
 
@@ -20,9 +20,10 @@ Column pivoting is not merely an optimization — it is structurally required by
 algorithms.  Without it, three failure modes arise:
 
 1. **Rank detection breaks.**  Pivoted QR sorts columns by decreasing norm, so the
-   diagonal of R decays monotonically.  The tolerance test
-   `|R[k,k]| / |R[1,1]| ≤ rtol` (used in `orth_sketch` to adaptively grow the
-   sketch until the desired accuracy is reached) relies on this ordering.  With
+   diagonal of R decays monotonically.  The buffered tolerance test
+   `diagR[end − extra_samples] / diagR[1] ≤ rtol` (used in `orth_sketch` to
+   adaptively grow the sketch until the desired accuracy is reached) relies
+   on this ordering.  With
    unpivoted QR the diagonal has no guaranteed ordering; small and large values
    can appear in any position, making the ratio unreliable.  In practice this
    causes the adaptive loop to either terminate too early (returning an
@@ -89,7 +90,7 @@ Used in `compare_svd_torch.py` for randomized low-rank SVD comparison.
 
 When running on GPU with `--precision single`, tests show:
 
-1. **Orthogonality loss**: ~1 digit lost in `||U'U - I||` and `||V'V - I||`
+1. **Orthogonality loss**: ~2 digits lost in `||U'U - I||` and `||V'V - I||`
 2. **Test failures**: Orthogonality checks may fail
 
 These results were observed in single precision only — we did not have access to
@@ -102,8 +103,8 @@ Possible causes:
 - Fused-multiply-add (FMA) usage differences between CPU and GPU paths
 
 **Observed:** Orthogonality error of `1e-5` on GPU (single precision) vs `1e-7` on
-CPU (single precision) — a loss of roughly 2 digits, independent of the float32
-vs float64 distinction.
+CPU (single precision) — a loss of roughly 2 digits at the same precision, i.e.
+a GPU-vs-CPU implementation effect rather than a float32 vs float64 effect.
 
 ## Recommendations
 
@@ -116,7 +117,7 @@ vs float64 distinction.
 ### For SVD comparison (`compare_svd_torch.py`)
 
 1. **Double precision** (`--precision double`): Use for accuracy comparisons
-2. **Single precision** (`--precision single`): Expect ~1 digit orthogonality loss on GPU relative to CPU at the same precision
+2. **Single precision** (`--precision single`): Expect ~2 digits orthogonality loss on GPU relative to CPU at the same precision
 3. **CUDA** (`--cuda`): Supported via `torch.svd_lowrank`; note the GPU orthogonality anomalies above
 
 ## References
@@ -127,4 +128,4 @@ vs float64 distinction.
 - [JAX scipy.linalg.qr documentation](https://docs.jax.dev/en/latest/_autosummary/jax.scipy.linalg.qr.html)
 - [Apple JAX Metal documentation](https://developer.apple.com/metal/jax/)
 
-*Last updated: 2026-03-16*
+*Last updated: 2026-07-29*

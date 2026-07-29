@@ -14,7 +14,7 @@ Common pitfalls and issues when performing Empirical Orthogonal Function (EOF) a
 
 ## Interpretation Pitfalls
 
-5. **Sign ambiguity** - EOFs are only defined up to a sign flip (eigenvectors can be ±1). You must choose a convention (e.g., positive loading in a reference region).
+5. **Sign ambiguity** - EOFs are only defined up to a sign flip (eigenvectors can be multiplied by ±1). You must choose a convention (e.g., positive loading in a reference region).
 
 6. **Orthogonality constraint** - EOFs are mathematically orthogonal, but physical climate modes aren't. Higher EOFs often show artificial dipole structures (Buell patterns) due to this constraint.
 
@@ -24,7 +24,7 @@ Common pitfalls and issues when performing Empirical Orthogonal Function (EOF) a
 
 ## Statistical Issues
 
-9. **North's rule of thumb** - Eigenvalues within √(2/N) of each other are effectively degenerate. Their EOFs can mix and rotate arbitrarily. Don't over-interpret individual patterns when eigenvalues are close.
+9. **North's rule of thumb** - The sampling error of an eigenvalue λ is approximately λ·√(2/N); eigenvalues whose spacing is smaller than this are effectively degenerate. Their EOFs can mix and rotate arbitrarily. Don't over-interpret individual patterns when eigenvalues are close.
 
 10. **Sampling error** - With limited samples, trailing EOFs are mostly noise. The number of meaningful EOFs is typically much smaller than min(space, time).
 
