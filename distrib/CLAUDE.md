@@ -1,126 +1,21 @@
-# CLAUDE.md
+# librla/distrib
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Multi-language distribution of librla (randomized low-rank factorizations: `orth_sketch`, `qr_sketch`, `svd_sketch`, `id_sketch`, `id_qrpiv`) with matching Python (`python/librla.py`, packaged via `python/pyproject.toml`), MATLAB/Octave (`matlab/librla.m`, a classdef with static methods) and Julia (`julia/librla.jl`) implementations.
 
-## Repository Overview
+## Layout, tests, demos
 
-This is the **distrib/** directory of the librla (randomized linear algebra) library. It contains a multi-language distribution with identical APIs across Python, MATLAB/Octave, and Julia for low-rank matrix approximations using randomized sketching algorithms.
+Each language directory has a `test/` (run `test_all`) and a `demo/` folder plus its own README.md. `fortran/` holds a prebuilt Fortran `test_all` binary, `compare/` has scripts comparing librla against SciPy and PyTorch, and `notes/` is an AI-generated, unverified knowledge base (read its README.md warning before trusting anything there).
 
-## Build/Test/Run Commands
+## Contracts
 
-### Running Tests
+- Two modes: `rtol < 1` is tolerance mode (adaptive rank); `rtol >= 1` is rank mode with `k = floor(rtol)`.
+- Matrix-free operators (scipy `LinearOperator`, custom `LinearOperator.m` / `LinearOperator.jl`) support both modes, but there is a performance trap: in tolerance mode the deterministic fallback (`_get_matrix` / `get_matrix`, used when the sketch terminates early) may materialize the operator as a dense matrix, one matvec per column, at O(n) matvecs. Prefer rank mode for genuinely matrix-free operators.
+- `extra_samples` (default 12) is the buffer beyond the target rank in both modes: rank mode samples `floor(rtol) + extra_samples` columns; tolerance mode accepts a sketch only when at least `extra_samples + 1` pivoted column norms fall at or below `rtol` times the largest. `extra_samples=0` selects the legacy last-column tolerance check.
+- Other optional parameters (`block_size`, `power_iter`, `method`, `rng`) are documented in each function's header.
 
-```bash
-# Python - run all tests
-cd python/test && python test_all.py
+## API differences between languages
 
-# Python - run individual test
-cd python/test && python test_id.py     # Interpolative decomposition
-cd python/test && python test_svd.py    # SVD
-cd python/test && python test_qr.py     # QR
-cd python/test && python test_orth.py   # Orthonormal basis
-
-# MATLAB/Octave - run all tests (from MATLAB command window)
-cd matlab/test
-test_all
-
-# MATLAB/Octave - run individual test
-test_id
-test_svd
-test_qr
-test_orth
-
-# Julia - run all tests
-cd julia/test && julia test_all.jl
-
-# Julia - run individual test
-cd julia/test && julia test_id.jl
-cd julia/test && julia test_svd.jl
-```
-
-### Running Demos
-
-```bash
-# Python
-cd python/demo && python demo01_basic.py
-
-# MATLAB (in command window)
-cd matlab/demo
-demo01_basic
-
-# Julia
-cd julia/demo && julia demo01_basic.jl
-```
-
-## Core Architecture
-
-### Unified API Design
-
-All three language implementations expose the same five core functions:
-
-| Function | Description |
-|----------|-------------|
-| `orth_sketch(A, rtol)` | Approximate orthonormal basis for column space |
-| `qr_sketch(A, rtol)` | Truncated QR factorization |
-| `svd_sketch(A, rtol)` | Truncated SVD |
-| `id_sketch(A, rtol)` | Interpolative decomposition (randomized) |
-| `id_qrpiv(A, rtol)` | Interpolative decomposition (deterministic) |
-
-### Two Operating Modes
-
-- **Tolerance mode** (rtol < 1): Adaptive rank selection to achieve specified accuracy
-- **Rank mode** (rtol >= 1): Fixed-rank approximation (specify rank as integer)
-
-### LinearOperator Abstraction
-
-All implementations support matrix-free computation through LinearOperator:
-
-| Language | Implementation |
-|----------|---------------|
-| Python | `scipy.sparse.linalg.LinearOperator` (standard library) |
-| MATLAB | Custom `LinearOperator.m` class |
-| Julia | Custom `LinearOperator.jl` type |
-
-Matrix-free operators support both modes; in tolerance mode the deterministic
-fallback may materialize the operator as a dense matrix (one matvec per column,
-O(n) matvecs).
-
-## Language-Specific Details
-
-### Python (python/)
-
-- Main library: `librla.py`
-- Uses NumPy and SciPy
-- Functions are module-level exports
-- LinearOperator via scipy (no custom class needed)
-- 0-based indexing
-
-### MATLAB/Octave (matlab/)
-
-- Main library: `librla.m`
-- Implemented as `classdef` with static methods
-- All functions accessed as `librla.method_name(...)`
-- Custom `LinearOperator.m` class
-- 1-based indexing
-
-### Julia (julia/)
-
-- Main library: `librla.jl`
-- Implemented as a module
-- Functions exported at module level
-- Custom `LinearOperator.jl` type
-- 1-based indexing
-
-## API Differences Between Languages
-
-### orth_sketch Return Values
-
-All languages return `Q, flag, diagR`:
-- `Q`: Orthonormal basis matrix
-- `flag`: Exit status (0=success, 1=early termination)
-- `diagR`: Diagonal of R from pivoted QR (column norms)
-
-### svd_sketch Return Values
+svd_sketch return convention (preserve it):
 
 | Language | Returns | Reconstruction |
 |----------|---------|----------------|
@@ -130,51 +25,24 @@ All languages return `Q, flag, diagR`:
 
 Python and Julia return V transposed; MATLAB returns V (not transposed).
 
-### Indexing in id_sketch/id_qrpiv
+ID reconstruction identity for `id_sketch` / `id_qrpiv` (`k` skeleton columns, `T` is `k x (n-k)`):
 
 ```python
-# Python (0-based)
-A[:, piv[k:]] = A[:, piv[:k]] @ T
+A[:, piv[k:]] = A[:, piv[:k]] @ T          # Python (0-based)
 ```
-
 ```matlab
-% MATLAB (1-based)
-A(:, piv(k+1:end)) = A(:, piv(1:k)) * T
+A(:, piv(k+1:end)) = A(:, piv(1:k)) * T    % MATLAB (1-based)
 ```
-
 ```julia
-# Julia (1-based)
-A[:, piv[k+1:end]] = A[:, piv[1:k]] * T
+A[:, piv[k+1:end]] = A[:, piv[1:k]] * T    # Julia (1-based)
 ```
 
-## Key Algorithmic Features
-
-### id_sketch Method Options
-
-The `method` parameter controls T matrix computation:
-
-| Method | Description |
-|--------|-------------|
-| `'fast'` | Triangular solve (default, fastest) |
-| `'svd'` | SVD-based pseudoinverse |
-| `'lstsq'` | Least squares from original A (most accurate, slowest) |
-
-### Optional Parameters
-
-All functions accept:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `block_size` | 42 | Initial sketch size |
-| `power_iter` | 0 | Power iterations for accuracy |
-| `extra_samples` | 12 | Oversampling / buffer beyond the target rank (both modes; 0 = legacy last-column tolerance check) |
-
-## Cross-Language Consistency
+## Cross-language consistency
 
 When making changes:
 
-1. Maintain API consistency across all three languages
-2. Keep function signatures equivalent (accounting for language idioms)
-3. Update tests in all three languages when adding features
-4. Ensure documentation stays synchronized in README.md
-5. Preserve the svd_sketch return convention (Python/Julia: transposed V; MATLAB: non-transposed V)
+1. Maintain API consistency across all three languages; change all three together.
+2. Keep function signatures equivalent (accounting for language idioms).
+3. Update tests in all three languages when adding features.
+4. Ensure documentation stays synchronized in the per-language README.md files.
+5. Preserve the svd_sketch return convention (Python/Julia: transposed V; MATLAB: non-transposed V).
