@@ -230,3 +230,6 @@ See COPYING file in the parent repository.
 For questions, issues, or contributions, please contact the repository maintainers.
 
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/librla?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/librla)
+
+[![Used by](https://img.shields.io/static/v1?label=Used%20by&message=51&color=informational&logo=slickpic)](https://github.com/nvuillam/github-dependents-info)
+
