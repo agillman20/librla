@@ -234,3 +234,5 @@ Pip Downloads. [![PyPI Downloads](https://static.pepy.tech/personalized-badge/li
 Repos using librla
 [![Used by](https://img.shields.io/static/v1?label=Used%20by&message=51&color=informational&logo=slickpic)](https://github.com/nvuillam/github-dependents-info)
 
+![GitHub Downloads (all assets)](https://img.shields.io/github/downloads/agillman20/librla/total)
+
