@@ -5,8 +5,8 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.2.0
-% Date: July 26, 2026
+% Version: 1.2.1
+% Date: July 30, 2026
 % Assisted by: Claude Code (Anthropic)
 %==========================================================================
 
