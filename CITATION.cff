@@ -1,0 +1,40 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: 'librla: A Randomized Linear Algebra Library'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Adrianna
+    family-names: Gillman
+    email: adrianna.gillman@colorado.edu
+    affiliation: 'University of Colorado, Boulder'
+    orcid: 'https://orcid.org/0000-0002-3413-4133'
+  - given-names: Zydrunas
+    family-names: Gimbutas
+    email: zydrunas.gimbutas@nist.gov
+    affiliation: NIST
+    orcid: 'https://orcid.org/0000-0003-3209-8228'
+identifiers:
+  - type: url
+    value: 'https://github.com/agillman20/librla'
+    description: GitHub repo
+repository-code: 'https://github.com/agillman20/librla'
+abstract: >-
+  Randomized Linear Algebra Library. A unified,
+  multi-language library implementing randomized algorithms
+  for low-rank matrix factorizations. Provides efficient
+  randomized-sketching-based methods for large-scale matrix
+  factorizations with consistent APIs across Python,
+  MATLAB/Octave, and Julia.
+keywords:
+  - Randomized linear algebra
+  - Low rank factorization
+  - Rank revealing factorizations
+  - 'Singular value decomposition '
+  - Interpolatory decomposition
+  - QR factorization
+license: MIT
