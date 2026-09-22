@@ -228,3 +228,5 @@ See COPYING file in the parent repository.
 ## Contact
 
 For questions, issues, or contributions, please contact the repository maintainers.
+
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/librla?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/librla)
