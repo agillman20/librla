@@ -233,6 +233,4 @@ For questions, issues, or contributions, please contact the repository maintaine
 
 [![Used by](https://img.shields.io/static/v1?label=Used%20by&message=51&color=informational&logo=slickpic)](https://github.com/nvuillam/github-dependents-info)
 
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/agillman20/librla/total)
-
 
