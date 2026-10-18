@@ -7,7 +7,7 @@
 # - Runtime
 #
 # Usage:
-#     julia test_orth.jl
+#     julia --project=.. test_orth.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
@@ -22,11 +22,10 @@ using Printf
 using Statistics
 using Random
 
-include(joinpath(@__DIR__, "..", "librla.jl"))
 include(joinpath(@__DIR__, "test_utils.jl"))
 using .TestUtils: make_mat
 
-using .librla: orth_sketch
+using LibRLA: orth_sketch
 
 export test
 

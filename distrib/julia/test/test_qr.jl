@@ -6,7 +6,7 @@
 # - Runtime
 #
 # Usage:
-#     julia test_qr.jl
+#     julia --project=.. test_qr.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
@@ -21,11 +21,10 @@ using Printf
 using Statistics
 using Random
 
-include(joinpath(@__DIR__, "..", "librla.jl"))
 include(joinpath(@__DIR__, "test_utils.jl"))
 using .TestUtils: make_mat
 
-using .librla: qr_sketch
+using LibRLA: qr_sketch
 
 export test
 

@@ -52,8 +52,7 @@ jobs:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
       - name: Run tests
-        working-directory: distrib/julia/test
-        run: julia --color=yes test_all.jl
+        run: julia --color=yes --project=distrib/julia -e "using Pkg; Pkg.test()"
 
   octave:
     name: Octave (MATLAB compat)

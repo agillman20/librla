@@ -38,3 +38,4 @@ lapack-ref/
 # Sphinx documentation build
 docs/_build/
 docs/_static/*.pyc
+Manifest*.toml

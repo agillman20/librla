@@ -154,8 +154,10 @@ distrib/
 │       ├── demo_utils.m   # Demo utilities (includes hilbert matrix)
 │       └── demo*.m        # Demo suite (demo01-demo05)
 ├── julia/
-│   ├── librla.jl          # Main library
-│   ├── LinearOperator.jl  # Matrix-free operator type
+│   ├── Project.toml       # Julia package metadata (package LibRLA)
+│   ├── src/
+│   │   ├── LibRLA.jl      # Main library
+│   │   └── LinearOperator.jl  # Matrix-free operator type
 │   ├── test/
 │   │   ├── test_utils.jl  # Test utilities
 │   │   └── test*.jl       # Test suite (test_id, test_svd, test_qr, test_orth, test_all)
@@ -172,7 +174,7 @@ distrib/
 |----------|-------------|
 | Python | Python 3.9+, NumPy >= 1.20, SciPy >= 1.7 |
 | MATLAB | R2018a or later, OR Octave 6.0+ |
-| Julia | 1.6 or later (LinearAlgebra, Random standard libraries) |
+| Julia | 1.10 or later (LinearAlgebra, Random standard libraries) |
 
 
 ## Examples

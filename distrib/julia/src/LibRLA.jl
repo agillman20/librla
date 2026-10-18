@@ -1,5 +1,5 @@
 """
-    librla - Randomized Linear Algebra Routines for Julia
+    LibRLA - Randomized Linear Algebra Routines for Julia
 
 Randomized algorithms for low-rank matrix approximations:
 - `orth_sketch(A, rtol; kwargs...)` - Approximate orthonormal basis for column space
@@ -12,6 +12,7 @@ Deterministic:
 
 # Usage
 ```julia
+using LibRLA
 Q, flag, diagR = orth_sketch(A, rtol)
 Q, R, p = qr_sketch(A, rtol)
 U, s, Vt = svd_sketch(A, rtol)
@@ -22,7 +23,6 @@ k, piv, T = id_sketch(A, rtol)
 # Matrix-Free Operators
 Use the LinearOperator type for matrix-free operators:
 ```julia
-include("LinearOperator.jl")
 A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
 U, s, Vt = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
                                         # materialize A at O(n) matvec cost
@@ -42,7 +42,7 @@ July 30, 2026
 # Assisted by
 Claude Code (Anthropic)
 """
-module librla
+module LibRLA
 
 using LinearAlgebra
 using Random
@@ -52,6 +52,10 @@ import .LinearOperator, .matvec, .rmatvec, .from_matrix
 
 export orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv
 export LinearOperator, from_matrix, matvec, rmatvec
+
+# Alias so that call sites written as `librla.svd_sketch(...)` keep working
+const librla = LibRLA
+export librla
 
 # LinearOperator support:
 # - m::Int, n::Int (dimensions)
@@ -945,4 +949,4 @@ function _compute_T_fast(R, k, rtol_for_svd)
     return T
 end
 
-end # module librla
+end # module LibRLA

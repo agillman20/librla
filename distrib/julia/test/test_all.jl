@@ -9,7 +9,7 @@
 # - test_orth.jl  (Orth implementations)
 #
 # Usage:
-#     julia test_all.jl
+#     julia --project=.. test_all.jl
 #
 # Returns exit code 0 if all tests pass, 1 otherwise.
 #
