@@ -11,7 +11,7 @@
 # - Rank selection behavior
 #
 # Usage:
-#     julia test_id.jl
+#     julia --project=.. test_id.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
@@ -27,11 +27,10 @@ using Statistics
 using Random
 
 # Import ID implementations
-include(joinpath(@__DIR__, "..", "librla.jl"))
 include(joinpath(@__DIR__, "test_utils.jl"))
 using .TestUtils: make_mat
 
-using .librla: id_sketch, id_qrpiv
+using LibRLA: id_sketch, id_qrpiv
 
 export test
 

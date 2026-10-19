@@ -41,8 +41,7 @@ The `id_sketch` and `id_qrpiv` functions support three methods for computing the
 ### Julia
 
 ```julia
-include("librla.jl")
-using .librla
+using LibRLA
 
 # Create a test matrix (Hilbert matrix, ill-conditioned)
 A = [1.0 / (i + j - 1) for i in 1:1000, j in 1:500]
@@ -144,8 +143,6 @@ Create matrix-free operators for implicit matrices:
 Julia uses the custom `LinearOperator` type:
 
 ```julia
-include("LinearOperator.jl")
-
 # Create LinearOperator
 n = 1000
 matvec_fun(x) = fft(x)
@@ -187,35 +184,33 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method="svd")
 
 | Language | Requirements |
 |----------|--------------|
-| Julia    | 1.6 or later (LinearAlgebra, Random standard libraries) |
+| Julia    | 1.10 or later (LinearAlgebra, Random standard libraries) |
 
 ## Installation
 
 ### Julia
 
-**Requirements:** Julia 1.6+, LinearAlgebra (standard library)
+**Requirements:** Julia 1.10+ (uses only the LinearAlgebra and Random standard libraries)
 
-**Option 1: Include in your project (recommended)**
+LibRLA is not yet in the Julia General registry. Install it straight from GitHub:
+
 ```julia
-include("/path/to/distrib/julia/librla.jl")
-using .librla
+using Pkg
+Pkg.add(url="https://github.com/agillman20/librla", subdir="distrib/julia")
+using LibRLA
 ```
 
-**Option 2: Add to LOAD_PATH**
+Add `rev="<branch, tag or commit>"` to `Pkg.add` to install a specific branch or commit, e.g. `rev="main"`.
+
+**Working from a clone** (no install): load the source file directly.
 ```julia
-push!(LOAD_PATH, "/path/to/distrib/julia")
-using librla
+include("/path/to/distrib/julia/src/LibRLA.jl")
+using .LibRLA
 ```
 
-**Option 3: Copy files to your project**
-```bash
-cp distrib/julia/librla.jl your_project/
-cp distrib/julia/LinearOperator.jl your_project/  # Optional
-```
+The module is named `LibRLA`; it also exports the alias `librla`, so calls written as `librla.svd_sketch(A, rtol)` keep working.
 
-**Troubleshooting:**
-- `UndefVarError: librla not defined` - Ensure you called `using .librla` (note the dot prefix)
-- Verify the path to `librla.jl` in the `include()` statement
+**macOS:** LibRLA uses whichever BLAS library is active. On Apple Silicon, `using AppleAccelerate` before `using LibRLA` switches from the default OpenBLAS to Apple's Accelerate, which can be much faster.
 
 ## Demos
 
@@ -247,9 +242,11 @@ Run the tests from the `test/` directory:
 
 ```
 cd distrib/julia/test
-julia test_all.jl
-julia test_id.jl
+julia --project=.. test_all.jl
+julia --project=.. test_id.jl
 ```
+
+or, through the package manager, `julia --project=distrib/julia -e "using Pkg; Pkg.test()"`.
 
 Tests for validating that the algorithms are working are:
 

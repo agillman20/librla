@@ -7,7 +7,7 @@
 #   - id_sketch / id_qrpiv with method="svd" and method="lstsq"
 #
 # Usage:
-#     julia test_linop.jl
+#     julia --project=.. test_linop.jl
 #
 # Author: Adrianna Gillman, Zydrunas Gimbutas
 # SPDX-License-Identifier: MIT
@@ -22,10 +22,8 @@ using Printf
 using Random
 using SparseArrays
 
-include(joinpath(@__DIR__, "..", "librla.jl"))
-
-using .librla: orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv,
-               LinearOperator, from_matrix
+using LibRLA: orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv,
+              LinearOperator, from_matrix
 
 export test
 

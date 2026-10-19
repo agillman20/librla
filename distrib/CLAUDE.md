@@ -1,6 +1,6 @@
 # librla/distrib
 
-Multi-language distribution of librla (randomized low-rank factorizations: `orth_sketch`, `qr_sketch`, `svd_sketch`, `id_sketch`, `id_qrpiv`) with matching Python (`python/librla.py`, packaged via `python/pyproject.toml`), MATLAB/Octave (`matlab/librla.m`, a classdef with static methods) and Julia (`julia/librla.jl`) implementations.
+Multi-language distribution of librla (randomized low-rank factorizations: `orth_sketch`, `qr_sketch`, `svd_sketch`, `id_sketch`, `id_qrpiv`) with matching Python (`python/librla.py`, packaged via `python/pyproject.toml`), MATLAB/Octave (`matlab/librla.m`, a classdef with static methods) and Julia (`julia/src/LibRLA.jl`, packaged as `LibRLA` via `julia/Project.toml`) implementations.
 
 ## Layout, tests, demos
 

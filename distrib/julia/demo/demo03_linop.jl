@@ -38,10 +38,10 @@ using LinearAlgebra
 using Printf
 using Random
 
-include("../librla.jl")
+include(joinpath(@__DIR__, "..", "src", "LibRLA.jl"))
 include("demo_utils.jl")
 
-using .librla: id_sketch, svd_sketch, LinearOperator, from_matrix
+using .LibRLA: id_sketch, svd_sketch, LinearOperator, from_matrix
 using .demo_utils: hilbert, id_error, print_header, print_subheader
 
 

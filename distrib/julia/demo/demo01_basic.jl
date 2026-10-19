@@ -40,10 +40,10 @@ using LinearAlgebra
 using Printf
 using Random
 
-include("../librla.jl")
+include(joinpath(@__DIR__, "..", "src", "LibRLA.jl"))
 include("demo_utils.jl")
 
-using .librla: id_sketch, id_qrpiv
+using .LibRLA: id_sketch, id_qrpiv
 using .demo_utils: hilbert, kahan, id_error, print_header, print_subheader
 
 

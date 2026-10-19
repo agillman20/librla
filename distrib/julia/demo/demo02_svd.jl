@@ -36,10 +36,10 @@ using LinearAlgebra
 using Printf
 using Random
 
-include("../librla.jl")
+include(joinpath(@__DIR__, "..", "src", "LibRLA.jl"))
 include("demo_utils.jl")
 
-using .librla: svd_sketch, qr_sketch
+using .LibRLA: svd_sketch, qr_sketch
 using .demo_utils: hilbert, svd_error, print_header, print_subheader
 
 
