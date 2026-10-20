@@ -33,10 +33,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy scipy
+          pip install numpy scipy coverage
       - name: Run tests
         working-directory: distrib/python/test
-        run: python test_all.py
+        run: python -m coverage run --include='*/distrib/python/librla.py' test_all.py
+      # One upload is enough; the library is the same on every Python version
+      - name: Write coverage report
+        if: matrix.python-version == '3.12'
+        working-directory: distrib/python/test
+        run: python -m coverage xml -o ../../../coverage-python.xml
+      - uses: codecov/codecov-action@v5
+        if: matrix.python-version == '3.12'
+        with:
+          files: coverage-python.xml
+          flags: python
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   julia:
     name: Julia ${{ matrix.julia-version }}

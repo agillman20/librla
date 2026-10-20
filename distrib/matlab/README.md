@@ -1,5 +1,8 @@
 # librla - Randomized Linear Algebra Library
 
+[![Tests](https://github.com/agillman20/librla/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/agillman20/librla/actions/workflows/tests.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23029492.svg)](https://doi.org/10.5281/zenodo.23029492)
+
 A unified, multi-language library implementing randomized algorithms for low-rank matrix factorizations of both real and complex matrices. The library provides efficient sketching-based methods for large-scale matrix decompositions with consistent APIs across Python, MATLAB/Octave, and Julia.
 
 ## Features
