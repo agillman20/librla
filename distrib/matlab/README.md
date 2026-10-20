@@ -24,7 +24,9 @@ All algorithms support **LinearOperator** abstraction for matrix-free computatio
 - **Explicit LinearOperators** - Matrix wrappers with unified interface
 - **Matrix-free LinearOperators** - Function handles for `A*x` and `A'*x` operations only
 
-Matrix-free operators enable sketching of **implicit matrices** (FFT, convolution, Toeplitz, circulant, etc.) without explicit storage.
+Matrix-free operators let you sketch a matrix that is available only through products with
+A and A', for example a product of factors that is never formed, or a discretized integral
+operator with a smooth kernel.
 
 ### Method Options for ID
 
@@ -138,21 +140,23 @@ For matrices with slowly decaying singular values (small spectral gap), use **po
 
 ## LinearOperator Usage
 
-Create matrix-free operators for implicit matrices:
+Create matrix-free operators for matrices available only through products:
 
 ### MATLAB
 
 MATLAB uses the custom `LinearOperator` class:
 
 ```matlab
-% Create LinearOperator
-n = 1000;
-matvec_fun = @(x) fft(x);
-rmatvec_fun = @(x) ifft(x);
-A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n);
+% A = B*C has rank 20 and is never formed; each product costs O((m+n)k)
+m = 2000; n = 1000; k = 20;
+B = randn(m, k);
+C = randn(k, n);
 
-% Use with librla
-[Q, flag, diagR] = librla.orth_sketch(A_op, 20);
+% Function handles accept a vector or a block of columns (matmat=true default)
+A_op = LinearOperator(@(x) B*(C*x), @(y) C'*(B'*y), m, n);
+
+[U, s, V] = librla.svd_sketch(A_op, 20);   % rank mode
+% A = U*diag(s)*V' to round-off
 ```
 
 **Note:** Matrix-free LinearOperators support both modes. In tolerance mode

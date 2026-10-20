@@ -24,7 +24,9 @@ All algorithms support **LinearOperator** abstraction for matrix-free computatio
 - **Explicit LinearOperators** - Matrix wrappers with unified interface
 - **Matrix-free LinearOperators** - Function handles for `A*x` and `A'*x` operations only
 
-Matrix-free operators enable sketching of **implicit matrices** (FFT, convolution, Toeplitz, circulant, etc.) without explicit storage.
+Matrix-free operators let you sketch a matrix that is available only through products with
+A and A', for example a product of factors that is never formed, or a discretized integral
+operator with a smooth kernel.
 
 ### Method Options for ID
 

@@ -24,7 +24,9 @@ All algorithms support **LinearOperator** abstraction for matrix-free computatio
 - **Explicit LinearOperators** - Matrix wrappers with unified interface
 - **Matrix-free LinearOperators** - Function handles for `A*x` and `A'*x` operations only
 
-Matrix-free operators enable sketching of **implicit matrices** (FFT, convolution, Toeplitz, circulant, etc.) without explicit storage.
+Matrix-free operators let you sketch a matrix that is available only through products with
+A and A', for example a product of factors that is never formed, or a discretized integral
+operator with a smooth kernel.
 
 ### Method Options for ID
 
@@ -144,7 +146,7 @@ U, s, Vh = svd_sketch(A, 20, power_iter=2)
 
 ## LinearOperator Usage
 
-Create matrix-free operators for implicit matrices:
+Create matrix-free operators for matrices available only through products:
 
 ### Python
 
@@ -153,21 +155,26 @@ Python uses `scipy.sparse.linalg.LinearOperator`:
 ```python
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
-from librla import orth_sketch
+from librla import svd_sketch
 
-# Define matrix-vector products
-def matvec(x):
-    return np.fft.fft(x)
+# A = B @ C has rank 20 and is never formed; each product costs O((m+n)k)
+m, n, k = 2000, 1000, 20
+rng = np.random.default_rng(0)
+B = rng.standard_normal((m, k))
+C = rng.standard_normal((k, n))
 
-def rmatvec(x):
-    return np.fft.ifft(x).real
+def apply(x):        # A @ x, for a vector or a block of columns
+    return B @ (C @ x)
 
-# Create LinearOperator
-n = 1000
-A_op = LinearOperator(shape=(n, n), matvec=matvec, rmatvec=rmatvec, dtype=complex)
+def apply_adj(y):    # A^H @ y
+    return C.T @ (B.T @ y)
 
-# Use with librla
-Q, flag, diagR = orth_sketch(A_op, 20)  # Rank-20 approximation
+# matmat/rmatmat let librla apply A to whole blocks (BLAS3)
+A_op = LinearOperator((m, n), matvec=apply, rmatvec=apply_adj,
+                      matmat=apply, rmatmat=apply_adj, dtype=np.float64)
+
+U, s, Vh = svd_sketch(A_op, 20)   # rank mode
+# A = U @ np.diag(s) @ Vh to round-off
 ```
 
 **Note:** Matrix-free LinearOperators support both modes. In tolerance mode
