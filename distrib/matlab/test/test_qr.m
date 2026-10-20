@@ -13,8 +13,6 @@
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.2.1
-% Date: July 30, 2026
 % Assisted by: Claude Code (Anthropic)
 
 function exit_code = test_qr()

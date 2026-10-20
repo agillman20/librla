@@ -24,6 +24,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # On a tag push, refuse to publish unless the tag equals the version
+      # declared by all three ports (manual runs check agreement only)
+      - name: Check versions
+        run: python .github/scripts/check_versions.py "${{ github.ref_type == 'tag' && github.ref_name || '' }}"
       - name: Build sdist and wheel
         working-directory: distrib/python
         run: |

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "librla"
-version = "1.2.1"
+dynamic = ["version"]
 description = "Randomized linear-algebra routines for low-rank matrix factorizations"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -50,3 +50,6 @@ Issues = "https://github.com/agillman20/librla/issues"
 
 [tool.setuptools]
 py-modules = ["librla"]
+
+[tool.setuptools.dynamic]
+version = { attr = "librla.__version__" }

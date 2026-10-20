@@ -29,8 +29,6 @@ Matrix-free operators:
 
 Author: Adrianna Gillman, Zydrunas Gimbutas
 SPDX-License-Identifier: MIT
-Version: 1.2.1
-Date: July 30, 2026
 Assisted by: Claude Code (Anthropic)
 """
 
@@ -38,6 +36,8 @@ import numpy as np
 from scipy import linalg
 from numpy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
+
+__version__ = "1.2.1"
 
 # --------------------------------------------------------------
 # 1. Orthogonal sketch

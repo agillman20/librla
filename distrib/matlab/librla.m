@@ -10,6 +10,8 @@ classdef librla
 % Deterministic:
 %   librla.id_qrpiv     - Interpolative decomposition via QR with pivoting
 %
+%   librla.version      - Release version string
+%
 % USAGE:
 %   [Q, flag, diagR] = librla.orth_sketch(A, rtol_or_rank);
 %   [Q, R, p] = librla.qr_sketch(A, rtol_or_rank);
@@ -26,11 +28,21 @@ classdef librla
 %
 % Author: Adrianna Gillman, Zydrunas Gimbutas
 % SPDX-License-Identifier: MIT
-% Version: 1.2.1
-% Date: July 30, 2026
 % Assisted by: Claude Code (Anthropic)
 
 methods (Static)
+
+function v = version()
+% VERSION - librla version string
+%
+% Syntax:
+%   v = librla.version()
+%
+% Returns the release version as a 'major.minor.patch' char vector. The Python
+% (librla.__version__) and Julia (pkgversion(LibRLA)) ports carry the same
+% number; CI checks that all three agree.
+  v = '1.2.1';
+end
 
 function [Q, flag, diagR] = orth_sketch(A, rtol, varargin)
 % ORTH_SKETCH - Approximate orthonormal basis for column space using randomized sketching

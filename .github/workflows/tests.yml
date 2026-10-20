@@ -6,10 +6,12 @@ on:
     paths:
       - 'distrib/**'
       - '.github/workflows/tests.yml'
+      - '.github/scripts/**'
   pull_request:
     paths:
       - 'distrib/**'
       - '.github/workflows/tests.yml'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 concurrency:
@@ -17,6 +19,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  versions:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that all ports declare the same version
+        run: python3 .github/scripts/check_versions.py
+
   python:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
