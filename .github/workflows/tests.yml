@@ -51,8 +51,21 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
-      - name: Run tests
-        run: julia --color=yes --project=distrib/julia -e "using Pkg; Pkg.test()"
+      - uses: julia-actions/julia-buildpkg@v1
+        with:
+          project: distrib/julia
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          project: distrib/julia
+      - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: distrib/julia/src
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          flags: julia
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   octave:
     name: Octave (MATLAB compat)

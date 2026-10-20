@@ -1,0 +1,23 @@
+name: TagBot
+
+# Tags each Julia registration of distrib/julia as LibRLA-v<version> and
+# creates a matching GitHub release. The LibRLA- prefix keeps these tags
+# apart from the project-wide v* tags that drive publish.yml (PyPI).
+#
+# Requires Settings -> Actions -> General -> Workflow permissions set to
+# "Read and write permissions" so GITHUB_TOKEN can push tags.
+
+on:
+  issue_comment:
+    types:
+      - created
+  workflow_dispatch:
+jobs:
+  TagBot:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JuliaRegistries/TagBot@a3a48fad3c1d6c2abbb874970a3f9032493a7473 # v1.25.14
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          subdir: distrib/julia
