@@ -23,13 +23,14 @@ k, piv, T = id_sketch(A, rtol)
 # Matrix-Free Operators
 `A` may be any `AbstractMatrix` (dense, sparse, ...) or any linear operator
 that defines `size`, `eltype`, `adjoint` and `LinearAlgebra.mul!(Y, A, X)` for
-matrix `X`, such as those of LinearOperators.jl or LinearMaps.jl:
+matrix `X`, such as those of LinearOperators.jl or LinearMaps.jl. For a
+low-rank product A = B*C that is never formed:
 ```julia
 using LinearOperators
 A = LinearOperator(Float64, m, n, false, false,
-                   (y, x, α, β) -> mul!(y, M, x, α, β),     # A * x
+                   (y, x, α, β) -> mul!(y, B, C * x, α, β),     # A * x
                    nothing,
-                   (y, x, α, β) -> mul!(y, M', x, α, β))    # A' * x
+                   (y, x, α, β) -> mul!(y, C', B' * x, α, β))   # A' * x
 U, s, Vt = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
                                         # materialize A at O(n) matvec cost
 ```

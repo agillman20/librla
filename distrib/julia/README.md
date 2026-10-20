@@ -30,7 +30,9 @@ All algorithms accept matrix-free operators from the Julia ecosystem:
   [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl)
   or `LinearMap` from [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
 
-Matrix-free operators enable sketching of **implicit matrices** (FFT, convolution, Toeplitz, circulant, etc.) without explicit storage.
+Matrix-free operators let you sketch a matrix that is available only through products with
+A and A', for example a product of factors that is never formed, or a discretized integral
+operator with a smooth kernel.
 
 ### Method Options for ID
 
@@ -165,12 +167,19 @@ block of columns, so a product that handles matrices runs at BLAS3 speed:
 
 ```julia
 using LibRLA, LinearAlgebra, LinearOperators
-M = randn(2000, 1000)
-A_op = LinearOperator(Float64, 2000, 1000, false, false,
-                      (y, x, α, β) -> mul!(y, M, x, α, β),     # A * x
+
+# A = B*C has rank 20 and is never formed; each product costs O((m+n)k)
+m, n, k = 2000, 1000, 20
+B = randn(m, k)
+C = randn(k, n)
+
+A_op = LinearOperator(Float64, m, n, false, false,
+                      (y, x, α, β) -> mul!(y, B, C * x, α, β),     # A * x
                       nothing,
-                      (y, x, α, β) -> mul!(y, M', x, α, β))    # A' * x
-Q, flag, diagR = orth_sketch(A_op, 20)
+                      (y, x, α, β) -> mul!(y, C', B' * x, α, β))   # A' * x
+
+U, s, Vt = svd_sketch(A_op, 20)   # rank mode
+# A = U * diagm(s) * Vt to round-off
 ```
 
 With [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl),
@@ -179,7 +188,7 @@ product is applied one column at a time:
 
 ```julia
 using LinearMaps
-A_op = LinearMap(x -> M * x, x -> M' * x, 2000, 1000)
+A_op = LinearMap(x -> B * (C * x), y -> C' * (B' * y), m, n)
 U, s, Vt = svd_sketch(A_op, 20)
 ```
 
