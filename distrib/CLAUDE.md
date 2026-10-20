@@ -9,7 +9,7 @@ Each language directory has a `test/` (run `test_all`) and a `demo/` folder plus
 ## Contracts
 
 - Two modes: `rtol < 1` is tolerance mode (adaptive rank); `rtol >= 1` is rank mode with `k = floor(rtol)`.
-- Matrix-free operators (scipy `LinearOperator`, custom `LinearOperator.m` / `LinearOperator.jl`) support both modes, but there is a performance trap: in tolerance mode the deterministic fallback (`_get_matrix` / `get_matrix`, used when the sketch terminates early) may materialize the operator as a dense matrix, one matvec per column, at O(n) matvecs. Prefer rank mode for genuinely matrix-free operators.
+- Matrix-free operators (scipy `LinearOperator`, custom `LinearOperator.m`, and in Julia any operator with `size`/`eltype`/`adjoint`/`mul!`, e.g. LinearOperators.jl or LinearMaps.jl) support both modes, but there is a performance trap: in tolerance mode the deterministic fallback (`_get_matrix` / `get_matrix`, used when the sketch terminates early) may materialize the operator as a dense matrix, one matvec per column, at O(n) matvecs. Prefer rank mode for genuinely matrix-free operators.
 - `extra_samples` (default 12) is the buffer beyond the target rank in both modes: rank mode samples `floor(rtol) + extra_samples` columns; tolerance mode accepts a sketch only when at least `extra_samples + 1` pivoted column norms fall at or below `rtol` times the largest. `extra_samples=0` selects the legacy last-column tolerance check.
 - Other optional parameters (`block_size`, `power_iter`, `method`, `rng`) are documented in each function's header.
 
