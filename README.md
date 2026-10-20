@@ -156,8 +156,7 @@ distrib/
 ├── julia/
 │   ├── Project.toml       # Julia package metadata (package LibRLA)
 │   ├── src/
-│   │   ├── LibRLA.jl      # Main library
-│   │   └── LinearOperator.jl  # Matrix-free operator type
+│   │   └── LibRLA.jl      # Main library
 │   ├── test/
 │   │   ├── test_utils.jl  # Test utilities
 │   │   └── test*.jl       # Test suite (test_id, test_svd, test_qr, test_orth, test_all)

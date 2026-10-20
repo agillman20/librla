@@ -1,8 +1,8 @@
-# test_linop.jl - LinearOperator, wide-matrix, and method="svd" regression tests
+# test_linop.jl - Linear operator, wide-matrix, and method="svd" regression tests
 #
 # Covers code paths not exercised by test_id/test_svd/test_qr/test_orth:
-#   - Explicit LinearOperator (from_matrix — .matrix attribute attached)
-#   - Matrix-free LinearOperator (matvec/rmatvec closures only)
+#   - LinearOperators.jl: matrix wrapper and 5-argument in-place products
+#   - LinearMaps.jl: out-of-place closures (applied one column at a time)
 #   - Wide matrices (m < n), which trigger svd_sketch's transpose branch
 #   - id_sketch / id_qrpiv with method="svd" and method="lstsq"
 #
@@ -22,27 +22,37 @@ using Printf
 using Random
 using SparseArrays
 
-using LibRLA: orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv,
-              LinearOperator, from_matrix
+using LinearMaps: LinearMap
+using LinearOperators: LinearOperator
+
+using LibRLA: orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv
 
 export test
 
 
+# Matrix-free operator from in-place products, called once per block
 function wrap_matfree(M)
     m, n = size(M)
-    T = eltype(M)
-    return LinearOperator(x -> M * x, x -> M' * x, m, n;
-                          dtype=T, is_complex=(T <: Complex))
+    return LinearOperator(eltype(M), m, n, false, false,
+                          (y, x, α, β) -> mul!(y, M, x, α, β),
+                          nothing,
+                          (y, x, α, β) -> mul!(y, M', x, α, β))
 end
+
+# Matrix-free operator from out-of-place closures, as with scipy
+wrap_linmap(M) = LinearMap{eltype(M)}(x -> M * x, x -> M' * x, size(M)...)
+
+operator_variants(M) = [("dense",    M),
+                        ("explicit", LinearOperator(M)),
+                        ("matfree",  wrap_matfree(M)),
+                        ("linmap",   wrap_linmap(M))]
 
 
 function check_orth(M, k, label, errors)
     # Rank mode returns the oversampled basis: rank + extra_samples (12)
     # buffer columns, capped by the number of rows
     k_expected = min(k + 12, size(M, 1))
-    for (variant, A) in [("dense", M),
-                         ("explicit", from_matrix(M)),
-                         ("matfree",  wrap_matfree(M))]
+    for (variant, A) in operator_variants(M)
         Q, flag, _ = orth_sketch(A, Float64(k))
         ortho = size(Q, 2) > 0 ? norm(Q' * Q - I) : 0.0
         ok = (flag == 0) && (size(Q, 2) == k_expected) && (ortho < 1e-10)
@@ -56,9 +66,7 @@ end
 
 function check_qr(M, k, label, errors)
     normM = norm(M)
-    for (variant, A) in [("dense", M),
-                         ("explicit", from_matrix(M)),
-                         ("matfree",  wrap_matfree(M))]
+    for (variant, A) in operator_variants(M)
         Q, R, p = qr_sketch(A, Float64(k))
         err = norm(M[:, p] - Q * R) / normM
         ortho = norm(Q' * Q - I)
@@ -76,9 +84,7 @@ function check_svd(M, k, label, errors)
     s_true = svdvals(M)
     err_opt = k < length(s_true) ? norm(s_true[(k+1):end]) / normM : 0.0
     tol = max(4.0 * err_opt, 1e-10)
-    for (variant, A) in [("dense", M),
-                         ("explicit", from_matrix(M)),
-                         ("matfree",  wrap_matfree(M))]
+    for (variant, A) in operator_variants(M)
         U, s, Vt = svd_sketch(A, Float64(k))
         err = norm(M - U * Diagonal(s) * Vt) / normM
         ortho_U = norm(U' * U - I)
@@ -153,9 +159,7 @@ function check_power_iter(errors)
     m, n, k = 50, 10, 6              # block_size = k + 12 = 18 > n = 10
     M = randn(m, k) * randn(k, n)    # exact rank k
     normM = norm(M)
-    for (variant, A) in [("dense", M),
-                         ("explicit", from_matrix(M)),
-                         ("matfree",  wrap_matfree(M))]
+    for (variant, A) in operator_variants(M)
         ok = false
         err = NaN
         msg = ""
@@ -250,7 +254,9 @@ function check_matfree_tol(errors)
         try
             U, s, Vt = svd_sketch(wrap_matfree(M), rtol)
             err = norm(M - U * diagm(s) * Vt) / norm(M)
-            ok = (length(s) == k_true) && (err < 10 * rtol)
+            U2, s2, Vt2 = svd_sketch(wrap_linmap(M), rtol)
+            err = max(err, norm(M - U2 * diagm(s2) * Vt2) / norm(M))
+            ok = (length(s) == k_true) && (length(s2) == k_true) && (err < 10 * rtol)
             ok || (msg = "wrong rank/err")
         catch e
             msg = string(typeof(e))
@@ -284,7 +290,7 @@ end
 
 
 function check_sparse_backed(errors)
-    # Regression: sparse-backed operators (from_matrix of a SparseMatrixCSC)
+    # Regression: sparse-backed operators (LinearOperator of a SparseMatrixCSC)
     # and raw sparse matrices. _get_matrix materializes them densely, so the
     # dense LAPACK paths (id_qrpiv, lstsq, full QR/SVD fallback) no longer
     # crash on a sparse backing matrix.
@@ -292,7 +298,7 @@ function check_sparse_backed(errors)
     # Genuinely rank-5 sparse matrix: product of two sparse factors
     S = sprandn(120, 5, 0.4) * sprandn(5, 60, 0.4)
     D = Matrix(S)
-    A = from_matrix(S)
+    A = LinearOperator(S)
 
     cases = [
         ("id_qrpiv tol       ", () -> id_qrpiv(A, 1e-6)[1], 5),
@@ -323,7 +329,7 @@ function check_sparse_backed(errors)
 
     # Full-rank sparse: forces the dense QR/SVD fallback
     Sf = sparse(randn(40, 30))
-    Af = from_matrix(Sf)
+    Af = LinearOperator(Sf)
     ok = false
     msg = ""
     try

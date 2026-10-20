@@ -21,9 +21,15 @@ k, piv, T = id_sketch(A, rtol)
 ```
 
 # Matrix-Free Operators
-Use the LinearOperator type for matrix-free operators:
+`A` may be any `AbstractMatrix` (dense, sparse, ...) or any linear operator
+that defines `size`, `eltype`, `adjoint` and `LinearAlgebra.mul!(Y, A, X)` for
+matrix `X`, such as those of LinearOperators.jl or LinearMaps.jl:
 ```julia
-A = LinearOperator(matvec_fun, rmatvec_fun, m, n; dtype=Float64)
+using LinearOperators
+A = LinearOperator(Float64, m, n, false, false,
+                   (y, x, α, β) -> mul!(y, M, x, α, β),     # A * x
+                   nothing,
+                   (y, x, α, β) -> mul!(y, M', x, α, β))    # A' * x
 U, s, Vt = svd_sketch(A, rtol_or_rank)  # both modes; tolerance mode may
                                         # materialize A at O(n) matvec cost
 ```
@@ -47,20 +53,14 @@ module LibRLA
 using LinearAlgebra
 using Random
 
-include("LinearOperator.jl")
-import .LinearOperator, .matvec, .rmatvec, .from_matrix
-
 export orth_sketch, qr_sketch, svd_sketch, id_sketch, id_qrpiv
-export LinearOperator, from_matrix, matvec, rmatvec
 
 # Alias so that call sites written as `librla.svd_sketch(...)` keep working
 const librla = LibRLA
 export librla
 
-# LinearOperator support:
-# - m::Int, n::Int (dimensions)
-# - matvec(A, x), rmatvec(A, x) (apply forward/adjoint)
-# - matrix (explicit matrix or nothing for matrix-free)
+# Operators that are not an AbstractMatrix are used only through size,
+# eltype, adjoint and mul! (see _matvec, _rmatvec, _get_matrix).
 
 # --------------------------------------------------------------
 # Public API Functions
@@ -92,7 +92,7 @@ max-norm statistic over `extra_samples + 1` sketch columns rather than the
 single smallest one.
 
 # Arguments
-- `A`: Input matrix (m×n) or LinearOperator
+- `A`: Input matrix (m×n) or linear operator
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
 - `block_size`: Initial number of random test vectors in tolerance mode
   (default: 42). Ignored in rank mode.
@@ -223,7 +223,7 @@ This is much faster than full QR for matrices where the target rank k is
 much smaller than min(m,n).
 
 # Arguments
-- `A`: Input matrix (m×n) or LinearOperator
+- `A`: Input matrix (m×n) or linear operator
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
   - Tolerance mode: keep columns with norm >= rtol * max_norm
   - Rank mode: return k leading columns
@@ -340,7 +340,7 @@ This is much faster than full SVD for matrices where the target rank k is
 much smaller than min(m,n).
 
 # Arguments
-- `A`: Input matrix (m×n) or LinearOperator
+- `A`: Input matrix (m×n) or linear operator
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
   - Tolerance mode: keep singular values >= rtol * s[1]
   - Rank mode: return k leading singular triplets
@@ -380,13 +380,13 @@ function svd_sketch(A, rtol; block_size=42, power_iter=0, extra_samples=12, rng=
     m, n = size(A)
     dtype = _get_dtype(A)
 
-    # Handle wide matrices via transpose. For a LinearOperator, adjoint returns
-    # a concrete new LinearOperator (Base.copy is undefined for it); for a dense
-    # array, copy materializes the lazy Adjoint wrapper so recursive sketching
-    # hits BLAS directly. If A' = U_at * diag(s) * Vt_at, then A = Vt_at' *
+    # Handle wide matrices via transpose. An operator's adjoint is itself an
+    # operator (Base.copy may be undefined for it); for an array, copy
+    # materializes the lazy Adjoint wrapper so recursive sketching hits BLAS
+    # directly. If A' = U_at * diag(s) * Vt_at, then A = Vt_at' *
     # diag(s) * U_at', so U = Vt_at' and Vt = U_at'.
     if m < n
-        At = isa(A, LinearOperator) ? A' : copy(A')
+        At = A isa AbstractMatrix ? copy(A') : A'
         U_at, s, Vt_at = svd_sketch(At, rtol; block_size=block_size,
                                     power_iter=power_iter, extra_samples=extra_samples, rng=rng)
         return Vt_at', s, U_at'
@@ -474,7 +474,7 @@ T provides the coefficients to reconstruct the other columns.
 This function uses `qr_sketch` to identify the column permutation.
 
 # Arguments
-- `A`: Input matrix (m×n) or LinearOperator
+- `A`: Input matrix (m×n) or linear operator
 - `rtol`: Relative tolerance (< 1) or target rank (>= 1)
 - `block_size`: Sketch size for tolerance mode (default: 42)
 - `power_iter`: Power iterations for accuracy (default: 0)
@@ -564,11 +564,11 @@ T provides the coefficients to reconstruct the other columns.
 This function provides a deterministic alternative to `id_sketch` by
 computing the interpolative decomposition using only QR with column
 pivoting (LAPACK geqp3), without any randomized sketching. It preserves
-LinearOperator support and uses the same T matrix computation logic as
+linear operator support and uses the same T matrix computation logic as
 `id_sketch`.
 
 # Arguments
-- `A`: Input matrix or LinearOperator
+- `A`: Input matrix or linear operator
 - `rtol`: Tolerance (< 1) or rank (>= 1)
 - `method`: Method for computing T matrix (default: "fast")
   - "fast": Triangular solve R11 \\ R12 (fastest)
@@ -715,13 +715,17 @@ end
     _matvec(A, x)
 
 Apply operator A to vector/matrix x.
+
+Operators go through `mul!` because LinearOperators.jl and LinearMaps.jl
+return a lazy composite operator, not an array, for `A * X` with a matrix `X`.
+The output is zero-filled because a user-supplied 5-argument product may read
+it even when β = 0.
 """
+_matvec(A::AbstractMatrix, x) = A * x
 function _matvec(A, x)
-    if isa(A, LinearOperator)
-        return matvec(A, x)
-    else
-        return A * x
-    end
+    T = promote_type(eltype(A), eltype(x))
+    y = x isa AbstractVector ? zeros(T, size(A, 1)) : zeros(T, size(A, 1), size(x, 2))
+    return mul!(y, A, x)
 end
 
 """
@@ -729,27 +733,15 @@ end
 
 Apply adjoint A' to vector/matrix x.
 """
-function _rmatvec(A, x)
-    if isa(A, LinearOperator)
-        return rmatvec(A, x)
-    else
-        return A' * x
-    end
-end
+_rmatvec(A, x) = _matvec(A', x)
 
 """
     _matmat_left(Q, A)
 
 Compute Q' * A efficiently.
 """
-function _matmat_left(Q, A)
-    if isa(A, LinearOperator)
-        # Use adjoint: Q' * A = (A' * Q)'
-        return _rmatvec(A, Q)'
-    else
-        return Q' * A
-    end
-end
+_matmat_left(Q, A::AbstractMatrix) = Q' * A
+_matmat_left(Q, A) = _rmatvec(A, Q)'   # Q' * A = (A' * Q)'
 
 """
     _rank_from_svals(s, rtol)
@@ -784,7 +776,7 @@ end
 Check if A represents complex data.
 """
 function _is_complex_type(A)
-    # Use eltype which works for both matrices and LinearOperators
+    # eltype works for both matrices and operators
     T = eltype(A)
     return T <: Complex
 end
@@ -795,7 +787,7 @@ end
 Get data type for arrays and operations.
 """
 function _get_dtype(A)
-    # eltype works for both matrices and LinearOperators
+    # eltype works for both matrices and operators
     return eltype(A)
 end
 
@@ -813,45 +805,28 @@ function _get_eps(dtype)
 end
 
 """
-    _is_matrix_free_linop(A)
-
-Check if A is a matrix-free LinearOperator.
-"""
-function _is_matrix_free_linop(A)
-    return isa(A, LinearOperator) && isnothing(A.matrix)
-end
-
-"""
     _get_matrix(A)
 
 Return A as a dense matrix, materializing it if necessary.
 
-Dense matrices and LinearOperators backed by a dense `Matrix` are returned
-directly; other raw `AbstractMatrix` types (sparse, `Adjoint`) are converted
-via `Matrix()`. LinearOperators without a dense backing matrix are
-materialized one column at a time via matvec, at an O(n)-matvec cost —
-callers are dense (LAPACK) algorithms, so a dense result is required.
+Dense matrices are returned directly; other `AbstractMatrix` types (sparse,
+`Adjoint`) are converted via `Matrix()`. Operators are materialized one column
+at a time via `mul!`, at an O(n)-matvec cost; callers are dense (LAPACK)
+algorithms, so a dense result is required.
 """
+_get_matrix(A::Matrix) = A
+_get_matrix(A::AbstractMatrix) = Matrix(A)
 function _get_matrix(A)
-    if isa(A, LinearOperator)
-        if A.matrix isa Matrix
-            return A.matrix
-        end
-        # Materialize one column at a time via matvec (matrix-free or
-        # sparse/lazy-backed operators)
-        m, n = size(A)
-        T = eltype(A)
-        A_mat = Matrix{T}(undef, m, n)
-        e_j = zeros(T, n)
-        for j = 1:n
-            e_j[j] = one(T)
-            A_mat[:, j] = _matvec(A, e_j)
-            e_j[j] = zero(T)
-        end
-        return A_mat
-    else
-        return A isa Matrix ? A : Matrix(A)
+    m, n = size(A)
+    T = eltype(A)
+    A_mat = Matrix{T}(undef, m, n)
+    e_j = zeros(T, n)
+    for j = 1:n
+        e_j[j] = one(T)
+        A_mat[:, j] = _matvec(A, e_j)
+        e_j[j] = zero(T)
     end
+    return A_mat
 end
 
 """

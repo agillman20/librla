@@ -2,14 +2,18 @@
 """
 demo03_linop.jl - Matrix-Free Computation with LinearOperator
 
-This demo shows how to use librla with LinearOperators for matrix-free
-computation. This is essential for large-scale problems where the matrix
-doesn't fit in memory.
+This demo shows how to use librla with operators from LinearOperators.jl for
+matrix-free computation. This is essential for large-scale problems where the
+matrix doesn't fit in memory. Any operator that defines size, eltype, adjoint
+and mul! works the same way (e.g. LinearMaps.jl).
+
+Requires LinearOperators.jl in the active environment:
+    using Pkg; Pkg.add("LinearOperators")
 
 Three modes are demonstrated:
   1. Dense matrix (baseline)
-  2. Explicit LinearOperator (matrix stored, accessed via matvec)
-  3. Matrix-free LinearOperator (only matvec/rmatvec functions provided)
+  2. Explicit LinearOperator (matrix wrapped, accessed via products)
+  3. Matrix-free LinearOperator (only in-place A*x and A'*x products provided)
 
 Note: Matrix-free mode only supports rank mode (rtol >= 1).
 
@@ -41,7 +45,8 @@ using Random
 include(joinpath(@__DIR__, "..", "src", "LibRLA.jl"))
 include("demo_utils.jl")
 
-using .LibRLA: id_sketch, svd_sketch, LinearOperator, from_matrix
+using .LibRLA: id_sketch, svd_sketch
+using LinearOperators: LinearOperator
 using .demo_utils: hilbert, id_error, print_header, print_subheader
 
 
@@ -66,7 +71,7 @@ function main()
     A_warmup = randn(50, 30)
     id_sketch(A_warmup, 10.0)
     svd_sketch(A_warmup, 10.0)
-    A_lo_warmup = LinearOperator(x -> A_warmup * x, x -> A_warmup' * x, 50, 30)
+    A_lo_warmup = LinearOperator(A_warmup)
     id_sketch(A_lo_warmup, 10.0)
     println("JIT warm-up complete.")
 
@@ -88,12 +93,12 @@ function main()
     @printf("       Rank: %d, Error: %.3e, Time: %.4fs\n", k1, err1, elapsed1)
 
     #--------------------------------------------------------------------------
-    # Test 2: Explicit LinearOperator (stored matrix via from_matrix)
+    # Test 2: Explicit LinearOperator (wraps the stored matrix)
     #--------------------------------------------------------------------------
     println("\n   1b. Explicit LinearOperator (matrix wrapper)")
-    println("       Matrix is stored in the LinearOperator for direct access.")
+    println("       Matrix is wrapped by LinearOperator(A).")
 
-    A_explicit = from_matrix(A)
+    A_explicit = LinearOperator(A)
 
     elapsed2 = @elapsed begin
         k2, piv2, T2 = id_sketch(A_explicit, Float64(k))
@@ -106,12 +111,14 @@ function main()
     # Test 3: Matrix-free LinearOperator
     #--------------------------------------------------------------------------
     println("\n   1c. Matrix-free LinearOperator")
-    println("       Only matvec/rmatvec functions provided.")
+    println("       Only in-place A*x and A'*x products provided.")
     println("       Requires rank mode (rtol >= 1).")
 
-    my_matvec = x -> A * x
-    my_rmatvec = x -> A' * x
-    A_matfree = LinearOperator(my_matvec, my_rmatvec, m, n)
+    # 5-argument products y = α*op(A)*x + β*y; x may be a block of columns
+    my_matvec = (y, x, α, β) -> mul!(y, A, x, α, β)
+    my_rmatvec = (y, x, α, β) -> mul!(y, A', x, α, β)
+    A_matfree = LinearOperator(Float64, m, n, false, false,
+                               my_matvec, nothing, my_rmatvec)
 
     elapsed3 = @elapsed begin
         k3, piv3, T3 = id_sketch(A_matfree, Float64(k))
@@ -159,7 +166,7 @@ function main()
     println("  - LinearOperator allows matrix-free computation")
     println("  - Essential for large-scale problems (matrix doesn't fit in memory)")
     println("  - Matrix-free mode requires rank mode (rtol >= 1)")
-    println("  - Define only matvec(x) = A * x and rmatvec(x) = A' * x")
+    println("  - Define only the products A * x and A' * x")
 
     return true
 end

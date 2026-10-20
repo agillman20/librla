@@ -16,13 +16,15 @@ All algorithms support both **tolerance mode** (rtol < 1) for adaptive rank sele
 | `id_sketch` | Interpolative decomposition via randomized sketching |
 | `id_qrpiv` | Interpolative decomposition via deterministic QR pivoting |
 
-### LinearOperator Support
+### Linear Operator Support
 
-All algorithms support **LinearOperator** abstraction for matrix-free computation:
+All algorithms accept matrix-free operators from the Julia ecosystem:
 
-- **Dense matrices** - Standard NumPy/MATLAB/Julia arrays
-- **Explicit LinearOperators** - Matrix wrappers with unified interface
-- **Matrix-free LinearOperators** - Function handles for `A*x` and `A'*x` operations only
+- **Matrices** - any `AbstractMatrix` (dense, sparse, ...)
+- **Operators** - anything that defines `size`, `eltype`, `adjoint` and
+  `mul!(Y, A, X)`, e.g. `LinearOperator` from
+  [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl)
+  or `LinearMap` from [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
 
 Matrix-free operators enable sketching of **implicit matrices** (FFT, convolution, Toeplitz, circulant, etc.) without explicit storage.
 
@@ -134,26 +136,35 @@ For matrices with slowly decaying singular values (small spectral gap), use **po
 U, s, Vt = svd_sketch(A, 20, power_iter=2)
 ```
 
-## LinearOperator Usage
+## Linear Operator Usage
 
-Create matrix-free operators for implicit matrices:
-
-### Julia
-
-Julia uses the custom `LinearOperator` type:
+LibRLA has no operator type of its own; it uses an operator only through
+`size`, `eltype`, `adjoint` and `mul!`. With
+[LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl),
+products are 5-argument in-place functions `y = α*op(A)*x + β*y`, and `x` is a
+block of columns, so a product that handles matrices runs at BLAS3 speed:
 
 ```julia
-# Create LinearOperator
-n = 1000
-matvec_fun(x) = fft(x)
-rmatvec_fun(x) = ifft(x)
-A_op = LinearOperator(matvec_fun, rmatvec_fun, n, n; dtype=ComplexF64)
-
-# Use with librla
+using LibRLA, LinearAlgebra, LinearOperators
+M = randn(2000, 1000)
+A_op = LinearOperator(Float64, 2000, 1000, false, false,
+                      (y, x, α, β) -> mul!(y, M, x, α, β),     # A * x
+                      nothing,
+                      (y, x, α, β) -> mul!(y, M', x, α, β))    # A' * x
 Q, flag, diagR = orth_sketch(A_op, 20)
 ```
 
-**Note:** Matrix-free LinearOperators support both modes. In tolerance mode
+With [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl),
+out-of-place closures work as with scipy's `LinearOperator`, but each block
+product is applied one column at a time:
+
+```julia
+using LinearMaps
+A_op = LinearMap(x -> M * x, x -> M' * x, 2000, 1000)
+U, s, Vt = svd_sketch(A_op, 20)
+```
+
+**Note:** Matrix-free operators support both modes. In tolerance mode
 (rtol < 1) the deterministic fallback may materialize the operator as a dense
 matrix, one matvec per column (O(n) matvecs) — prefer rank mode when that cost
 is unacceptable.
@@ -232,7 +243,7 @@ The demo suite provides examples for:
 |------|-------------|
 | demo01_basic | Basic ID algorithms (id_sketch, id_qrpiv) |
 | demo02_svd | SVD and QR sketching |
-| demo03_linop | LinearOperator abstraction |
+| demo03_linop | Matrix-free operators (needs LinearOperators.jl) |
 | demo04_power | Power iteration effects |
 | demo05_methods | T computation methods comparison |
 
