@@ -1,0 +1,7 @@
+# build outputs (make)
+build*/
+*.o
+*.mod
+*.a
+# stale binary from the old F77 port
+/test_all
