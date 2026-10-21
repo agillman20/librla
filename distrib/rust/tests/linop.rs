@@ -93,14 +93,16 @@ fn hidden_dense<T: Scalar>() {
     let mut rng = seed();
     let a = decaying::<T>(&mut rng, 300, 200);
     compare(&a, 15.0, "rank 15 300x200");
-    compare(&a, 1e-8, "tolerance 300x200");
+    // 1.3e-8 lies between singular values (10^(-j/4)), so rounding cannot
+    // decide the rank; 1e-8 would be exactly s_33
+    compare(&a, 1.3e-8, "tolerance 300x200");
     // Full rank: tolerance mode terminates early and materializes the operator
     let b = rng.uniform::<T>(70, 60);
     compare(&b, 1e-6, "fallback 70x60");
     let w = rng.uniform::<T>(50, 70);
     compare(&w, 1e-6, "fallback wide 50x70");
     let w = decaying::<T>(&mut rng, 150, 300);
-    compare(&w, 1e-8, "tolerance wide 150x300");
+    compare(&w, 1.3e-8, "tolerance wide 150x300");
 }
 both!(linop_hidden_dense, hidden_dense);
 

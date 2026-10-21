@@ -272,10 +272,12 @@ public func checkOperators<T: TestScalar>(_ report: CheckReport, _: T.Type) {
     same("orthSketch rank 20", seed: 1, { (a, rng) -> Orth in orthSketch(a, rtol: 20, rng: &rng) }) { (d: Orth, f: Orth) in
         (d.q == f.q && d.diagR == f.diagR, "")
     }
-    same("orthSketch tolerance 1e-8", seed: 2, { (a, rng) -> Orth in orthSketch(a, rtol: 1e-8, rng: &rng) }) { (d: Orth, f: Orth) in
+    // 1.3e-8 lies between singular values (10^(-j/4)), so rounding cannot
+    // decide the rank; 1e-8 would be exactly s_33
+    same("orthSketch tolerance 1.3e-8", seed: 2, { (a, rng) -> Orth in orthSketch(a, rtol: 1.3e-8, rng: &rng) }) { (d: Orth, f: Orth) in
         (d.q == f.q && d.flag == f.flag, "")
     }
-    for rtol in [20, 1e-8] {
+    for rtol in [20, 1.3e-8] {
         same("qrSketch rtol \(sci(rtol))", seed: 3, { (a, rng) -> QR in qrSketch(a, rtol: rtol, rng: &rng) }) { (d: QR, f: QR) in
             let diff = relError(d.q * d.r, f.q * f.r)
             return (d.p == f.p && d.r.shape == f.r.shape && diff <= 1e-13, "diff \(sci(diff))")
