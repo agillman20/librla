@@ -127,7 +127,7 @@ function main()
 
         for (jdx, power_iter) in enumerate(POWER_ITER_LIST)
             elapsed = @elapsed begin
-                U, s, Vt = svd_sketch(A, Float64(k);
+                U, s, Vt = svd_sketch(A, k;
                                       power_iter=power_iter,
                                       extra_samples=extra_samples)
             end

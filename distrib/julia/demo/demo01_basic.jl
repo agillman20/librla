@@ -85,7 +85,7 @@ function main()
     println("   Uses random projections + QR. Fast but approximate.")
 
     elapsed1 = @elapsed begin
-        k1, piv1, T1 = id_sketch(A, Float64(k))
+        k1, piv1, T1 = id_sketch(A, k)
     end
 
     err1 = id_error(A, k1, piv1, T1)
@@ -103,7 +103,7 @@ function main()
     println("   Uses LAPACK column-pivoted QR. More accurate but slower.")
 
     elapsed2 = @elapsed begin
-        k2, piv2, T2 = id_qrpiv(A, Float64(k))
+        k2, piv2, T2 = id_qrpiv(A, k)
     end
 
     err2 = id_error(A, k2, piv2, T2)

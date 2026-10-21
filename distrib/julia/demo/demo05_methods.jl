@@ -109,7 +109,7 @@ function main()
         end
 
         elapsed = @elapsed begin
-            k_out, piv, T = id_sketch(A, Float64(k); method=method)
+            k_out, piv, T = id_sketch(A, k; method=method)
         end
 
         err = id_error(A, k_out, piv, T)

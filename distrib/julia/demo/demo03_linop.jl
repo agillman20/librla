@@ -86,7 +86,7 @@ function main()
     println("\n   1a. Dense matrix (baseline)")
 
     elapsed1 = @elapsed begin
-        k1, piv1, T1 = id_sketch(A, Float64(k))
+        k1, piv1, T1 = id_sketch(A, k)
     end
 
     err1 = id_error(A, k1, piv1, T1)
@@ -101,7 +101,7 @@ function main()
     A_explicit = LinearOperator(A)
 
     elapsed2 = @elapsed begin
-        k2, piv2, T2 = id_sketch(A_explicit, Float64(k))
+        k2, piv2, T2 = id_sketch(A_explicit, k)
     end
 
     err2 = id_error(A, k2, piv2, T2)
@@ -121,7 +121,7 @@ function main()
                                my_matvec, nothing, my_rmatvec)
 
     elapsed3 = @elapsed begin
-        k3, piv3, T3 = id_sketch(A_matfree, Float64(k))
+        k3, piv3, T3 = id_sketch(A_matfree, k)
     end
 
     err3 = id_error(A, k3, piv3, T3)
@@ -135,7 +135,7 @@ function main()
     # Dense baseline
     println("\n   2a. Dense matrix")
     elapsed_svd1 = @elapsed begin
-        U1, s1, Vt1 = svd_sketch(A, Float64(k))
+        U1, s1, Vt1 = svd_sketch(A, k)
     end
 
     A_approx1 = U1 * Diagonal(s1) * Vt1
@@ -145,7 +145,7 @@ function main()
     # Matrix-free
     println("\n   2b. Matrix-free LinearOperator")
     elapsed_svd2 = @elapsed begin
-        U2, s2, Vt2 = svd_sketch(A_matfree, Float64(k))
+        U2, s2, Vt2 = svd_sketch(A_matfree, k)
     end
 
     A_approx2 = U2 * Diagonal(s2) * Vt2

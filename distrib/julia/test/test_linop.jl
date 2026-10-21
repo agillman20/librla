@@ -5,6 +5,7 @@
 #   - LinearMaps.jl: out-of-place closures (applied one column at a time)
 #   - Wide matrices (m < n), which trigger svd_sketch's transpose branch
 #   - id_sketch / id_qrpiv with method="svd" and method="lstsq"
+#   - Integer rank argument (rtol = 10 vs 10.0)
 #
 # Usage:
 #     julia --project=.. test_linop.jl
@@ -53,7 +54,7 @@ function check_orth(M, k, label, errors)
     # buffer columns, capped by the number of rows
     k_expected = min(k + 12, size(M, 1))
     for (variant, A) in operator_variants(M)
-        Q, flag, _ = orth_sketch(A, Float64(k))
+        Q, flag, _ = orth_sketch(A, k)
         ortho = size(Q, 2) > 0 ? norm(Q' * Q - I) : 0.0
         ok = (flag == 0) && (size(Q, 2) == k_expected) && (ortho < 1e-10)
         status = ok ? "PASS" : "FAIL"
@@ -67,7 +68,7 @@ end
 function check_qr(M, k, label, errors)
     normM = norm(M)
     for (variant, A) in operator_variants(M)
-        Q, R, p = qr_sketch(A, Float64(k))
+        Q, R, p = qr_sketch(A, k)
         err = norm(M[:, p] - Q * R) / normM
         ortho = norm(Q' * Q - I)
         ok = (size(Q, 2) == k) && (ortho < 1e-10)
@@ -85,7 +86,7 @@ function check_svd(M, k, label, errors)
     err_opt = k < length(s_true) ? norm(s_true[(k+1):end]) / normM : 0.0
     tol = max(4.0 * err_opt, 1e-10)
     for (variant, A) in operator_variants(M)
-        U, s, Vt = svd_sketch(A, Float64(k))
+        U, s, Vt = svd_sketch(A, k)
         err = norm(M - U * Diagonal(s) * Vt) / normM
         ortho_U = norm(U' * U - I)
         ortho_V = norm(Vt * Vt' - I)
@@ -103,7 +104,7 @@ function check_id(M, k, label, errors)
     m, n = size(M)
     for (fn_name, fn) in [("id_sketch", id_sketch), ("id_qrpiv", id_qrpiv)]
         for method in ["fast", "svd", "lstsq"]
-            kk, piv, T = fn(M, Float64(k); method=method)
+            kk, piv, T = fn(M, k; method=method)
             err = if !isempty(T) && kk < n
                 A_skel = M[:, piv[(kk+1):end]]
                 A_basis = M[:, piv[1:kk]]
@@ -150,6 +151,41 @@ function check_rng_kwarg(errors)
 end
 
 
+function check_int_rank(errors)
+    # An integer rank (svd_sketch(A, 10)) must give results identical to the
+    # same rank passed as a float (svd_sketch(A, 10.0)), same seed.
+    println("\n--- Int rank == Float64 rank ---")
+    k = 10
+    seeded(f, A, r; kw...) = f(A, r; rng=MersenneTwister(7), kw...)
+    cases = Any[
+        ("orth_sketch", (A, r) -> seeded(orth_sketch, A, r)),
+        ("qr_sketch  ", (A, r) -> seeded(qr_sketch, A, r)),
+        ("svd_sketch ", (A, r) -> seeded(svd_sketch, A, r)),
+    ]
+    for meth in ["fast", "svd", "lstsq"]
+        push!(cases, ("id_sketch $(rpad(meth, 5))",
+                      (A, r) -> seeded(id_sketch, A, r; method=meth)))
+        push!(cases, ("id_qrpiv  $(rpad(meth, 5))",
+                      (A, r) -> id_qrpiv(A, r; method=meth)))
+    end
+    for (shape, M) in [("tall", randn(120, 40) * randn(40, 80)),
+                       ("wide", randn(80, 40) * randn(40, 120))]
+        for (name, f) in cases
+            ok = false
+            msg = ""
+            try
+                ok = f(M, k) == f(M, Float64(k))
+                ok || (msg = "results differ")
+            catch e
+                msg = string(typeof(e))
+            end
+            @printf("  [%s] %s %s rank=%d\n", ok ? "PASS" : "FAIL", name, shape, k)
+            ok || push!(errors, "int rank $name $shape ($msg)")
+        end
+    end
+end
+
+
 function check_power_iter(errors)
     # Regression: rank mode with power_iter >= 1 where block_size = rank +
     # extra_samples exceeds n. The intermediate sketch inside _power_iteration
@@ -164,11 +200,11 @@ function check_power_iter(errors)
         err = NaN
         msg = ""
         try
-            Q0, flag, _ = orth_sketch(A, Float64(k); power_iter=2)
-            U, s, Vt = svd_sketch(A, Float64(k); power_iter=2)
+            Q0, flag, _ = orth_sketch(A, k; power_iter=2)
+            U, s, Vt = svd_sketch(A, k; power_iter=2)
             err = norm(M - U * Diagonal(s) * Vt) / normM
-            Q, R, p = qr_sketch(A, Float64(k); power_iter=2)
-            kk, piv, T = id_sketch(A, Float64(k); power_iter=2)
+            Q, R, p = qr_sketch(A, k; power_iter=2)
+            kk, piv, T = id_sketch(A, k; power_iter=2)
             # orth_sketch returns the oversampled basis; the buffer is capped
             # at n by the power-iteration orthonormalization, so only require
             # at least k columns here. svd/qr/id must still return exactly k.
@@ -220,7 +256,7 @@ function check_overrank_id(errors)
                 ok = false
                 err = NaN
                 try
-                    k, piv, T = fn(A, Float64(r); method=meth)
+                    k, piv, T = fn(A, r; method=meth)
                     Arec = zeros(eltype(A), m, n)
                     Arec[:, piv[1:k]] = A[:, piv[1:k]]
                     Arec[:, piv[(k+1):end]] = A[:, piv[1:k]] * T
@@ -372,6 +408,7 @@ function test()
     end
 
     check_rng_kwarg(errors)
+    check_int_rank(errors)
     check_power_iter(errors)
     check_overrank_id(errors)
     check_zero_tol_rank(errors)

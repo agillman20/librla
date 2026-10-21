@@ -81,7 +81,7 @@ function main()
     println("   Returns U, s, Vt where A ≈ U * diagm(s) * Vt")
 
     elapsed = @elapsed begin
-        U, s, Vt = svd_sketch(A, Float64(k))
+        U, s, Vt = svd_sketch(A, k)
     end
 
     err = svd_error(A, U, s, Vt)
@@ -108,7 +108,7 @@ function main()
     println("   Returns Q, R, piv where A[:, piv] ≈ Q * R")
 
     elapsed2 = @elapsed begin
-        Q, R, piv = qr_sketch(A, Float64(k))
+        Q, R, piv = qr_sketch(A, k)
     end
 
     # Reconstruct: A[:, piv] = Q * R
