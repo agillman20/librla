@@ -21,7 +21,9 @@ Each routine has a matrix-free twin with a trailing `f` (`rla_dsvd_sketchf`,
 ...) that takes a user subroutine applying the operator instead of the matrix.
 
 For a modern interface (allocatable outputs, optional arguments, generic
-names, operator types), use the Fortran 2003 port in `distrib/fortran03`. The
+names, operator types), use the Fortran 2003 port in `distrib/fortran03`;
+for the same calls without LAPACK, in any precision (e.g. quad), the Fortran
+77 port in `distrib/fortran77`. The
 two ports make the same LAPACK calls and agree bit for bit when linked to the
 same LAPACK symbols.
 

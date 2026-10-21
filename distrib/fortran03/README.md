@@ -16,7 +16,9 @@ through LAPACK/BLAS. The port version is the `rla_version` constant in
 | `id_qrpiv` | Interpolative decomposition via deterministic pivoted QR |
 
 For LAPACK-style external subroutines callable from Fortran 77 and C, use the
-Fortran 95 port in `distrib/fortran95`.
+Fortran 95 port in `distrib/fortran95`; for a self-contained version without
+LAPACK that also compiles in quad precision, the Fortran 77 port in
+`distrib/fortran77`.
 
 ## Build and test
 

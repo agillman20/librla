@@ -1,0 +1,1019 @@
+!! Sketching algorithms and the public rla_@T* routines of librla77,
+!! written once for both kinds; expanded into the rla_d* and rla_z*
+!! halves of src/librla77.f. Same conventions as kernels.f.in.
+!!
+!! Author: Adrianna Gillman, Zydrunas Gimbutas
+!! SPDX-License-Identifier: MIT
+!! Assisted by: Claude Code (Anthropic)
+c
+c
+c
+c
+c
+        subroutine rla_@Tsketch(@OP,l,npow,iseed,x,z,y,tau,vn1,vn2,
+     1      jp,hw,d,kq,info)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S x(n,*),z(n,*),y(m,*),tau(*),hw(*)
+        @RV vn1(*),vn2(*),jp(*),d(*)
+        dimension iseed(4)
+c
+c       one sketch: x = Omega (n x l), npow power iterations
+c       x <- orth(A^@H A x), y = A x, then the pivoted QR of y.
+c       On exit y(:,1:kq) = Q, d(1:kq) = |diag R|
+c
+        info=0
+        call rla_@Trandn(iseed,n*l,x)
+        lx=l
+        do 1600 it=1,npow
+        call rla_@Tapply(@OP,0,lx,x,y)
+        call rla_@Tapply(@OP,1,lx,y,z)
+        call rla_@Tqrp(n,lx,z,n,jp,tau,vn1,vn2,hw)
+        kz=min(n,lx)
+        call rla_@Torgqr(n,kz,z,n,tau,hw)
+        do 1400 j=1,kz
+        do 1200 i=1,n
+        x(i,j)=z(i,j)
+ 1200 continue
+ 1400 continue
+        lx=kz
+ 1600 continue
+        call rla_@Tapply(@OP,0,lx,x,y)
+        call rla_@Tqrp(m,lx,y,m,jp,tau,vn1,vn2,hw)
+        kq=min(m,lx)
+        do 1800 i=1,kq
+        d(i)=abs(y(i,i))
+ 1800 continue
+        call rla_@Torgqr(m,kq,y,m,tau,hw)
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Torthc(@OP,rtol,nb,npow,nextra,iseed,x,z,y,
+     1      tau,vn1,vn2,jp,hw,d,kq,iflag,info)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S x(*),z(*),y(*),tau(*),hw(*)
+        @RV vn1(*),vn2(*),jp(*),d(*)
+        dimension iseed(4)
+c
+c       orth_sketch: y(:,1:kq) = Q, d(1:kq) = |diag R|. Rank mode: one
+c       sketch of floor(rtol)+nextra columns. Tolerance mode: a fresh
+c       sketch per pass, nb growing 4x, accepted when
+c       d(kq-nextra) <= rtol*d(1); iflag=1 (kq=0) when rtol < eps or
+c       the sketch would reach min(m,n)
+c
+        mn=min(m,n)
+        iflag=0
+        kq=0
+        info=0
+        if( rtol .ge. 1 ) then
+        l=int(rtol)+nextra
+        call rla_@Tsketch(@OP,l,npow,iseed,x,z,y,tau,vn1,vn2,jp,hw,
+     1      d,kq,info)
+        return
+        endif
+c
+        if( rtol .lt. rla_eps() .or. nb .ge. mn ) then
+        iflag=1
+        return
+        endif
+        l=nb
+ 1000 continue
+        call rla_@Tsketch(@OP,l,npow,iseed,x,z,y,tau,vn1,vn2,jp,hw,
+     1      d,kq,info)
+        if( info .ne. 0 .or. kq .eq. 0 ) return
+        if( kq .gt. nextra ) then
+        if( @RE(d(kq-nextra)) .le. rtol*@RE(d(1)) ) return
+        endif
+        l=min(4*l,mn)
+        if( l .ge. mn ) then
+        iflag=1
+        kq=0
+        return
+        endif
+        goto 1000
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqhta(@OP,kq,q,b,zt)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S q(m,*),b(kq,*),zt(n,*)
+c
+c       b (kq x n) = Q^@H A; for anything but a stored matrix,
+c       (A^@H Q)^@H via zt (n x kq)
+c
+        if( idense .eq. 1 .and. iadj .eq. 0 ) then
+        call rla_@Tgemm(1,kq,n,m,q,m,a,lda,b,kq)
+        return
+        endif
+        call rla_@Tapply(@OP,1,kq,q,zt)
+        do 1400 j=1,n
+        do 1200 i=1,kq
+        b(i,j)=@CJ(zt(j,i))
+ 1200 continue
+ 1400 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrcore(@OP,rtol,nb,npow,nextra,iseed,w,
+     1      ioff,wantq,kr,iq,ldqq,irc,ldrc,ipv,info)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S w(*)
+        dimension iseed(4),ioff(*)
+        logical wantq,fallbk
+        integer rla_@Trankd
+c
+c       qr_sketch up to the final product, in the workspace laid out
+c       by rla_@Tqrlay. On exit: rank kr, R = w(irc) (ld ldrc), the
+c       pivots as real numbers w(ipv:ipv+n-1), and (when wantq) the
+c       factor w(iq) (ld ldqq). Fallback: w(iq) is Q itself and
+c       ioff(18)=0; sketch path: Q = Qs * w(iq)(:,1:kr) with
+c       Qs = w(ioff(3)) (m x kq) and ioff(18)=kq
+c
+        mn=min(m,n)
+        info=0
+        call rla_@Torthc(@OP,rtol,nb,npow,nextra,iseed,w(ioff(1)),
+     1      w(ioff(2)),w(ioff(3)),w(ioff(4)),w(ioff(5)),w(ioff(6)),
+     2      w(ioff(7)),w(ioff(8)),w(ioff(9)),kq,iflag,info)
+        if( info .ne. 0 ) return
+        k=mn
+        if( iflag .eq. 0 ) k=kq
+        fallbk=(iflag .ne. 0 .or. k .ge. mn) .and. rtol .lt. 1
+c
+        if( fallbk ) then
+c
+c       . . . deterministic pivoted QR of the materialized operator
+c
+        iam=ioff(16)
+        call rla_@Tgetmat(@OP,w(iam),w(iam),w(ioff(17)))
+        ldrc=max(1,mn)
+        call rla_@Tqrfac(m,n,w(iam),m,w(ioff(10)),w(ioff(11)),
+     1      w(ioff(12)),w(ioff(13)),w(ioff(14)),w(ioff(15)),ldrc,
+     2      wantq)
+        kk=mn
+        iq=iam
+        ldqq=m
+        else
+c
+c       . . . pivoted QR of B = Q^@H A (kq x n), Q2 into B
+c
+        ib=ioff(2)
+        call rla_@Tqhta(@OP,kq,w(ioff(3)),w(ib),w(ioff(1)))
+        kk=min(kq,n)
+        ldrc=max(1,kk)
+        call rla_@Tqrfac(kq,n,w(ib),max(1,kq),w(ioff(10)),
+     1      w(ioff(11)),w(ioff(12)),w(ioff(13)),w(ioff(14)),
+     2      w(ioff(15)),ldrc,wantq)
+        iq=ib
+        ldqq=max(1,kq)
+        endif
+c
+        if( rtol .ge. 1 ) then
+        kr=min(int(rtol),kk)
+        else
+        kr=rla_@Trankd(kk,w(ioff(15)),ldrc,rtol)
+        endif
+        irc=ioff(15)
+        ipv=ioff(10)
+        ioff(18)=kq
+        if( fallbk ) ioff(18)=0
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrlay(m,n,rtol,nb,nextra,lres,ioff,lneed)
+        implicit real *8 (a-h,o-z)
+        dimension ioff(*)
+c
+c       workspace layout of rla_@Tqrcore (worst case, fixed before the
+c       data-dependent run). From 1: the sketch (1-9: x z y tau vn1
+c       vn2 jp hw d, ending at ioff(19)), overlaid by the fallback A
+c       and e (16-17) and by lres scalars for the caller's next stage.
+c       After them: the QR of B (10-15: jp tau vn1 vn2 hw R)
+c
+        mn=min(m,n)
+        call rla_lmax(m,n,rtol,nb,nextra,l)
+        ioff(1)=1
+        ioff(2)=ioff(1)+n*l
+        ioff(3)=ioff(2)+n*l
+        ioff(4)=ioff(3)+m*l
+        do 1200 i=5,10
+        ioff(i)=ioff(i-1)+l
+ 1200 continue
+        ioff(19)=ioff(10)
+        ioff(16)=1
+        ioff(17)=1+m*n
+        iend=max(ioff(10),1+lres)
+        if( rtol .lt. 1 ) iend=max(iend,ioff(17)+64*max(m,n))
+        ioff(10)=iend
+        do 1400 i=11,15
+        ioff(i)=ioff(i-1)+n
+ 1400 continue
+c
+c       R has min(kq,n) <= min(l,mn) rows, or mn after a fallback
+c
+        krow=mn
+        if( rtol .ge. 1 ) krow=min(l,mn)
+        lneed=ioff(15)+krow*n
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tsvdlay(m,n,rtol,nb,nextra,ladj,ioff,lneed)
+        implicit real *8 (a-h,o-z)
+        dimension ioff(*)
+c
+c       workspace layout of rla_@Tsvdd on the tall operator (m >= n):
+c       1-9 sketch, 10-13 small in-place SVD (v s tmp, Ut if the user
+c       matrix is wide, ladj=1); the fallback (15-20: A, adjoint
+c       scratch, e, v, s, tmp) overlays the sketch from 1
+c
+        call rla_lmax(m,n,rtol,nb,nextra,l)
+        kqm=min(m,l)
+        iq=min(kqm,n)
+        ioff(1)=1
+        ioff(2)=ioff(1)+n*l
+        ioff(3)=ioff(2)+n*l
+        ioff(4)=ioff(3)+m*l
+        do 1200 i=5,10
+        ioff(i)=ioff(i-1)+l
+ 1200 continue
+        ioff(11)=ioff(10)+iq*iq
+        ioff(12)=ioff(11)+iq
+        ioff(13)=ioff(12)+iq*iq+5*iq+max(m,n,kqm)+1
+        ioff(14)=ioff(13)
+        if( ladj .eq. 1 ) ioff(14)=ioff(13)+m*iq
+        lneed=ioff(14)
+        if( rtol .ge. 1 ) return
+        ioff(15)=1
+        ioff(16)=ioff(15)+m*n
+        ioff(17)=ioff(16)
+        if( ladj .eq. 1 ) ioff(17)=ioff(16)+m*n
+        ioff(18)=ioff(17)+64*max(m,n)
+        ioff(19)=ioff(18)+n*n
+        ioff(20)=ioff(19)+n
+        ioff(21)=ioff(20)+n*n+5*n+m+1
+        lneed=max(lneed,ioff(21))
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Torthd(@OP,rtol,nb,npow,nextra,iseed,kcap,k,
+     1      q,ldq,diagr,iflag,w,lw,ier)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S q(ldq,*),w(*)
+        dimension iseed(4),jseed(4),ioff(24),diagr(*)
+c
+        k=0
+        iflag=1
+        call rla_chkarg(idense,m,n,lda,rtol,nb,npow,nextra,iseed,
+     1      kcap,ier)
+        if( ier .eq. 0 .and. ldq .lt. max(1,m) ) ier=2
+        if( ier .ne. 0 ) return
+        call rla_@Tqrlay(m,n,rtol,nb,nextra,0,ioff,lneed)
+        lneed=ioff(19)
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 ) return
+c
+        do 1100 i=1,4
+        jseed(i)=iseed(i)
+ 1100 continue
+        call rla_@Torthc(@OP,rtol,nb,npow,nextra,jseed,w(ioff(1)),
+     1      w(ioff(2)),w(ioff(3)),w(ioff(4)),w(ioff(5)),w(ioff(6)),
+     2      w(ioff(7)),w(ioff(8)),w(ioff(9)),kq,iflag,info)
+        if( info .ne. 0 ) then
+        ier=3
+        iflag=1
+        return
+        endif
+        k=kq
+        if( k .gt. kcap ) then
+        ier=4
+        return
+        endif
+        iy=ioff(3)
+        do 1400 j=1,k
+        diagr(j)=@RE(w(ioff(9)+j-1))
+        do 1200 i=1,m
+        q(i,j)=w(iy+(i-1)+(j-1)*m)
+ 1200 continue
+ 1400 continue
+        do 1600 i=1,4
+        iseed(i)=jseed(i)
+ 1600 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrd(@OP,rtol,nb,npow,nextra,iseed,kcap,k,
+     1      q,ldq,r,ldr,ipiv,w,lw,ier)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S q(ldq,*),r(ldr,*),w(*)
+        dimension iseed(4),jseed(4),ioff(24),ipiv(*)
+c
+        k=0
+        call rla_chkarg(idense,m,n,lda,rtol,nb,npow,nextra,iseed,
+     1      kcap,ier)
+        if( ier .eq. 0 .and. (ldq .lt. max(1,m) .or.
+     1      ldr .lt. max(1,kcap)) ) ier=2
+        if( ier .ne. 0 ) return
+        call rla_@Tqrlay(m,n,rtol,nb,nextra,0,ioff,lneed)
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 ) return
+c
+        do 1100 i=1,4
+        jseed(i)=iseed(i)
+ 1100 continue
+        call rla_@Tqrcore(@OP,rtol,nb,npow,nextra,jseed,w,ioff,
+     1      .true.,kr,iq,ldqq,irc,ldrc,ipv,info)
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+        k=kr
+        if( k .gt. kcap ) then
+        ier=4
+        return
+        endif
+        kq=ioff(18)
+        if( kq .eq. 0 ) then
+        do 1400 j=1,k
+        do 1200 i=1,m
+        q(i,j)=w(iq+(i-1)+(j-1)*ldqq)
+ 1200 continue
+ 1400 continue
+        else
+        call rla_@Tgemm(0,m,k,kq,w(ioff(3)),m,w(iq),ldqq,q,ldq)
+        endif
+        do 1800 j=1,n
+        ipiv(j)=nint(@RE(w(ipv+j-1)))
+        do 1600 i=1,k
+        r(i,j)=w(irc+(i-1)+(j-1)*ldrc)
+ 1600 continue
+ 1800 continue
+        do 2000 i=1,4
+        iseed(i)=jseed(i)
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tsvdd(@OP,rtol,nb,npow,nextra,
+     1      iseed,kcap,k,u,ldu,s,vt,ldvt,w,lw,ier)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S u(ldu,*),vt(ldvt,*),w(*)
+        dimension iseed(4),jseed(4),ioff(24),s(*)
+        logical fallbk
+        integer rla_@Tranks
+c
+        k=0
+        call rla_chkarg(idense,m,n,lda,rtol,nb,npow,nextra,iseed,
+     1      kcap,ier)
+        if( ier .eq. 0 .and. (ldu .lt. max(1,m) .or.
+     1      ldvt .lt. max(1,kcap)) ) ier=2
+        if( ier .ne. 0 ) return
+c
+c       the algorithm runs on the tall operator: A, or A^@H if m < n
+c
+        jadj=iadj
+        mt=m
+        nt=n
+        ladj=0
+        if( m .lt. n ) then
+        jadj=1-iadj
+        mt=n
+        nt=m
+        ladj=1
+        endif
+        call rla_@Tsvdlay(mt,nt,rtol,nb,nextra,ladj,ioff,lneed)
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 ) return
+c
+        do 1100 i=1,4
+        jseed(i)=iseed(i)
+ 1100 continue
+        call rla_@Torthc(idense,jadj,mt,nt,a,lda,mv,ipar,rpar,zpar,
+     1      rtol,nb,npow,nextra,jseed,w(ioff(1)),w(ioff(2)),
+     2      w(ioff(3)),w(ioff(4)),w(ioff(5)),w(ioff(6)),w(ioff(7)),
+     3      w(ioff(8)),w(ioff(9)),kq,iflag,info)
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+        kk=nt
+        if( iflag .eq. 0 ) kk=kq
+        fallbk=(iflag .ne. 0 .or. kk .ge. nt) .and. rtol .lt. 1
+c
+c       op = L diag(s) R^@H with L = w(il) (ld ldl) and R = w(ir)
+c       (nt x iq, ld ldr), both from in-place Jacobi SVDs
+c
+        if( fallbk ) then
+        il=ioff(15)
+        call rla_@Tgetmat(idense,jadj,mt,nt,a,lda,mv,ipar,rpar,zpar,
+     1      w(il),w(ioff(16)),w(ioff(17)))
+        ir=ioff(18)
+        is=ioff(19)
+        call rla_@Tsvdip(mt,nt,w(il),mt,-1.0d0,-1.0d0,kqd,w(is),w(ir),
+     1      nt,w(ioff(20)),info)
+        iq=nt
+        ldl=mt
+        ldr=nt
+        else
+c
+c       . . . B = Qs^@H op (kq x nt), op = Qs B; the SVD of B or B^@H
+c
+        ib=ioff(2)
+        call rla_@Tqhta(idense,jadj,mt,nt,a,lda,mv,ipar,rpar,zpar,
+     1      kq,w(ioff(3)),w(ib),w(ioff(1)))
+        iv=ioff(10)
+        is=ioff(11)
+        if( kq .ge. nt ) then
+        call rla_@Tsvdip(kq,nt,w(ib),max(1,kq),-1.0d0,-1.0d0,kqd,
+     1      w(is),w(iv),max(1,nt),w(ioff(12)),info)
+        iq=nt
+        il=ib
+        ldl=max(1,kq)
+        ir=iv
+        ldr=max(1,nt)
+        else
+        ig=ioff(1)
+        do 1300 j=1,kq
+        do 1200 i=1,nt
+        w(ig+(i-1)+(j-1)*nt)=@CJ(w(ib+(j-1)+(i-1)*kq))
+ 1200 continue
+ 1300 continue
+        call rla_@Tsvdip(nt,kq,w(ig),max(1,nt),-1.0d0,-1.0d0,kqd,
+     1      w(is),w(iv),max(1,kq),w(ioff(12)),info)
+        iq=kq
+        il=iv
+        ldl=max(1,kq)
+        ir=ig
+        ldr=max(1,nt)
+        endif
+        endif
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+c
+        if( rtol .ge. 1 ) then
+        k=min(int(rtol),iq)
+        else
+        k=rla_@Tranks(iq,w(is),rtol)
+        endif
+        if( k .gt. kcap ) then
+        ier=4
+        return
+        endif
+c
+c       Ut (mt x k), the left factor of the tall operator: L itself
+c       (fallback), Qs L straight into u (tall), or into w(ioff(13))
+c
+        iut=1
+        ldut=1
+        if( fallbk ) then
+        iut=il
+        ldut=ldl
+        else if( m .ge. n ) then
+        call rla_@Tgemm(0,mt,k,kq,w(ioff(3)),mt,w(il),ldl,u,ldu)
+        else
+        iut=ioff(13)
+        ldut=mt
+        call rla_@Tgemm(0,mt,k,kq,w(ioff(3)),mt,w(il),ldl,w(iut),
+     1      ldut)
+        endif
+c
+c       tall: u = Ut, vt = R^@H; wide: u = R, vt = Ut^@H
+c
+        do 2400 j=1,k
+        s(j)=@RE(w(is+j-1))
+        if( m .ge. n .and. fallbk ) then
+        do 1900 i=1,mt
+        u(i,j)=w(iut+(i-1)+(j-1)*ldut)
+ 1900 continue
+        endif
+        if( m .lt. n ) then
+        do 2000 i=1,mt
+        vt(j,i)=@CJ(w(iut+(i-1)+(j-1)*ldut))
+ 2000 continue
+        endif
+        do 2200 i=1,nt
+        if( m .ge. n ) then
+        vt(j,i)=@CJ(w(ir+(i-1)+(j-1)*ldr))
+        else
+        u(i,j)=w(ir+(i-1)+(j-1)*ldr)
+        endif
+ 2200 continue
+ 2400 continue
+        do 2600 i=1,4
+        iseed(i)=jseed(i)
+ 2600 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tidsd(@OP,rtol,nb,npow,nextra,method,iseed,
+     1      kcap,k,ipiv,t,ldt,w,lw,ier)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S t(ldt,*),w(*)
+        dimension iseed(4),jseed(4),ioff(24),ipiv(*)
+c
+        k=0
+        call rla_chkmet(method,ier)
+        if( ier .eq. 0 ) call rla_chkarg(idense,m,n,lda,rtol,nb,npow,
+     1      nextra,iseed,kcap,ier)
+        if( ier .eq. 0 .and. ldt .lt. max(1,kcap) ) ier=2
+        if( ier .ne. 0 ) return
+        kt=min(m,n)
+        if( rtol .ge. 1 ) kt=min(int(rtol),kt)
+        call rla_@Ttlay(m,n,kt,method,ltn)
+        call rla_@Tqrlay(m,n,rtol,nb,nextra,ltn,ioff,lneed)
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 ) return
+c
+        do 1100 i=1,4
+        jseed(i)=iseed(i)
+ 1100 continue
+        call rla_@Tqrcore(@OP,rtol,nb,npow,nextra,jseed,w,ioff,
+     1      .false.,kr,iq,ldqq,irc,ldrc,ipv,info)
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+        k=kr
+        if( k .gt. kcap ) then
+        ier=4
+        return
+        endif
+        rts=rtol
+        if( rtol .ge. 1 ) rts=0
+        do 1200 j=1,n
+        ipiv(j)=nint(@RE(w(ipv+j-1)))
+ 1200 continue
+        call rla_@Ttcomp(@OP,w(irc),ldrc,ipiv,k,method,rts,t,ldt,
+     1      w(1),info)
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+        do 1600 i=1,4
+        iseed(i)=jseed(i)
+ 1600 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tidqd(@OP,rtol,method,kcap,k,ipiv,t,ldt,w,lw,
+     1      ier)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S t(ldt,*),w(*)
+        dimension ipiv(*),iseed(4)
+        integer rla_@Trankd
+c
+        k=0
+        iseed(1)=0
+        iseed(2)=0
+        iseed(3)=0
+        iseed(4)=1
+        call rla_chkmet(method,ier)
+        if( ier .eq. 0 ) call rla_chkarg(idense,m,n,lda,rtol,0,0,0,
+     1      iseed,kcap,ier)
+        if( ier .eq. 0 .and. ldt .lt. max(1,kcap) ) ier=2
+        if( ier .ne. 0 ) return
+c
+c       layout: A and e from 1, later overlaid by the T stage; then
+c       jp tau vn1 vn2 hw (n each) and R (mn*n)
+c
+        mn=min(m,n)
+        kt=mn
+        if( rtol .ge. 1 ) kt=min(int(rtol),mn)
+        call rla_@Ttlay(m,n,kt,method,ltn)
+        iam=1
+        ie=iam+m*n
+        ijp=1+max(m*n+64*max(m,n),ltn)
+        itau=ijp+n
+        iv1=itau+n
+        iv2=iv1+n
+        ihw=iv2+n
+        irc=ihw+n
+        lneed=irc+mn*n
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 ) return
+c
+        call rla_@Tgetmat(@OP,w(iam),w(iam),w(ie))
+        ldrc=max(1,mn)
+        call rla_@Tqrfac(m,n,w(iam),max(1,m),w(ijp),w(itau),w(iv1),
+     1      w(iv2),w(ihw),w(irc),ldrc,.false.)
+        if( rtol .ge. 1 ) then
+        k=min(int(rtol),mn)
+        rts=0
+        else
+        k=rla_@Trankd(mn,w(irc),ldrc,rtol)
+        rts=rtol
+        endif
+        if( k .gt. kcap ) then
+        ier=4
+        return
+        endif
+        do 1200 j=1,n
+        ipiv(j)=nint(@RE(w(ijp+j-1)))
+ 1200 continue
+        call rla_@Ttcomp(@OP,w(irc),ldrc,ipiv,k,method,rts,t,ldt,
+     1      w(1),info)
+        if( info .ne. 0 ) ier=3
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Ttlay(m,n,kmax,method,ltn)
+        implicit real *8 (a-h,o-z)
+c
+c       workspace of rla_@Ttcomp for k <= kmax
+c
+        if( method .eq. 3 ) then
+        ltn=m*n+64*max(m,n)+2*kmax*kmax+6*kmax+max(m,n)+10
+        else
+        ltn=3*kmax*kmax+7*kmax+10
+        endif
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Ttcomp(@OP,r,ldr,ipiv,k,method,rts,t,ldt,w,
+     1      info)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S r(ldr,*),t(ldt,*),w(*),d
+        dimension ipiv(*)
+c
+c       ID interpolation matrix t (k x (n-k)) from R (rows 1:k):
+c       method 1 fast (back substitution, svd if R11 is near-singular),
+c       2 svd (pseudoinverse of R11 dropping s < max(rts,eps)*smax),
+c       3 lstsq (least squares on the columns of A)
+c
+        info=0
+        nk=n-k
+        if( k .eq. 0 .or. nk .eq. 0 ) return
+        eps=rla_eps()
+c
+        if( method .eq. 3 ) then
+c
+c       . . . A in pivot order: A1 = columns 1:k, B = columns k+1:n
+c
+        iam=1
+        ie=iam+m*n
+        isw=ie+64*max(m,n)
+        call rla_@Tgetmatp(@OP,ipiv,w(iam),w(ie))
+        call rla_@Tlsqip(m,k,w(iam),nk,w(iam+m*k),m,t,ldt,w(isw),info)
+        return
+        endif
+c
+        if( method .eq. 1 ) then
+        dmin=abs(r(1,1))
+        dmax=dmin
+        do 1600 i=2,k
+        dmin=min(dmin,abs(r(i,i)))
+        dmax=max(dmax,abs(r(i,i)))
+ 1600 continue
+        if( dmin .gt. eps*dmax ) then
+c
+c       . . . t = R11 \ R12 by back substitution
+c
+        do 2000 j=1,nk
+        do 1700 i=1,k
+        t(i,j)=r(i,k+j)
+ 1700 continue
+        do 1900 i=k,1,-1
+        t(i,j)=t(i,j)/r(i,i)
+        d=t(i,j)
+        do 1800 l=1,i-1
+        t(l,j)=t(l,j)-d*r(l,i)
+ 1800 continue
+ 1900 continue
+ 2000 continue
+        return
+        endif
+        endif
+c
+c       . . . t = pinv(R11) R12 through the SVD of R11
+c
+        iu=1
+        iv=iu+k*k
+        is=iv+k*k
+        itm=is+k
+        do 2050 j=1,k
+        do 2040 i=1,k
+        w(iu+(i-1)+(j-1)*k)=r(i,j)
+ 2040 continue
+ 2050 continue
+        call rla_@Tsvdip(k,k,w(iu),k,-1.0d0,-1.0d0,kqd,w(is),w(iv),k,
+     1      w(itm),info)
+        do 2200 j=1,nk
+        do 2100 i=1,k
+        t(i,j)=0
+ 2100 continue
+ 2200 continue
+        if( info .ne. 0 ) return
+        smax=@RE(w(is))
+        if( smax .le. 0 ) return
+        cut=max(rts,eps)*smax
+        do 2800 j=1,nk
+        do 2700 l=1,k
+        sl=@RE(w(is+l-1))
+        if( sl .lt. cut ) goto 2700
+        d=0
+        do 2500 i=1,k
+        d=d+@CJ(w(iu+(i-1)+(l-1)*k))*r(i,k+j)
+ 2500 continue
+        d=d/sl
+        do 2600 i=1,k
+        t(i,j)=t(i,j)+w(iv+(i-1)+(l-1)*k)*d
+ 2600 continue
+ 2700 continue
+ 2800 continue
+        return
+        end
+c
+c
+c
+c
+c
+        integer function rla_@Trankd(kk,r,ldr,rtol)
+        implicit real *8 (a-h,o-z)
+        @S r(ldr,*)
+c
+c       number of |r(i,i)| >= rtol*|r(1,1)|, i <= kk (pivoted R)
+c
+        rla_@Trankd=0
+        if( kk .eq. 0 ) return
+        d1=abs(r(1,1))
+        if( d1 .le. 0 ) return
+        do 1200 i=1,kk
+        if( abs(r(i,i)) .ge. rtol*d1 ) rla_@Trankd=rla_@Trankd+1
+ 1200 continue
+        return
+        end
+c
+c
+c
+c
+c
+        integer function rla_@Tranks(kk,s,rtol)
+        implicit real *8 (a-h,o-z)
+        @RV s(*)
+c
+c       number of singular values >= rtol*s(1)
+c
+        rla_@Tranks=0
+        if( kk .eq. 0 ) return
+        s1=@RE(s(1))
+        if( s1 .le. 0 ) return
+        do 1200 i=1,kk
+        if( @RE(s(i)) .ge. rtol*s1 ) rla_@Tranks=rla_@Tranks+1
+ 1200 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tnomv(itrans,m,n,k,x,y,ipar,rpar,zpar)
+        implicit real *8 (a-h,o-z)
+        @S x(*),y(*)
+        dimension ipar(*),rpar(*)
+        complex *16 zpar(*)
+c
+c       placeholder matvec for the dense entry points (never called)
+c
+        if( itrans+m+n+k .lt. 0 .and. ipar(1)+rpar(1) .lt. 0 .and.
+     1      abs(zpar(1)) .lt. 0 ) y(1)=x(1)
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tlwchk(lw,lneed,w,ier)
+        implicit real *8 (a-h,o-z)
+        @S w(*)
+c
+c       workspace query (lw = -1: w(1) = size needed) and check
+c       (lw too small: ier = 5, w(1) = size needed if lw >= 1)
+c
+        ier=0
+        if( lw .eq. -1 ) then
+        w(1)=lneed
+        return
+        endif
+        if( lw .lt. lneed ) then
+        ier=5
+        if( lw .ge. 1 ) w(1)=lneed
+        endif
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tsvd(m,n,a,lda,rtol,atol,kmax,iexit,k,s,u,ldu,
+     1      vt,ldvt,w,lw,ier)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),u(ldu,*),vt(ldvt,*),w(*)
+        dimension s(*)
+c
+c       truncated SVD of the dense m x n matrix a (not modified), any
+c       shape: a ~ u (m x k) diag(s) vt (k x n), keeping the singular
+c       values s_j >= max(rtol*s_1, atol), at most kmax of them
+c       (rtol = atol = 0, kmax = min(m,n), iexit = 0: the full SVD).
+c       Preconditioned one-sided Jacobi (rla_@Tsvdip) on a or a^@H,
+c       whichever is tall; its pivoted QR may stop early (iexit):
+c
+c         0  no early exit (all min(m,n) values, zeros included)
+c         1  stop when the residual columns are rounding noise,
+c            ||R22||_F <= 10*sqrt(min(m,n))*eps*||A|| (the size of
+c            Jacobi's own backward error): as accurate as the full
+c            SVD, fast when a is low-rank to working precision
+c         2  stop when ||R22||_F <= 0.01*max(rtol*s_1, atol): the
+c            cost follows the rank at the requested tolerance; kept
+c            values move by at most that much (absolute)
+c         3  LAPACK @Tgeqp3rk's rule: stop when the largest residual
+c            column norm is <= max(rtol*(largest column norm of a),
+c            atol). Fastest; values near the threshold may move by up
+c            to about sqrt(min(m,n)) times it, so the count there is
+c            approximate
+c
+c       kmax only caps the output. w(lw): lw = -1 returns the size
+c       needed in w(1). ier: 0 success, 2 invalid argument, 3 no
+c       convergence, 5 lw too small (w(1) = size needed)
+c
+        ier=0
+        k=0
+        kk=min(m,n)
+        ip=max(m,n)
+        if( m .lt. 0 .or. n .lt. 0 .or. lda .lt. max(1,m) .or.
+     1      kmax .lt. 0 .or. iexit .lt. 0 .or. iexit .gt. 3 .or.
+     2      ldu .lt. max(1,m) .or. ldvt .lt. max(1,min(kmax,kk)) )
+     3      ier=2
+        if( .not. (rtol .ge. 0 .and. atol .ge. 0) ) ier=2
+        if( ier .ne. 0 ) return
+        ig=1
+        iv=ig+ip*kk
+        is=iv+kk*kk
+        iwk=is+kk
+        lneed=iwk+kk*kk+5*kk+ip+1
+        call rla_@Tlwchk(lw,lneed,w,ier)
+        if( ier .ne. 0 .or. lw .lt. 0 .or. kk .eq. 0 ) return
+c
+c       g = a (m >= n) or a^@H (m < n), tall ip x kk
+c
+        do 1400 j=1,kk
+        do 1200 i=1,ip
+        if( m .ge. n ) then
+        w(ig+(i-1)+(j-1)*ip)=a(i,j)
+        else
+        w(ig+(i-1)+(j-1)*ip)=@CJ(a(j,i))
+        endif
+ 1200 continue
+ 1400 continue
+c
+c       early-exit tolerances for the largest residual column norm,
+c       which bounds ||R22||_F/sqrt(kk)
+c
+        eps=rla_eps()
+        qatol=-1
+        qrtol=-1
+        if( iexit .eq. 1 ) qrtol=10*eps
+        if( iexit .eq. 2 ) then
+        qrtol=max(10*eps,0.01d0*rtol/sqrt(dble(kk)))
+        if( atol .gt. 0 ) qatol=0.01d0*atol/sqrt(dble(kk))
+        endif
+        if( iexit .eq. 3 ) then
+        qrtol=max(eps,rtol)
+        if( atol .gt. 0 ) qatol=atol
+        endif
+        call rla_@Tsvdip(ip,kk,w(ig),ip,qatol,qrtol,kq,w(is),w(iv),kk,
+     1      w(iwk),info)
+        if( info .ne. 0 ) then
+        ier=3
+        return
+        endif
+        if( kq .eq. 0 ) return
+c
+        cut=max(rtol*@RE(w(is)),atol)
+        do 1600 j=1,min(kq,kmax)
+        if( @RE(w(is+j-1)) .lt. cut ) goto 1700
+        k=j
+ 1600 continue
+ 1700 continue
+c
+c       a = g v^@H: u = g, vt = v^@H; a^@H = g v^@H: u = v, vt = g^@H
+c
+        do 2400 j=1,k
+        s(j)=@RE(w(is+j-1))
+        do 2000 i=1,ip
+        if( m .ge. n ) then
+        u(i,j)=w(ig+(i-1)+(j-1)*ip)
+        else
+        vt(j,i)=@CJ(w(ig+(i-1)+(j-1)*ip))
+        endif
+ 2000 continue
+        do 2200 i=1,kk
+        if( m .ge. n ) then
+        vt(j,i)=@CJ(w(iv+(i-1)+(j-1)*kk))
+        else
+        u(i,j)=w(iv+(i-1)+(j-1)*kk)
+        endif
+ 2200 continue
+ 2400 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrcp(m,n,kmax,abstol,reltol,a,lda,k,rmaxk,
+     1      relmaxk,ipiv,tau,w,ier)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),w(*)
+        dimension ipiv(*)
+c
+c       truncated Householder QR with column pivoting and early exit,
+c       after LAPACK 3.12 @Tgeqp3rk (without its right-hand sides):
+c       the factorization stops with k columns when k = kmax, or the
+c       largest column norm of the residual R22 is <= abstol, or is
+c       <= reltol times the largest column norm of a (a negative
+c       tolerance disables its test; kmax >= min(m,n) for no limit).
+c
+c       On exit a(:,ipiv) = Q(:,1:k) R(1:k,:) + [0 R22]: R in the upper
+c       triangle of rows 1:k, the reflectors H(i) = I - tau(i) v v^@H
+c       below it (rla_@Torgqr forms Q), and R22 in a(k+1:m,k+1:n).
+c       rmaxk = largest column norm of R22 (0 if k = min(m,n)),
+c       relmaxk = rmaxk / (largest column norm of a). ipiv (n), tau
+c       (min(m,n)), w (4*n) scratch. ier: 0, or 2 invalid argument
+c
+        ier=0
+        k=0
+        rmaxk=0
+        relmaxk=0
+        if( m .lt. 0 .or. n .lt. 0 .or. lda .lt. max(1,m) .or.
+     1      kmax .lt. 0 ) ier=2
+        if( .not. (abstol .ge. 0 .or. abstol .lt. 0) ) ier=2
+        if( .not. (reltol .ge. 0 .or. reltol .lt. 0) ) ier=2
+        if( ier .ne. 0 ) return
+        call rla_@Tqrpk(m,n,a,lda,kmax,abstol,reltol,w(1),tau,w(n+1),
+     1      w(2*n+1),w(3*n+1),k,rmaxk,rmax0)
+        do 1200 j=1,n
+        ipiv(j)=nint(@RE(w(j)))
+ 1200 continue
+        if( rmax0 .gt. 0 ) relmaxk=rmaxk/rmax0
+        return
+        end

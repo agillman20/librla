@@ -1,0 +1,764 @@
+!! Dense kernels of librla77 (products, Householder QR, Jacobi SVD,
+!! operator application), written once for both kinds; expanded into
+!! the rla_d* and rla_z* halves of src/librla77.f.
+!! Template for tools/generate.py: lines starting with !! are dropped;
+!! lines starting with @D (@Z) are kept only in the real (complex) half.
+!!
+!! Author: Adrianna Gillman, Zydrunas Gimbutas
+!! SPDX-License-Identifier: MIT
+!! Assisted by: Claude Code (Anthropic)
+c
+c
+c
+c
+c
+        subroutine rla_@Tgemm(itr,m,n,k,a,lda,b,ldb,c,ldc)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),b(ldb,*),c(ldc,*),d
+c
+c       c(m,n) = a b (itr=0, a is m x k) or a^@H b (itr=1, a is k x m)
+c
+        do 1600 j=1,n
+        if( itr .eq. 0 ) then
+        do 1200 i=1,m
+        c(i,j)=0
+ 1200 continue
+        do 1400 l=1,k
+        d=b(l,j)
+        do 1300 i=1,m
+        c(i,j)=c(i,j)+a(i,l)*d
+ 1300 continue
+ 1400 continue
+        else
+        do 1550 i=1,m
+        d=0
+        do 1500 l=1,k
+        d=d+@CJ(a(l,i))*b(l,j)
+ 1500 continue
+        c(i,j)=d
+ 1550 continue
+        endif
+ 1600 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tapply(@OP,itrans,k,x,y)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S x(*),y(*)
+c
+c       y = op(A) x for k columns: itrans=0: y(m,k) = A x(n,k);
+c       itrans=1: y(n,k) = A^@H x(m,k). (m,n) is the shape seen by the
+c       algorithms; iadj=1 means the operator is the adjoint of the
+c       stored or user-applied base
+c
+        if( iadj .eq. 1 ) then
+        mb=n
+        nb=m
+        ib=1-itrans
+        else
+        mb=m
+        nb=n
+        ib=itrans
+        endif
+        if( ib .eq. 0 ) then
+        nout=mb
+        nin=nb
+        else
+        nout=nb
+        nin=mb
+        endif
+        if( nout .eq. 0 .or. k .eq. 0 ) return
+        if( nin .eq. 0 ) then
+        do 1200 i=1,nout*k
+        y(i)=0
+ 1200 continue
+        return
+        endif
+        if( idense .eq. 1 ) then
+        call rla_@Tgemm(ib,nout,k,nin,a,lda,x,nin,y,nout)
+        else
+        call mv(ib,mb,nb,k,x,y,ipar,rpar,zpar)
+        endif
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tgetmat(@OP,am,bm,e)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S am(m,n),bm(n,m),e(*)
+c
+c       am = dense copy of the m x n operator: the stored matrix, the
+c       adjoint of the base, or the base applied to blocks of identity
+c       columns. bm (n x m) is scratch for an adjoint, e (64*max(m,n))
+c       for a matrix-free base
+c
+        if( iadj .eq. 0 ) then
+        call rla_@Tbasemat(idense,m,n,a,lda,mv,ipar,rpar,zpar,am,e)
+        return
+        endif
+        call rla_@Tbasemat(idense,n,m,a,lda,mv,ipar,rpar,zpar,bm,e)
+        do 1400 j=1,n
+        do 1200 i=1,m
+        am(i,j)=@CJ(bm(j,i))
+ 1200 continue
+ 1400 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tbasemat(idense,mb,nb,a,lda,mv,ipar,rpar,
+     1      zpar,bm,e)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),bm(mb,nb),e(nb,*)
+        dimension ipar(*),rpar(*)
+        complex *16 zpar(*)
+        external mv
+c
+c       bm (mb x nb) = the base operator, copied or materialized
+c
+        if( mb .eq. 0 .or. nb .eq. 0 ) return
+        if( idense .eq. 1 ) then
+        do 1400 j=1,nb
+        do 1200 i=1,mb
+        bm(i,j)=a(i,j)
+ 1200 continue
+ 1400 continue
+        return
+        endif
+        do 2000 j0=1,nb,64
+        jb=min(64,nb-j0+1)
+        do 1700 jj=1,jb
+        do 1600 i=1,nb
+        e(i,jj)=0
+ 1600 continue
+        e(j0+jj-1,jj)=1
+ 1700 continue
+        call mv(0,mb,nb,jb,e,bm(1,j0),ipar,rpar,zpar)
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tlarfg(n,alpha,x,tau)
+        implicit real *8 (a-h,o-z)
+        @S alpha,x(*),tau
+@Z      complex *16 ascal
+c
+c       elementary reflector H = I - tau v v^@H, v = (1, x), such that
+c       H^@H (alpha, x) = (beta, 0) with beta real (LAPACK @Tlarfg)
+c
+        if( n .le. 0 ) then
+        tau=0
+        return
+        endif
+        xnorm=0
+        do 1200 i=1,n-1
+        xnorm=xnorm+@ABS2(x(i))
+ 1200 continue
+        xnorm=sqrt(xnorm)
+        alphr=@RE(alpha)
+        alphi=@IM(alpha)
+        if( xnorm .le. 0 .and. abs(alphi) .le. 0 ) then
+        tau=0
+        return
+        endif
+        beta=-sign(sqrt(alphr**2+alphi**2+xnorm**2),alphr)
+@D      tau=(beta-alphr)/beta
+@D      ascal=1/(alphr-beta)
+@Z      tau=dcmplx((beta-alphr)/beta,-alphi/beta)
+@Z      ascal=1/(alpha-beta)
+        do 1400 i=1,n-1
+        x(i)=x(i)*ascal
+ 1400 continue
+        alpha=beta
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tlarfl(m,n,v,tau,c,ldc,work)
+        implicit real *8 (a-h,o-z)
+        @S v(*),tau,c(ldc,*),work(*),d
+c
+c       c (m x n) := (I - tau v v^@H) c
+c
+        if( abs(tau) .le. 0 ) return
+        do 1400 j=1,n
+        d=0
+        do 1200 i=1,m
+        d=d+@CJ(v(i))*c(i,j)
+ 1200 continue
+        work(j)=d
+ 1400 continue
+        do 1800 j=1,n
+        d=tau*work(j)
+        do 1600 i=1,m
+        c(i,j)=c(i,j)-v(i)*d
+ 1600 continue
+ 1800 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrp(m,n,a,lda,jp,tau,vn1,vn2,work)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),work(*)
+        @RV jp(*),vn1(*),vn2(*)
+c
+c       full Householder QR with column pivoting (rla_@Tqrpk without
+c       early exit): a(:,jp) = Q R, R in the upper triangle,
+c       reflectors below it, jp the 1-based pivots as real numbers
+c
+        call rla_@Tqrpk(m,n,a,lda,min(m,n),-1.0d0,-1.0d0,jp,tau,vn1,
+     1      vn2,work,k,rmaxk,rmax0)
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Torgqr(m,k,a,lda,tau,work)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),work(*)
+c
+c       overwrite the reflectors in a(:,1:k) (from rla_@Tqrp) with
+c       Q(:,1:k) = H(1) ... H(k) I(:,1:k), LAPACK @Torg2r / @Tung2r
+c
+        do 2000 i=k,1,-1
+        if( i .lt. k ) then
+        a(i,i)=1
+        call rla_@Tlarfl(m-i+1,k-i,a(i,i),tau(i),a(i,i+1),lda,work)
+        endif
+        do 1200 l=i+1,m
+        a(l,i)=-tau(i)*a(l,i)
+ 1200 continue
+        a(i,i)=1-tau(i)
+        do 1400 l=1,i-1
+        a(l,i)=0
+ 1400 continue
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrfac(m,n,a,lda,jp,tau,vn1,vn2,work,
+     1      r,ldr,wantq)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),work(*),r(ldr,*)
+        @RV jp(*),vn1(*),vn2(*)
+        logical wantq
+c
+c       pivoted QR of a (m x n) in place: r (kk x n, kk = min(m,n))
+c       gets R with its lower part zeroed; when wantq, a(:,1:kk) is
+c       overwritten with Q
+c
+        kk=min(m,n)
+        call rla_@Tqrp(m,n,a,lda,jp,tau,vn1,vn2,work)
+        do 1400 j=1,n
+        do 1200 i=1,kk
+        r(i,j)=0
+        if( i .le. j ) r(i,j)=a(i,j)
+ 1200 continue
+ 1400 continue
+        if( wantq ) call rla_@Torgqr(m,kk,a,lda,tau,work)
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tjacobi(p,q,g,ldg,v,ldv,s,info)
+        implicit real *8 (a-h,o-z)
+        integer p,q
+        @S g(ldg,*),v(ldv,*),gamma,e,gp,gq,ce
+        @RV s(*)
+c
+c       one-sided (Hestenes) Jacobi on the columns of g (p x q, p >= q):
+c       on exit g = U diag(s) with orthogonal columns, v (q x q) the
+c       accumulated rotations, so that g(in) = g(out) v^@H. s holds the
+c       column norms, unsorted. info=1 if 60 sweeps did not converge
+c
+        info=0
+        eps=rla_eps()
+        tol=sqrt(dble(p))*eps
+        do 1400 j=1,q
+        do 1200 i=1,q
+        v(i,j)=0
+ 1200 continue
+        v(j,j)=1
+ 1400 continue
+c
+        do 3000 isweep=1,60
+        nrot=0
+        do 2800 jp=1,q-1
+        do 2600 jq=jp+1,q
+        alpha=0
+        beta=0
+        gamma=0
+        do 2000 i=1,p
+        alpha=alpha+@ABS2(g(i,jp))
+        beta=beta+@ABS2(g(i,jq))
+        gamma=gamma+@CJ(g(i,jp))*g(i,jq)
+ 2000 continue
+        ag=abs(gamma)
+        if( ag .le. 0 ) goto 2600
+        if( ag .le. tol*sqrt(alpha)*sqrt(beta) ) goto 2600
+        nrot=nrot+1
+c
+c       . . . rotation [c, sn*e; -sn*conj(e), c] zeroing gamma
+c
+        zeta=(beta-alpha)/(2*ag)
+        if( abs(zeta) .gt. 1.0d100 ) then
+        t=0.5d0/zeta
+        else
+        t=sign(1.0d0,zeta)/(abs(zeta)+sqrt(1+zeta**2))
+        endif
+        c=1/sqrt(1+t**2)
+        sn=c*t
+        e=gamma/ag
+        ce=@CJ(e)
+        do 2200 i=1,p
+        gp=g(i,jp)
+        gq=g(i,jq)
+        g(i,jp)=c*gp-sn*ce*gq
+        g(i,jq)=sn*e*gp+c*gq
+ 2200 continue
+        do 2400 i=1,q
+        gp=v(i,jp)
+        gq=v(i,jq)
+        v(i,jp)=c*gp-sn*ce*gq
+        v(i,jq)=sn*e*gp+c*gq
+ 2400 continue
+ 2600 continue
+ 2800 continue
+        if( nrot .eq. 0 ) goto 3200
+ 3000 continue
+        info=1
+ 3200 continue
+c
+        do 3600 j=1,q
+        d=0
+        do 3400 i=1,p
+        d=d+@ABS2(g(i,j))
+ 3400 continue
+        s(j)=sqrt(d)
+ 3600 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tsvsort(p,q,g,ldg,v,ldv,s,tmp)
+        implicit real *8 (a-h,o-z)
+        integer p,q
+        @S g(ldg,*),v(ldv,*),tmp(*),d
+        @RV s(*)
+c
+c       sort the Jacobi output by decreasing s, normalize the columns
+c       of g to unit length, and replace columns with s = 0 by unit
+c       vectors orthogonal to the others (so g is orthonormal)
+c
+        do 1800 j=1,q-1
+        jmax=j
+        do 1200 l=j+1,q
+        if( @RE(s(l)) .gt. @RE(s(jmax)) ) jmax=l
+ 1200 continue
+        if( jmax .eq. j ) goto 1800
+        d=s(j)
+        s(j)=s(jmax)
+        s(jmax)=d
+        do 1400 i=1,p
+        d=g(i,j)
+        g(i,j)=g(i,jmax)
+        g(i,jmax)=d
+ 1400 continue
+        do 1600 i=1,q
+        d=v(i,j)
+        v(i,j)=v(i,jmax)
+        v(i,jmax)=d
+ 1600 continue
+ 1800 continue
+c
+        do 3000 j=1,q
+        sj=@RE(s(j))
+        if( sj .gt. 0 ) then
+        do 2000 i=1,p
+        g(i,j)=g(i,j)/sj
+ 2000 continue
+        goto 3000
+        endif
+c
+c       . . . s(j) = 0: try e_1, e_2, ... orthogonalized (twice)
+c       against the other columns, until one survives
+c
+        do 2800 ie=1,p
+        do 2100 i=1,p
+        tmp(i)=0
+ 2100 continue
+        tmp(ie)=1
+        do 2500 ipass=1,2
+        do 2400 l=1,q
+        if( l .eq. j ) goto 2400
+        if( l .gt. j .and. @RE(s(l)) .le. 0 ) goto 2400
+        d=0
+        do 2200 i=1,p
+        d=d+@CJ(g(i,l))*tmp(i)
+ 2200 continue
+        do 2300 i=1,p
+        tmp(i)=tmp(i)-d*g(i,l)
+ 2300 continue
+ 2400 continue
+ 2500 continue
+        d=0
+        do 2600 i=1,p
+        d=d+@ABS2(tmp(i))
+ 2600 continue
+        rn=sqrt(@RE(d))
+        if( rn .gt. 0.5d0 ) then
+        do 2700 i=1,p
+        g(i,j)=tmp(i)/rn
+ 2700 continue
+        goto 3000
+        endif
+ 2800 continue
+ 3000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tsvdip(p,q,g,ldg,qatol,qrtol,kq,s,v,ldv,w,info)
+        implicit real *8 (a-h,o-z)
+        integer p,q
+        @S g(ldg,*),v(ldv,*),w(*),d
+        @RV s(*)
+c
+c       in-place SVD of g (p x q, p >= q) by preconditioned one-sided
+c       Jacobi (Drmac, as in LAPACK @Tgejsv): pivoted QR g P = Q R, then
+c       Jacobi on X = R^@H = Ux S Vx^@H, so that g = (Q Vx) S (P Ux)^@H.
+c       The QR may stop early (rla_@Tqrpk with atol = qatol, rtol =
+c       qrtol; negative values disable): with kq rows of R kept, the
+c       dropped trailing block R22 perturbs g by ||R22||. On exit
+c       g(:,1:kq) = U, s(1:kq) descending, v (q x kq) = V. With no
+c       early exit kq = q (zero singular values get orthonormal
+c       completions). w: q*q+5*q+max(p,q) scalars. info=1: no
+c       convergence
+c
+        info=0
+        kq=0
+        if( q .eq. 0 ) return
+        ix=1
+        ijp=ix+q*q
+        itau=ijp+q
+        iv1=itau+q
+        iv2=iv1+q
+        iwk=iv2+q
+        itm=iwk+q
+c
+        call rla_@Tqrpk(p,q,g,ldg,q,qatol,qrtol,w(ijp),w(itau),w(iv1),
+     1      w(iv2),w(iwk),kq,rmaxk,rmax0)
+        if( qatol .lt. 0 .and. qrtol .lt. 0 ) kq=q
+        if( kq .eq. 0 ) return
+c
+c       X (q x kq) = R(1:kq,:)^@H
+c
+        do 1400 j=1,kq
+        do 1200 i=1,q
+        d=0
+        if( j .le. i ) d=@CJ(g(j,i))
+        w(ix+(i-1)+(j-1)*q)=d
+ 1200 continue
+ 1400 continue
+        call rla_@Tjacobi(q,kq,w(ix),q,v,ldv,s,info)
+        call rla_@Tsvsort(q,kq,w(ix),q,v,ldv,s,w(itm))
+c
+c       left vectors Q(:,1:kq) Vx, formed row by row in g
+c
+        call rla_@Torgqr(p,kq,g,ldg,w(itau),w(iwk))
+        do 2000 i=1,p
+        do 1600 l=1,kq
+        w(itm+l-1)=g(i,l)
+ 1600 continue
+        do 1800 j=1,kq
+        d=0
+        do 1700 l=1,kq
+        d=d+w(itm+l-1)*v(l,j)
+ 1700 continue
+        g(i,j)=d
+ 1800 continue
+ 2000 continue
+c
+c       right vectors P Ux (q x kq): row jp(i) of v = row i of Ux
+c
+        do 2400 j=1,kq
+        do 2200 i=1,q
+        ir=nint(@RE(w(ijp+i-1)))
+        v(ir,j)=w(ix+(i-1)+(j-1)*q)
+ 2200 continue
+ 2400 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tlsqip(m,k,a1,nrhs,b,ldb,x,ldx,w,info)
+        implicit real *8 (a-h,o-z)
+        @S a1(m,k),b(ldb,*),x(ldx,*),w(*),d
+c
+c       minimum-norm least squares x (k x nrhs) = pinv(a1) b, m >= k,
+c       dropping singular values <= eps*smax (LAPACK @Tgelsd with
+c       rcond = eps). a1 is overwritten; w: 2*k*k + 6*k + m
+c
+        info=0
+        do 1200 j=1,nrhs
+        do 1100 i=1,k
+        x(i,j)=0
+ 1100 continue
+ 1200 continue
+        if( m .eq. 0 .or. k .eq. 0 .or. nrhs .eq. 0 ) return
+        iv=1
+        is=iv+k*k
+        it=is+k
+        call rla_@Tsvdip(m,k,a1,m,-1.0d0,-1.0d0,kqd,w(is),w(iv),k,
+     1      w(it),info)
+        if( info .ne. 0 ) return
+        smax=@RE(w(is))
+        nk=0
+        do 1300 l=1,k
+        if( @RE(w(is+l-1)) .gt. rla_eps()*smax ) nk=l
+ 1300 continue
+c
+c       x = v diag(1/s) U^@H b over the nk kept singular values
+c
+        do 2000 j=1,nrhs
+        do 1800 l=1,nk
+        d=0
+        do 1600 i=1,m
+        d=d+@CJ(a1(i,l))*b(i,j)
+ 1600 continue
+        d=d/@RE(w(is+l-1))
+        do 1700 i=1,k
+        x(i,j)=x(i,j)+w(iv+(i-1)+(l-1)*k)*d
+ 1700 continue
+ 1800 continue
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tgetmatp(@OP,ipiv,am,e)
+        implicit real *8 (a-h,o-z)
+@OPDECL
+        @S am(m,n),e(n,*)
+        dimension ipiv(*)
+c
+c       am(:,j) = A(:,ipiv(j)): the (non-adjoint) operator materialized
+c       in pivot order; e (64*n) is scratch for a matrix-free operator
+c
+        if( iadj .ne. 0 .or. m .eq. 0 .or. n .eq. 0 ) return
+        if( idense .eq. 1 ) then
+        do 1400 j=1,n
+        do 1200 i=1,m
+        am(i,j)=a(i,ipiv(j))
+ 1200 continue
+ 1400 continue
+        return
+        endif
+        do 2000 j0=1,n,64
+        jb=min(64,n-j0+1)
+        do 1700 jj=1,jb
+        do 1600 i=1,n
+        e(i,jj)=0
+ 1600 continue
+        e(ipiv(j0+jj-1),jj)=1
+ 1700 continue
+        call mv(0,m,n,jb,e,am(1,j0),ipar,rpar,zpar)
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrf(m,n,a,lda,tau,work)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),work(*),aii,ctau
+c
+c       Householder QR without pivoting, LAPACK @Tgeqr2: a (m x n) =
+c       Q R with R in the upper triangle and the reflectors
+c       H(i) = I - tau(i) v v^@H below it (v(i) = 1 implicit).
+c       tau (min(m,n)) and work (n) are scratch. Q (m x k) is formed
+c       from the reflectors in place by rla_@Torgqr(m,k,a,lda,tau,work)
+c
+        k=min(m,n)
+        do 2000 i=1,k
+        if( i .lt. m ) then
+        call rla_@Tlarfg(m-i+1,a(i,i),a(i+1,i),tau(i))
+        else
+        call rla_@Tlarfg(1,a(m,m),a(m,m),tau(m))
+        endif
+        if( i .lt. n ) then
+        aii=a(i,i)
+        a(i,i)=1
+        ctau=@CJ(tau(i))
+        call rla_@Tlarfl(m-i+1,n-i,a(i,i),ctau,a(i,i+1),lda,work)
+        a(i,i)=aii
+        endif
+ 2000 continue
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine rla_@Tqrpk(m,n,a,lda,kmax,atol,rtol,jp,tau,vn1,vn2,
+     1      work,k,rmaxk,rmax0)
+        implicit real *8 (a-h,o-z)
+        @S a(lda,*),tau(*),work(*),aii,d,ctau
+        @RV jp(*),vn1(*),vn2(*)
+c
+c       Householder QR with column pivoting and early exit (LAPACK
+c       @Tlaqp2 steps with the stopping rules of @Tgeqp3rk): before step
+c       i the largest partial column norm rmax of the trailing block
+c       is compared with the tolerances, and the factorization stops
+c       with k = i-1 columns when
+c
+c         i-1 = kmax, or rmax <= atol (atol >= 0), or
+c         rmax <= rtol*rmax0 (rtol >= 0), rmax0 the largest column
+c         norm of a; a negative tolerance disables its test.
+c
+c       On exit a(:,jp) = Q(:,1:k) R(1:k,:) + [0 R22]: R in the upper
+c       triangle of the first k rows, reflectors below it, the
+c       updated residual R22 in a(k+1:m,k+1:n), tau(k+1:) = 0.
+c       rmaxk = largest column norm of R22 (0 if k = min(m,n)).
+c       jp: 1-based pivots as real numbers; vn1, vn2, work (n) scratch
+c
+        tol3z=sqrt(rla_eps())
+        rmax0=0
+        do 1400 j=1,n
+        jp(j)=j
+        s=0
+        do 1200 i=1,m
+        s=s+@ABS2(a(i,j))
+ 1200 continue
+        vn1(j)=sqrt(s)
+        vn2(j)=vn1(j)
+        rmax0=max(rmax0,sqrt(s))
+ 1400 continue
+c
+        kk=min(m,n)
+        do 1500 i=1,kk
+        tau(i)=0
+ 1500 continue
+        k=0
+        rmaxk=0
+        do 3000 i=1,kk
+c
+c       . . . pivot: the remaining column of largest partial norm,
+c       then the stopping tests
+c
+        ipvt=i
+        vmax=@RE(vn1(i))
+        do 1600 j=i+1,n
+        if( @RE(vn1(j)) .gt. vmax ) then
+        ipvt=j
+        vmax=@RE(vn1(j))
+        endif
+ 1600 continue
+        rmaxk=vmax
+        if( i-1 .ge. kmax ) return
+        if( atol .ge. 0 .and. vmax .le. atol ) return
+        if( rtol .ge. 0 .and. vmax .le. rtol*rmax0 ) return
+        if( ipvt .ne. i ) then
+        do 1800 l=1,m
+        d=a(l,ipvt)
+        a(l,ipvt)=a(l,i)
+        a(l,i)=d
+ 1800 continue
+        tmp=@RE(jp(ipvt))
+        jp(ipvt)=jp(i)
+        jp(i)=tmp
+        vn1(ipvt)=vn1(i)
+        vn2(ipvt)=vn2(i)
+        endif
+c
+c       . . . reflector for column i, applied to the trailing columns
+c
+        if( i .lt. m ) then
+        call rla_@Tlarfg(m-i+1,a(i,i),a(i+1,i),tau(i))
+        else
+        call rla_@Tlarfg(1,a(m,m),a(m,m),tau(m))
+        endif
+        if( i .lt. n ) then
+        aii=a(i,i)
+        a(i,i)=1
+        ctau=@CJ(tau(i))
+        call rla_@Tlarfl(m-i+1,n-i,a(i,i),ctau,a(i,i+1),lda,work)
+        a(i,i)=aii
+        endif
+        k=i
+c
+c       . . . downdate the partial column norms
+c
+        do 2400 j=i+1,n
+        v1=@RE(vn1(j))
+        if( v1 .le. 0 ) goto 2400
+        temp=1-(abs(a(i,j))/v1)**2
+        if( temp .lt. 0 ) temp=0
+        temp2=temp*(v1/@RE(vn2(j)))**2
+        if( temp2 .le. tol3z ) then
+        if( i .lt. m ) then
+        s=0
+        do 2200 l=i+1,m
+        s=s+@ABS2(a(l,j))
+ 2200 continue
+        vn1(j)=sqrt(s)
+        vn2(j)=vn1(j)
+        else
+        vn1(j)=0
+        vn2(j)=0
+        endif
+        else
+        vn1(j)=v1*sqrt(temp)
+        endif
+ 2400 continue
+ 3000 continue
+        rmaxk=0
+        return
+        end

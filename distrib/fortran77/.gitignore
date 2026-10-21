@@ -1,0 +1,4 @@
+# build outputs (make)
+build*/
+*.o
+*.a
