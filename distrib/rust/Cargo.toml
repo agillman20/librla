@@ -1,0 +1,24 @@
+[package]
+name = "librla"
+version = "0.1.0"
+edition = "2021"
+authors = ["Adrianna Gillman", "Zydrunas Gimbutas"]
+license = "MIT"
+description = "Randomized low-rank factorizations (orth, QR, SVD, ID) on LAPACK, dense and matrix-free (experimental port)"
+repository = "https://github.com/agillman20/librla"
+keywords = ["linear-algebra", "randomized", "svd", "low-rank", "lapack"]
+categories = ["mathematics", "science"]
+build = "build.rs"
+
+[dependencies]
+num-complex = "0.4"
+
+[features]
+# LAPACK/BLAS backend; select at most one. With none selected, build.rs
+# picks Accelerate on macOS and `system` (-llapack -lblas) elsewhere.
+# `accelerate` binds Accelerate's new LAPACK interface (macOS 13.3+);
+# `accelerate-legacy` binds its legacy `<name>_` symbols for older macOS.
+accelerate = []
+accelerate-legacy = ["accelerate"]
+openblas = []
+system = []
