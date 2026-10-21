@@ -1,4 +1,4 @@
-# librla - Fortran port (experimental)
+# librla - Fortran 2003 port (experimental)
 
 A Fortran 2003 port of librla, the randomized low-rank factorization
 library, for real (`real(dp)`) and complex (`complex(dp)`) matrices, dense or
@@ -14,6 +14,9 @@ through LAPACK/BLAS. The port version is the `rla_version` constant in
 | `svd_sketch` | Truncated singular value decomposition |
 | `id_sketch` | Interpolative decomposition via randomized sketching |
 | `id_qrpiv` | Interpolative decomposition via deterministic pivoted QR |
+
+For LAPACK-style external subroutines callable from Fortran 77 and C, use the
+Fortran 95 port in `distrib/fortran95`.
 
 ## Build and test
 
@@ -165,8 +168,8 @@ An invalid four-integer seed is an error (`rla_rng(1, 2, 3, 4, info)` returns
 Passing the same `rng` to several calls advances it, so the calls draw
 different sketches.
 
-The C++, Rust and Swift ports use the same generator and LAPACK, so the same
-seed gives the same sketch in every port; the test suite prints `CROSSPORT`
+The C++, Rust, Swift and Fortran 95 ports use the same generator and LAPACK,
+so the same seed gives the same sketch in every port; the test suite prints `CROSSPORT`
 lines to compare them.
 
 ### Matrix-free operators

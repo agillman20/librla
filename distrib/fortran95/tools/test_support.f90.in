@@ -1,0 +1,210 @@
+!! Test helpers (error measures, random matrices, matrix-free test operators);
+!! expanded into the _d and _z halves of module test_support in test/test_all.f90.
+!! Template for tools/generate.py: lines starting with !! are dropped.
+!!
+!! Author: Adrianna Gillman, Zydrunas Gimbutas
+!! SPDX-License-Identifier: MIT
+!! Assisted by: Claude Code (Anthropic)
+  ! ---------------- @NAME helpers ----------------
+
+  real(dp) function fro_@T(a)
+    @S, intent(in) :: a(:,:)
+    fro_@T = sqrt(sum(abs(a)**2))
+  end function fro_@T
+
+  ! ||A - Q Q^@H A|| / ||A||
+  real(dp) function span_err_@T(a, q)
+    @S, intent(in) :: a(:,:), q(:,:)
+    span_err_@T = fro_@T(a - matmul(q, matmul(@ADJ(q), a))) / fro_@T(a)
+  end function span_err_@T
+
+  ! max |Q^@H Q - I|
+  real(dp) function orth_err_@T(q)
+    @S, intent(in) :: q(:,:)
+    @S :: g(size(q, 2), size(q, 2))
+    integer :: i
+    orth_err_@T = 0
+    if (size(q, 2) == 0) return
+    g = matmul(@ADJ(q), q)
+    do i = 1, size(q, 2)
+       g(i, i) = g(i, i) - 1
+    end do
+    orth_err_@T = maxval(abs(g))
+  end function orth_err_@T
+
+  ! ||A(:, piv) - Q R|| / ||A||
+  real(dp) function qr_err_@T(a, q, r, piv)
+    @S, intent(in) :: a(:,:), q(:,:), r(:,:)
+    integer, intent(in) :: piv(:)
+    qr_err_@T = fro_@T(a(:, piv) - matmul(q, r)) / fro_@T(a)
+  end function qr_err_@T
+
+  ! ||A - U diag(s) Vt|| / ||A||
+  real(dp) function svd_err_@T(a, u, s, vt)
+    @S, intent(in) :: a(:,:), u(:,:), vt(:,:)
+    real(dp), intent(in) :: s(:)
+    @S :: us(size(u, 1), size(u, 2))
+    integer :: j
+    do j = 1, size(u, 2)
+       us(:, j) = u(:, j) * s(j)
+    end do
+    svd_err_@T = fro_@T(a - matmul(us, vt)) / fro_@T(a)
+  end function svd_err_@T
+
+  ! ||A(:, piv(k+1:)) - A(:, piv(1:k)) T|| / ||A|| (absolute for A = 0)
+  real(dp) function id_err_@T(a, k, piv, t)
+    @S, intent(in) :: a(:,:), t(:,:)
+    integer, intent(in) :: k, piv(:)
+    integer :: n
+    n = size(a, 2)
+    id_err_@T = 0
+    if (k >= n) return
+    id_err_@T = fro_@T(a(:, piv(k+1:n)) - matmul(a(:, piv(1:k)), t)) &
+         / max(fro_@T(a), tiny(1.0_dp))
+  end function id_err_@T
+
+  ! x (m x n) uniform(-1, 1) from @Tlarnv
+  subroutine rand_@T(iseed, m, n, x)
+    integer, intent(inout) :: iseed(4)
+    integer, intent(in) :: m, n
+    @S, intent(out) :: x(m, n)
+    call @Tlarnv(2, iseed, m*n, x)
+  end subroutine rand_@T
+
+  ! q (m x n, m >= n) with orthonormal columns: Q factor of a random matrix
+  subroutine rand_orth_@T(iseed, m, n, q)
+    integer, intent(inout) :: iseed(4)
+    integer, intent(in) :: m, n
+    @S, intent(out) :: q(m, n)
+    @S :: tau(n), wq(1)
+    @S, allocatable :: work(:)
+    integer :: info, lwork
+    call rand_@T(iseed, m, n, q)
+    call @GEQRF(m, n, q, m, tau, wq, -1, info)
+    lwork = int(real(wq(1)))
+    allocate(work(lwork))
+    call @GEQRF(m, n, q, m, tau, work, lwork, info)
+    call @ORGQR(m, n, n, q, m, tau, work, lwork, info)
+    deallocate(work)
+  end subroutine rand_orth_@T
+
+  ! a (m x n, m >= n) = U diag(s) V^@H with random orthonormal U and V
+  subroutine with_svals_@T(iseed, m, n, s, a)
+    integer, intent(inout) :: iseed(4)
+    integer, intent(in) :: m, n
+    real(dp), intent(in) :: s(n)
+    @S, intent(out) :: a(m, n)
+    @S :: u(m, n), v(n, n)
+    integer :: j
+    call rand_orth_@T(iseed, m, n, u)
+    call rand_orth_@T(iseed, n, n, v)
+    do j = 1, n
+       u(:, j) = u(:, j) * s(j)
+    end do
+    a = matmul(u, @ADJ(v))
+  end subroutine with_svals_@T
+
+  ! Matrix-free test operator. ipar(1) = 1: dense m x n matrix stored in
+  ! @PNAME; ipar(1) = 2: low-rank B C with B (m x r) then C (r x n) in
+  ! @PNAME, r = ipar(2). ipar(3) counts the columns applied with itrans = 0.
+  subroutine matvec_@T(itrans, m, n, k, x, y, ipar, rpar, zpar)
+    integer, intent(in) :: itrans, m, n, k
+    @S, intent(in) :: x(*)
+    @S, intent(inout) :: y(*)
+    integer :: ipar(*)
+    real(dp) :: rpar(*)
+    complex(dp) :: zpar(*)
+    if (itrans == 0) ipar(3) = ipar(3) + k
+    if (ipar(1) == 1) then
+       call dense_apply_@T(itrans, m, n, k, x, y, @PNAME)
+    else
+       call lowrank_apply_@T(itrans, m, n, ipar(2), k, x, y, @PNAME, @PNAME(m*ipar(2) + 1))
+    end if
+    @TOUCH
+  end subroutine matvec_@T
+
+  subroutine dense_apply_@T(itrans, m, n, k, x, y, amat)
+    integer, intent(in) :: itrans, m, n, k
+    @S, intent(in) :: x(*), amat(m, n)
+    @S, intent(inout) :: y(*)
+    if (itrans == 0) then
+       call @GEMM('N', 'N', m, k, n, ONE, amat, m, x, n, ZERO, y, m)
+    else
+       call @GEMM('@TC', 'N', n, k, m, ONE, amat, m, x, m, ZERO, y, n)
+    end if
+  end subroutine dense_apply_@T
+
+  ! y = B (C x) or C^@H (B^@H x)
+  subroutine lowrank_apply_@T(itrans, m, n, r, k, x, y, b, c)
+    integer, intent(in) :: itrans, m, n, r, k
+    @S, intent(in) :: x(*), b(m, r), c(r, n)
+    @S, intent(inout) :: y(*)
+    @S :: w(r, k)
+    if (itrans == 0) then
+       call @GEMM('N', 'N', r, k, n, ONE, c, r, x, n, ZERO, w, r)
+       call @GEMM('N', 'N', m, k, r, ONE, b, m, w, r, ZERO, y, m)
+    else
+       call @GEMM('@TC', 'N', r, k, m, ONE, b, m, x, m, ZERO, w, r)
+       call @GEMM('@TC', 'N', n, k, r, ONE, c, r, w, r, ZERO, y, n)
+    end if
+  end subroutine lowrank_apply_@T
+
+  ! Deterministic pivoted QR straight from LAPACK, done the way the library
+  ! does it: a(:, piv) = q (m x kk) r (kk x n), kk = min(m, n), written to
+  ! q(1:m, 1:kk), r(1:kk, 1:n) and piv(1:n)
+  subroutine pqr_@T(m, n, a, q, r, piv)
+    integer, intent(in) :: m, n
+    @S, intent(in) :: a(m, n)
+    @S, intent(inout) :: q(:,:), r(:,:)
+    integer, intent(inout) :: piv(:)
+    @S :: w(m, n), tau(min(m, n)), wq(1)
+    @S, allocatable :: work(:)
+    @RWORKDECL
+    integer :: info, lwork, kk, i, jp(n)
+    kk = min(m, n)
+    w = a
+    jp = 0
+    call @GEQP3(m, n, w, m, jp, tau, wq, -1, @RWORKARGinfo)
+    lwork = max(1, int(real(wq(1))))
+    allocate(work(lwork))
+    call @GEQP3(m, n, w, m, jp, tau, work, lwork, @RWORKARGinfo)
+    deallocate(work)
+    piv(1:n) = jp
+    r(1:kk, 1:n) = w(1:kk, :)
+    do i = 1, kk
+       r(i+1:kk, i) = 0
+    end do
+    call @ORGQR(m, kk, kk, w, m, tau, wq, -1, info)
+    lwork = max(1, int(real(wq(1))))
+    allocate(work(lwork))
+    call @ORGQR(m, kk, kk, w, m, tau, work, lwork, info)
+    deallocate(work)
+    q(1:m, 1:kk) = w(:, 1:kk)
+  end subroutine pqr_@T
+
+  ! max |V V^@H - I| for V with orthonormal rows
+  real(dp) function orth_rows_@T(v)
+    @S, intent(in) :: v(:,:)
+    @S :: g(size(v, 1), size(v, 1))
+    integer :: i
+    orth_rows_@T = 0
+    if (size(v, 1) == 0) return
+    g = matmul(v, @ADJ(v))
+    do i = 1, size(v, 1)
+       g(i, i) = g(i, i) - 1
+    end do
+    orth_rows_@T = maxval(abs(g))
+  end function orth_rows_@T
+
+  ! max |r(i, j)| below the diagonal
+  real(dp) function lower_max_@T(r)
+    @S, intent(in) :: r(:,:)
+    integer :: i, j
+    lower_max_@T = 0
+    do j = 1, size(r, 2)
+       do i = j + 1, size(r, 1)
+          lower_max_@T = max(lower_max_@T, abs(r(i, j)))
+       end do
+    end do
+  end function lower_max_@T
+

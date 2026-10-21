@@ -1,0 +1,363 @@
+!! The per-kind test routine; expanded into test_d and test_z in
+!! test/test_all.f90.
+!! Template for tools/generate.py: lines starting with !! are dropped.
+!!
+!! Author: Adrianna Gillman, Zydrunas Gimbutas
+!! SPDX-License-Identifier: MIT
+!! Assisted by: Claude Code (Anthropic)
+  subroutine test_@T()
+    integer, parameter :: m = 400, n = 300, kc = 300
+    @S, allocatable :: a(:,:), aw(:,:), gm(:,:), lr(:,:), zm(:,:), b(:,:)
+    @S, allocatable :: q(:,:), r(:,:), u(:,:), vt(:,:), t(:,:)
+    @S, allocatable :: q2(:,:), r2(:,:), u2(:,:), vt2(:,:), t2(:,:)
+    @S, allocatable :: pdat(:), bb(:,:), cc(:,:)
+    real(dp), allocatable :: sv(:), d(:), s(:), s2(:)
+    integer, allocatable :: piv(:), piv2(:)
+    real(dp) :: rdum(1), tail, e(3), nan
+    complex(dp) :: zdum(1)
+    integer :: g(4), g1(4), g2(4), ipar(3), k, k2, flag, ier, im, j
+
+    write(*, '(a)') '--- @NAME ---'
+    rdum = 0
+    zdum = 0
+    nan = transfer(9221120237041090560_i8, 1.0_dp)
+    allocate(sv(n), a(m, n), aw(n, m), gm(100, 80))
+    do j = 1, n
+       sv(j) = 10.0_dp**(-real(j - 1, dp)/4)
+    end do
+    g = (/ 11, 22, 33, 45 /)
+    call with_svals_@T(g, m, n, sv, a)
+    aw = @ADJ(a)
+    call rand_@T(g, 100, 80, gm)
+    ! Output buffers sized for every call below (leading dimensions m, kc)
+    allocate(q(m, kc), r(kc, m), u(m, kc), vt(kc, m), t(kc, m), s(kc), d(kc))
+    allocate(q2(m, kc), r2(kc, m), u2(m, kc), vt2(kc, m), t2(kc, m), s2(kc))
+    allocate(piv(m), piv2(m))
+
+    ! ---------------- orth_sketch ----------------
+    g1 = (/ 1, 2, 3, 5 /)
+    call rla_@Torth_sketch(m, n, a, m, 1e-6_dp, 42, 0, 12, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check('@L orth tol: ier 0, flag 0, accepted at block 42', &
+         ier == 0 .and. flag == 0 .and. k == 42)
+    call check_le('@L orth tol: span error', span_err_@T(a, q(:, 1:k)), 1e-6_dp)
+    call check_le('@L orth tol: orthonormality', orth_err_@T(q(:, 1:k)), 1e-13_dp)
+    call check('@L orth tol: diagr decreasing', all(d(1:k-1) >= d(2:k)))
+    call check('@L orth: iseed advanced', any(g1 /= (/ 1, 2, 3, 5 /)))
+    call rla_@Torth_sketch(m, n, a, m, 1e-10_dp, 42, 0, 12, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check_le('@L orth tol 1e-10: span error', span_err_@T(a, q(:, 1:k)), &
+         1e-9_dp)
+    call rla_@Torth_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check('@L orth rank 20: k = 32', ier == 0 .and. flag == 0 .and. k == 32)
+    ! first 20 rows only, through lda > m
+    call rla_@Torth_sketch(20, n, a, m, 15.7_dp, 42, 0, 12, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check('@L orth rank 15 on 20 x 300 (lda > m): k = 20', &
+         ier == 0 .and. k == 20)
+    call check_le('@L orth rank 15 on 20 x 300: orthonormality', &
+         orth_err_@T(q(1:20, 1:k)), 1e-13_dp)
+    call rla_@Torth_sketch(m, n, a, m, 1e-6_dp, 42, 0, 0, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check_le('@L orth tol, extra 0: span error', &
+         span_err_@T(a, q(:, 1:k)), 1e-5_dp)
+    call rla_@Torth_sketch(m, n, a, m, 1e-17_dp, 42, 0, 12, g1, kc, k, q, m, &
+         d, flag, ier)
+    call check('@L orth rtol < eps: flag 1, k = 0', &
+         ier == 0 .and. flag == 1 .and. k == 0)
+    call rla_@Torth_sketch(100, 80, gm, 100, 1e-6_dp, 42, 0, 12, g1, kc, k, q, &
+         m, d, flag, ier)
+    call check('@L orth full rank: flag 1, k = 0', &
+         ier == 0 .and. flag == 1 .and. k == 0)
+    g2 = g1
+    call rla_@Torth_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g1, 10, k, q, m, &
+         d, flag, ier)
+    call check('@L orth kcap 10 < 32: ier 4, k = 32, iseed unchanged', &
+         ier == RLA_ERR_KCAP .and. k == 32 .and. all(g1 == g2))
+
+    ! ---------------- qr_sketch ----------------
+    call rla_@Tqr_sketch(m, n, a, m, 1e-6_dp, 42, 0, 12, g1, kc, k, q, m, r, &
+         kc, piv, ier)
+    call check('@L qr tol: ier 0, 20 < k < 42, permutation', &
+         ier == 0 .and. k > 20 .and. k < 42 .and. is_perm(piv(1:n), n))
+    call check_le('@L qr tol: ||A(:,p) - QR||/||A||', &
+         qr_err_@T(a, q(:, 1:k), r(1:k, 1:n), piv(1:n)), 1e-5_dp)
+    call check('@L qr tol: R upper triangular', lower_max_@T(r(1:k, 1:n)) <= 0)
+    call check_le('@L qr tol: orthonormality', orth_err_@T(q(:, 1:k)), 1e-13_dp)
+    call rla_@Tqr_sketch(m, n, a, m, 25.0_dp, 42, 0, 12, g1, kc, k, q, m, r, &
+         kc, piv, ier)
+    call pqr_@T(m, n, a, q2, r2, piv2)
+    call check('@L qr rank: k = 25', ier == 0 .and. k == 25)
+    call check_le('@L qr rank: error / pivoted-QR error', &
+         qr_err_@T(a, q(:, 1:25), r(1:25, 1:n), piv(1:n)) / &
+         qr_err_@T(a, q2(:, 1:25), r2(1:25, 1:n), piv2(1:n)), 4.0_dp)
+    call rla_@Tqr_sketch(n, m, aw, n, 1e-6_dp, 42, 0, 12, g1, kc, k, q, m, r, &
+         kc, piv, ier)
+    call check_le('@L qr wide tol: error', &
+         qr_err_@T(aw, q(1:n, 1:k), r(1:k, 1:m), piv(1:m)), 1e-5_dp)
+    call check('@L qr wide tol: R upper, permutation', &
+         lower_max_@T(r(1:k, 1:m)) <= 0 .and. is_perm(piv(1:m), m))
+    call rla_@Tqr_sketch(n, m, aw, n, 25.0_dp, 42, 0, 12, g1, kc, k, q, m, r, &
+         kc, piv, ier)
+    call check_le('@L qr wide rank: error', &
+         qr_err_@T(aw, q(1:n, 1:k), r(1:k, 1:m), piv(1:m)), 1e-5_dp)
+    call rla_@Tqr_sketch(100, 80, gm, 100, 1e-6_dp, 42, 0, 12, g1, kc, k, q, &
+         m, r, kc, piv, ier)
+    call pqr_@T(100, 80, gm, q2, r2, piv2)
+    call check('@L qr fallback = deterministic pivoted QR', ier == 0 .and. &
+         k == 80 .and. all(piv(1:80) == piv2(1:80)) .and. &
+         maxval(abs(q(1:100, 1:80) - q2(1:100, 1:80))) <= 0 .and. &
+         maxval(abs(r(1:80, 1:80) - r2(1:80, 1:80))) <= 0)
+
+    ! ---------------- svd_sketch ----------------
+    tail = sqrt(sum(sv(21:n)**2) / sum(sv**2))
+    call rla_@Tsvd_sketch(m, n, a, m, 1e-6_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check_le('@L svd tol: reconstruction', &
+         svd_err_@T(a, u(:, 1:k), s(1:k), vt(1:k, 1:n)), 1e-5_dp)
+    call check_le('@L svd tol: U orthonormal', orth_err_@T(u(:, 1:k)), 1e-13_dp)
+    call check_le('@L svd tol: V orthonormal', &
+         orth_rows_@T(vt(1:k, 1:n)), 1e-13_dp)
+    call check('@L svd tol: s decreasing', all(s(1:k-1) >= s(2:k)))
+    call rla_@Tsvd_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check('@L svd rank: k = 20', ier == 0 .and. k == 20)
+    call check_le('@L svd rank: error / optimal', &
+         svd_err_@T(a, u(:, 1:k), s(1:k), vt(1:k, 1:n)) / tail, 4.0_dp)
+    call check_le('@L svd rank: singular values', &
+         maxval(abs(s(1:20) - sv(1:20))) / sv(1), 1e-4_dp)
+    call rla_@Tsvd_sketch(n, m, aw, n, 1e-6_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check_le('@L svd wide tol: reconstruction', &
+         svd_err_@T(aw, u(1:n, 1:k), s(1:k), vt(1:k, 1:m)), 1e-5_dp)
+    call check_le('@L svd wide tol: V orthonormal', &
+         orth_rows_@T(vt(1:k, 1:m)), 1e-13_dp)
+    call rla_@Tsvd_sketch(n, m, aw, n, 20.0_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check_le('@L svd wide rank: error / optimal', &
+         svd_err_@T(aw, u(1:n, 1:k), s(1:k), vt(1:k, 1:m)) / tail, 4.0_dp)
+    call rla_@Tsvd_sketch(100, 80, gm, 100, 1e-6_dp, 42, 0, 12, g1, kc, k, u, &
+         m, s, vt, kc, ier)
+    call check_le('@L svd fallback: full SVD, k = 80', &
+         svd_err_@T(gm, u(1:100, 1:k), s(1:k), vt(1:k, 1:80)), 1e-13_dp)
+    call check('@L svd fallback: k = 80', ier == 0 .and. k == 80)
+
+    ! ---------------- id_sketch / id_qrpiv ----------------
+    do im = 1, 3
+       call rla_@Tid_sketch(m, n, a, m, 1e-6_dp, 42, 0, 12, im, g1, kc, k, &
+            piv, t, kc, ier)
+       call check_le('@L id_sketch tol ' // trim(mname(im)) // ': error', &
+            id_err_@T(a, k, piv(1:n), t(1:k, 1:n-k)), 1e-5_dp)
+       call rla_@Tid_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, im, g1, kc, k, &
+            piv, t, kc, ier)
+       call check_le('@L id_sketch rank ' // trim(mname(im)) // ': error', &
+            id_err_@T(a, k, piv(1:n), t(1:k, 1:n-k)), 1e-3_dp)
+       call check('@L id_sketch rank ' // trim(mname(im)) // ': k = 20', k == 20)
+       call rla_@Tid_qrpiv(m, n, a, m, 1e-6_dp, im, kc, k, piv, t, kc, ier)
+       call check_le('@L id_qrpiv tol ' // trim(mname(im)) // ': error', &
+            id_err_@T(a, k, piv(1:n), t(1:k, 1:n-k)), 1e-5_dp)
+       call rla_@Tid_qrpiv(m, n, a, m, 20.0_dp, im, kc, k, piv, t, kc, ier)
+       call check_le('@L id_qrpiv rank ' // trim(mname(im)) // ': error', &
+            id_err_@T(a, k, piv(1:n), t(1:k, 1:n-k)), 1e-3_dp)
+       call rla_@Tid_sketch(n, m, aw, n, 1e-6_dp, 42, 0, 12, im, g1, kc, k, &
+            piv, t, kc, ier)
+       call check_le('@L id_sketch wide tol ' // trim(mname(im)) // ': error', &
+            id_err_@T(aw, k, piv(1:m), t(1:k, 1:m-k)), 1e-5_dp)
+    end do
+
+    ! rank-deficient: requested rank 10 > true rank 5
+    allocate(lr(60, 40), bb(60, 5), cc(5, 40))
+    call rand_@T(g, 60, 5, bb)
+    call rand_@T(g, 5, 40, cc)
+    lr = matmul(bb, cc)
+    deallocate(bb, cc)
+    do im = 1, 3
+       call rla_@Tid_sketch(60, 40, lr, 60, 10.0_dp, 42, 0, 12, im, g1, kc, k, &
+            piv, t, kc, ier)
+       call check('@L id_sketch rank-deficient ' // trim(mname(im)) // ': k = 10, T finite', &
+            ier == 0 .and. k == 10 .and. maxval(abs(t(1:k, 1:40-k))) < huge(1.0_dp))
+       call check_le('@L id_sketch rank-deficient ' // trim(mname(im)) // ': error', &
+            id_err_@T(lr, k, piv(1:40), t(1:k, 1:40-k)), 1e-10_dp)
+       call rla_@Tid_qrpiv(60, 40, lr, 60, 10.0_dp, im, kc, k, piv, t, kc, ier)
+       call check_le('@L id_qrpiv rank-deficient ' // trim(mname(im)) // ': error', &
+            id_err_@T(lr, k, piv(1:40), t(1:k, 1:40-k)), 1e-10_dp)
+    end do
+
+    ! zero matrix: k = 0; full rank requested: k = n, T empty
+    allocate(zm(30, 20))
+    zm = 0
+    call rla_@Tid_sketch(30, 20, zm, 30, 1e-6_dp, 42, 0, 12, 1, g1, kc, k, piv, &
+         t, kc, ier)
+    call check('@L id_sketch zero matrix: k = 0', ier == 0 .and. k == 0 .and. &
+         is_perm(piv(1:20), 20))
+    call rla_@Tid_qrpiv(30, 20, zm, 30, 1e-6_dp, 1, kc, k, piv, t, kc, ier)
+    call check('@L id_qrpiv zero matrix: k = 0', ier == 0 .and. k == 0)
+    call rla_@Tid_qrpiv(100, 80, gm, 100, 80.0_dp, 1, kc, k, piv, t, kc, ier)
+    call check('@L id_qrpiv k = n', ier == 0 .and. k == 80 .and. is_perm(piv(1:80), 80))
+    call rla_@Tid_sketch(100, 80, gm, 100, 80.0_dp, 42, 0, 12, 3, g1, kc, k, &
+         piv, t, kc, ier)
+    call check('@L id_sketch k = n (lstsq)', ier == 0 .and. k == 80)
+    call rla_@Tid_qrpiv(m, n, a, m, 1e-6_dp, 4, kc, k, piv, t, kc, ier)
+    call check('@L id_qrpiv invalid method: ier 1', ier == RLA_ERR_METHOD .and. k == 0)
+
+    ! ---------------- argument checks ----------------
+    g2 = g1
+    call rla_@Tsvd_sketch(m, n, a, m - 1, 20.0_dp, 42, 0, 12, g1, kc, k, u, m, &
+         s, vt, kc, ier)
+    call check('@L lda < m: ier 2', ier == RLA_ERR_ARG)
+    call rla_@Tsvd_sketch(m, n, a, m, 20.0_dp, -1, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check('@L block size < 0: ier 2', ier == RLA_ERR_ARG)
+    call rla_@Tsvd_sketch(m, n, a, m, nan, 42, 0, 12, g1, kc, k, u, m, s, vt, &
+         kc, ier)
+    call check('@L rtol NaN: ier 2', ier == RLA_ERR_ARG)
+    call rla_@Tsvd_sketch(m, n, a, m, 1e30_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check('@L rtol 1e30: ier 2', ier == RLA_ERR_ARG)
+    call rla_@Tsvd_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, 10, ier)
+    call check('@L ldvt < kcap: ier 2', ier == RLA_ERR_ARG)
+    call check('@L iseed unchanged after errors', all(g1 == g2))
+    g2 = (/ 1, 2, 3, 4 /)
+    call rla_@Tsvd_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g2, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check('@L even iseed(4): ier 2', ier == RLA_ERR_ARG)
+    g2 = (/ 4096, 2, 3, 5 /)
+    call rla_@Tsvd_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g2, kc, k, u, m, s, &
+         vt, kc, ier)
+    call check('@L iseed entry > 4095: ier 2', ier == RLA_ERR_ARG)
+
+    ! ---------------- matrix-free ----------------
+    ! the dense matrix behind a callback (dgemm, as in the dense path). The
+    ! tolerance-mode comparisons use rtol = 1.3e-6, between singular values
+    ! 24 and 25: at 1e-6 = sv(25) rounding decides the rank.
+    allocate(pdat(m*n))
+    pdat = reshape(a, (/ m*n /))
+    ipar = (/ 1, 0, 0 /)
+    g1 = (/ 1, 2, 3, 5 /); g2 = g1
+    call rla_@Torth_sketch(m, n, a, m, 10.0_dp, 42, 0, 12, g1, kc, k, q, m, d, &
+         flag, ier)
+    call rla_@Torth_sketchf(m, n, matvec_@T, @PARGS, 10.0_dp, 42, 0, 12, g2, &
+         kc, k2, q2, m, s, flag, ier)
+    call check('@L operator orth rank = dense (bitwise), same iseed after', &
+         k == k2 .and. maxval(abs(q(:, 1:k) - q2(:, 1:k))) <= 0 .and. all(g1 == g2))
+    call rla_@Tqr_sketch(m, n, a, m, 20.0_dp, 42, 0, 12, g1, kc, k, q, m, r, &
+         kc, piv, ier)
+    call rla_@Tqr_sketchf(m, n, matvec_@T, @PARGS, 20.0_dp, 42, 0, 12, g2, &
+         kc, k2, q2, m, r2, kc, piv2, ier)
+    call check('@L operator qr rank = dense: k, piv', &
+         k == k2 .and. all(piv(1:n) == piv2(1:n)))
+    call check_le('@L operator qr rank = dense: R', &
+         maxval(abs(r(1:k, 1:n) - r2(1:k, 1:n))) / abs(r(1, 1)), 1e-12_dp)
+    call rla_@Tsvd_sketch(m, n, a, m, 1.3e-6_dp, 42, 1, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call rla_@Tsvd_sketchf(m, n, matvec_@T, @PARGS, 1.3e-6_dp, 42, 1, 12, g2, &
+         kc, k2, u2, m, s2, vt2, kc, ier)
+    call check_le('@L operator svd tol (power_iter=1) = dense', &
+         maxval(abs(s(1:k) - s2(1:k))) / s(1), 1e-12_dp)
+    call rla_@Tid_sketch(m, n, a, m, 1.3e-6_dp, 42, 0, 12, 3, g1, kc, k, piv, t, &
+         kc, ier)
+    call rla_@Tid_sketchf(m, n, matvec_@T, @PARGS, 1.3e-6_dp, 42, 0, 12, 3, g2, &
+         kc, k2, piv2, t2, kc, ier)
+    call check('@L operator id_sketch lstsq = dense: k, piv', &
+         k == k2 .and. all(piv(1:n) == piv2(1:n)))
+    call check_le('@L operator id_sketch lstsq = dense: T', &
+         maxval(abs(t(1:k, 1:n-k) - t2(1:k, 1:n-k))), 1e-9_dp)
+    deallocate(pdat)
+
+    ! wide operator: svd_sketch goes through the adjoint
+    allocate(pdat(n*m))
+    pdat = reshape(aw, (/ n*m /))
+    call rla_@Tsvd_sketch(n, m, aw, n, 15.0_dp, 42, 0, 12, g1, kc, k, u, m, s, &
+         vt, kc, ier)
+    call rla_@Tsvd_sketchf(n, m, matvec_@T, @PARGS, 15.0_dp, 42, 0, 12, g2, &
+         kc, k2, u2, m, s2, vt2, kc, ier)
+    call check_le('@L operator svd wide rank = dense', &
+         maxval(abs(s(1:k) - s2(1:k))) / s(1), 1e-12_dp)
+    call check_le('@L operator svd wide rank: reconstruction', &
+         svd_err_@T(aw, u2(1:n, 1:k2), s2(1:k2), vt2(1:k2, 1:m)) / &
+         sqrt(sum(sv(16:n)**2) / sum(sv**2)), 4.0_dp)
+    deallocate(pdat)
+
+    ! tolerance-mode fallback materializes the operator
+    allocate(pdat(100*80))
+    pdat = reshape(gm, (/ 100*80 /))
+    call rla_@Tqr_sketch(100, 80, gm, 100, 1e-6_dp, 42, 0, 12, g1, kc, k, q, &
+         m, r, kc, piv, ier)
+    ipar(3) = 0
+    call rla_@Tqr_sketchf(100, 80, matvec_@T, @PARGS, 1e-6_dp, 42, 0, 12, g2, &
+         kc, k2, q2, m, r2, kc, piv2, ier)
+    call check('@L operator qr fallback = dense (materialized)', &
+         k == k2 .and. all(piv(1:80) == piv2(1:80)) .and. &
+         maxval(abs(q(1:100, 1:k) - q2(1:100, 1:k))) <= 1e-12_dp .and. &
+         maxval(abs(r(1:k, 1:80) - r2(1:k, 1:80))) <= 1e-12_dp)
+    call check('@L operator qr fallback applied >= n columns', ipar(3) >= 80)
+    call rla_@Tsvd_sketch(100, 80, gm, 100, 1e-6_dp, 42, 0, 12, g1, kc, k, u, &
+         m, s, vt, kc, ier)
+    call rla_@Tsvd_sketchf(100, 80, matvec_@T, @PARGS, 1e-6_dp, 42, 0, 12, g2, &
+         kc, k2, u2, m, s2, vt2, kc, ier)
+    call check_le('@L operator svd fallback = dense', &
+         maxval(abs(s(1:k) - s2(1:k))), 1e-12_dp)
+    call rla_@Tid_qrpiv(100, 80, gm, 100, 30.0_dp, 2, kc, k, piv, t, kc, ier)
+    call rla_@Tid_qrpivf(100, 80, matvec_@T, @PARGS, 30.0_dp, 2, kc, k2, piv2, &
+         t2, kc, ier)
+    call check('@L operator id_qrpiv = dense', k == k2 .and. &
+         all(piv(1:80) == piv2(1:80)) .and. &
+         maxval(abs(t(1:k, 1:80-k) - t2(1:k, 1:80-k))) <= 1e-12_dp)
+    deallocate(pdat)
+
+    ! genuinely matrix-free low-rank product B C (300 x 200, rank 8)
+    allocate(bb(300, 8), cc(8, 200), b(300, 200), pdat(300*8 + 8*200))
+    call rand_@T(g, 300, 8, bb)
+    call rand_@T(g, 8, 200, cc)
+    b = matmul(bb, cc)
+    pdat(1:300*8) = reshape(bb, (/ 300*8 /))
+    pdat(300*8+1:) = reshape(cc, (/ 8*200 /))
+    ipar = (/ 2, 8, 0 /)
+    call rla_@Tsvd_sketchf(300, 200, matvec_@T, @PARGS, 8.0_dp, 42, 0, 12, g1, &
+         kc, k, u, m, s, vt, kc, ier)
+    call check_le('@L low-rank operator svd rank 8: reconstruction', &
+         svd_err_@T(b, u(1:300, 1:k), s(1:k), vt(1:k, 1:200)), 1e-12_dp)
+    call check('@L low-rank operator svd: no materialization', ipar(3) < 200)
+    call rla_@Tid_sketchf(300, 200, matvec_@T, @PARGS, 8.0_dp, 42, 0, 12, 1, &
+         g1, kc, k, piv, t, kc, ier)
+    call check_le('@L low-rank operator id_sketch rank 8: error', &
+         id_err_@T(b, k, piv(1:200), t(1:k, 1:200-k)), 1e-12_dp)
+    call rla_@Tqr_sketchf(300, 200, matvec_@T, @PARGS, 8.0_dp, 42, 0, 12, g1, &
+         kc, k, q, m, r, kc, piv, ier)
+    call check_le('@L low-rank operator qr_sketch rank 8: error', &
+         qr_err_@T(b, q(1:300, 1:k), r(1:k, 1:200), piv(1:200)), 1e-12_dp)
+    ! wide: C^@H B^@H (200 x 300)
+    pdat(1:200*8) = reshape(@ADJ(cc), (/ 200*8 /))
+    pdat(200*8+1:) = reshape(@ADJ(bb), (/ 8*300 /))
+    call rla_@Tsvd_sketchf(200, 300, matvec_@T, @PARGS, 8.0_dp, 42, 0, 12, g1, &
+         kc, k, u, m, s, vt, kc, ier)
+    call check_le('@L low-rank wide operator svd rank 8: reconstruction', &
+         svd_err_@T(@ADJ(b), u(1:200, 1:k), s(1:k), vt(1:k, 1:300)), 1e-12_dp)
+    deallocate(bb, cc, b, pdat)
+
+    ! ---------------- power iteration, seeds ----------------
+    deallocate(a)
+    allocate(a(300, 200))
+    do j = 1, 200
+       sv(j) = 1.0_dp / j
+    end do
+    call with_svals_@T(g, 300, 200, sv(1:200), a)
+    do j = 1, 3
+       g1 = (/ 1, 2, 3, 5 /)
+       call rla_@Tsvd_sketch(300, 200, a, 300, 10.0_dp, 42, j - 1, 12, g1, kc, &
+            k, u, m, s, vt, kc, ier)
+       e(j) = svd_err_@T(a, u(1:300, 1:k), s(1:k), vt(1:k, 1:200))
+    end do
+    call check('@L power_iter 0 -> 1 -> 2 does not hurt accuracy', &
+         e(2) <= 1.01_dp*e(1) .and. e(3) <= 1.01_dp*e(2))
+    g1 = (/ 7, 7, 7, 7 /); g2 = g1
+    call rla_@Tsvd_sketch(300, 200, a, 300, 10.0_dp, 42, 0, 12, g1, kc, k, u, &
+         m, s, vt, kc, ier)
+    call rla_@Tsvd_sketch(300, 200, a, 300, 10.0_dp, 42, 0, 12, g2, kc, k2, &
+         u2, m, s2, vt2, kc, ier)
+    call check('@L same seed -> identical output', k == k2 .and. &
+         maxval(abs(s(1:k) - s2(1:k))) <= 0 .and. all(g1 == g2))
+  end subroutine test_@T
+

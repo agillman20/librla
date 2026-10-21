@@ -1,0 +1,5 @@
+# build outputs (make)
+build*/
+*.o
+*.mod
+*.a

@@ -1,0 +1,722 @@
+!! Algorithms, operator plumbing and drivers of rla95_core, written once for
+!! both kinds; expanded into the _d and _z halves of src/rla95_core.f90.
+!! Template for tools/generate.py: lines starting with !! are dropped.
+!!
+!! Author: Adrianna Gillman, Zydrunas Gimbutas
+!! SPDX-License-Identifier: MIT
+!! Assisted by: Claude Code (Anthropic)
+  ! ==================================================================
+  ! @NAME: operator plumbing
+  ! ==================================================================
+
+  ! Dense placeholder for the matvec argument of the dense entry points
+  subroutine nomv_@T(itrans, m, n, k, x, y, ipar, rpar, zpar)
+    integer, intent(in) :: itrans, m, n, k
+    @S, intent(in) :: x(*)
+    @S, intent(inout) :: y(*)
+    integer :: ipar(*)
+    real(dp) :: rpar(*)
+    complex(dp) :: zpar(*)
+    ! Never called: dense operators do not use mv. References every
+    ! argument so the compiler does not flag them as unused.
+    if (itrans < 0 .and. m < 0 .and. n < 0 .and. k < 0 .and. ipar(1) < 0 &
+         .and. rpar(1) < 0 .and. abs(zpar(1)) < 0) y(1) = x(1)
+  end subroutine nomv_@T
+
+  ! y = op(A) x, k columns: itrans = 0: y (m x k) = A x; itrans = 1:
+  ! y (n x k) = A^@H x, with (m, n) the shape seen by the algorithms
+  subroutine apply_@T(@OPARGS, itrans, k, x, y)
+@OPDECL
+    integer, intent(in) :: itrans, k
+    @S, intent(in) :: x(*)
+    @S, intent(inout) :: y(*)
+    integer :: bt, mb, nb, nout, nin
+    if (op%adj) then
+       mb = op%n; nb = op%m; bt = 1 - itrans
+    else
+       mb = op%m; nb = op%n; bt = itrans
+    end if
+    if (bt == 0) then
+       nout = mb; nin = nb
+    else
+       nout = nb; nin = mb
+    end if
+    if (nout == 0 .or. k == 0) return
+    if (nin == 0) then
+       y(1:nout*k) = 0
+       return
+    end if
+    if (op%dense) then
+       if (bt == 0) then
+          call gemm_@T('N', 'N', mb, k, nb, a, op%lda, x, nb, y, mb)
+       else
+          call gemm_@T('@TC', 'N', nb, k, mb, a, op%lda, x, mb, y, nb)
+       end if
+    else
+       call mv(bt, mb, nb, k, x, y, ipar, rpar, zpar)
+    end if
+  end subroutine apply_@T
+
+  ! Dense copy of A (m x n, allocated): the stored matrix, the adjoint of
+  ! the base, or the base applied to blocks of identity columns
+  subroutine get_matrix_@T(@OPARGS, am)
+@OPDECL
+    @S, pointer :: am(:,:)
+    @S, allocatable :: bm(:,:)
+    allocate(am(op%m, op%n))
+    if (op%adj) then
+       allocate(bm(op%n, op%m))
+       call base_matrix_@T(@OPARGS, op%n, op%m, bm)
+       am = @ADJ(bm)
+       deallocate(bm)
+    else
+       call base_matrix_@T(@OPARGS, op%m, op%n, am)
+    end if
+  end subroutine get_matrix_@T
+
+  subroutine base_matrix_@T(@OPARGS, mb, nb, bm)
+@OPDECL
+    integer, intent(in) :: mb, nb
+    @S, intent(out) :: bm(mb, nb)
+    @S, allocatable :: e(:,:)
+    integer :: j0, j1, j
+    if (mb == 0 .or. nb == 0) return
+    if (op%dense) then
+       do j = 1, nb
+          bm(:, j) = a((j - 1)*op%lda + 1:(j - 1)*op%lda + mb)
+       end do
+       return
+    end if
+    do j0 = 1, nb, materialize_block
+       j1 = min(j0 + materialize_block - 1, nb)
+       allocate(e(nb, j1 - j0 + 1))
+       e = 0
+       do j = j0, j1
+          e(j, j - j0 + 1) = 1
+       end do
+       call mv(0, mb, nb, j1 - j0 + 1, e, bm(1, j0), ipar, rpar, zpar)
+       deallocate(e)
+    end do
+  end subroutine base_matrix_@T
+
+  ! b (kq x n, allocated) = Q^@H A; for anything but a stored matrix,
+  ! (A^@H Q)^@H
+  subroutine qh_times_a_@T(@OPARGS, kq, q, b)
+@OPDECL
+    integer, intent(in) :: kq
+    @S, intent(in) :: q(:,:)
+    @S, pointer :: b(:,:)
+    @S, allocatable :: z(:,:)
+    allocate(b(kq, op%n))
+    if (op%dense .and. .not. op%adj) then
+       call gemm_@T('@TC', 'N', kq, op%n, op%m, q, max(1, op%m), a, op%lda, &
+            b, max(1, kq))
+    else
+       allocate(z(op%n, kq))
+       call apply_@T(@OPARGS, 1, kq, q, z)
+       b = @ADJ(z)
+       deallocate(z)
+    end if
+  end subroutine qh_times_a_@T
+
+  ! ==================================================================
+  ! @NAME: algorithms
+  ! ==================================================================
+
+  ! y (m x l', allocated) = A x with x = Omega (n x l) after pit power
+  ! iterations x <- orth(A^@H A x); l' = l, or min(n, l) when pit > 0
+  subroutine sample_@T(@OPARGS, l, pit, iseed, y, ierr)
+@OPDECL
+    integer, intent(in) :: l, pit
+    integer, intent(inout) :: iseed(4)
+    @S, pointer :: y(:,:)
+    integer, intent(out) :: ierr
+    @S, pointer :: x(:,:), z(:,:), r(:,:), xn(:,:)
+    integer, pointer :: jp(:)
+    integer :: it, kx, info
+    ierr = RLA_OK
+    allocate(x(op%n, l))
+    call larnv_@T(iseed, op%n*l, x)
+    do it = 1, pit
+       kx = size(x, 2)
+       allocate(y(op%m, kx), z(op%n, kx))
+       call apply_@T(@OPARGS, 0, kx, x, y)
+       call apply_@T(@OPARGS, 1, kx, y, z)
+       deallocate(y, x)
+       call qrpiv_@T(op%n, kx, z, r, jp, xn, .true., info)
+       deallocate(r, jp)
+       if (info /= 0) then
+          ierr = RLA_ERR_LAPACK
+          nullify(y)
+          return
+       end if
+       x => xn
+    end do
+    kx = size(x, 2)
+    allocate(y(op%m, kx))
+    call apply_@T(@OPARGS, 0, kx, x, y)
+    deallocate(x)
+  end subroutine sample_@T
+
+  ! Q (m x k) and diagr = |diag R| of the pivoted QR of the sketch
+  subroutine orth_core_@T(@OPARGS, rtol, bs, pit, es, iseed, q, diagr, &
+       flag, ierr)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: bs, pit, es
+    integer, intent(inout) :: iseed(4)
+    @S, pointer :: q(:,:)
+    real(dp), pointer :: diagr(:)
+    integer, intent(out) :: flag, ierr
+    integer :: mn, l, nd
+
+    mn = min(op%m, op%n)
+    flag = 0
+    nullify(q, diagr)
+
+    ! Rank mode: one sketch of floor(rtol) + extra_samples columns
+    if (rtol >= 1) then
+       call sketch_qr_@T(@OPARGS, kmax_of(rtol) + es, pit, iseed, q, diagr, ierr)
+       return
+    end if
+
+    ! Tolerance mode: fresh sketch per pass, block size grows 4x
+    ierr = RLA_OK
+    if (rtol < eps .or. bs >= mn) then
+       flag = 1
+       allocate(q(op%m, 0), diagr(0))
+       return
+    end if
+    l = bs
+    do
+       call sketch_qr_@T(@OPARGS, l, pit, iseed, q, diagr, ierr)
+       if (ierr /= RLA_OK) return
+       nd = size(diagr)
+       if (nd == 0) return
+       if (nd > es) then
+          if (diagr(nd - es) <= rtol*diagr(1)) return
+       end if
+       l = min(4*l, mn)
+       deallocate(q, diagr)
+       if (l >= mn) then
+          flag = 1
+          allocate(q(op%m, 0), diagr(0))
+          return
+       end if
+    end do
+  end subroutine orth_core_@T
+
+  ! One sketch of l columns and its pivoted QR: q (m x k), diagr (k)
+  subroutine sketch_qr_@T(@OPARGS, l, pit, iseed, q, diagr, ierr)
+@OPDECL
+    integer, intent(in) :: l, pit
+    integer, intent(inout) :: iseed(4)
+    @S, pointer :: q(:,:)
+    real(dp), pointer :: diagr(:)
+    integer, intent(out) :: ierr
+    @S, pointer :: y(:,:), r(:,:)
+    integer, pointer :: jp(:)
+    integer :: i, info
+    nullify(q, diagr)
+    call sample_@T(@OPARGS, l, pit, iseed, y, ierr)
+    if (ierr /= RLA_OK) return
+    call qrpiv_@T(size(y, 1), size(y, 2), y, r, jp, q, .true., info)
+    if (info /= 0) then
+       ierr = RLA_ERR_LAPACK
+       deallocate(r, jp)
+       if (associated(q)) deallocate(q)
+       return
+    end if
+    allocate(diagr(size(r, 1)))
+    do i = 1, size(r, 1)
+       diagr(i) = abs(r(i, i))
+    end do
+    deallocate(r, jp)
+  end subroutine sketch_qr_@T
+
+  subroutine qr_core_@T(@OPARGS, rtol, bs, pit, es, iseed, q, r, piv, ierr)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: bs, pit, es
+    integer, intent(inout) :: iseed(4)
+    @S, pointer :: q(:,:), r(:,:)
+    integer, pointer :: piv(:)
+    integer, intent(out) :: ierr
+    @S, pointer :: qs(:,:), b(:,:), qp(:,:), rp(:,:)
+    real(dp), pointer :: d(:)
+    logical :: rank_mode, fallback
+    integer :: mn, flag, k, rank, info
+
+    nullify(q, r, piv)
+    mn = min(op%m, op%n)
+    rank_mode = rtol >= 1
+    call orth_core_@T(@OPARGS, rtol, bs, pit, es, iseed, qs, d, flag, ierr)
+    if (ierr /= RLA_OK) return
+    deallocate(d)
+    k = mn
+    if (flag == 0) k = size(qs, 2)
+    fallback = (flag /= 0 .or. k >= mn) .and. .not. rank_mode
+
+    if (fallback) then
+       deallocate(qs)
+       call get_matrix_@T(@OPARGS, b)
+    else
+       call qh_times_a_@T(@OPARGS, size(qs, 2), qs, b)
+    end if
+    call qrpiv_@T(size(b, 1), size(b, 2), b, rp, piv, qp, .true., info)
+    if (info /= 0) then
+       ierr = RLA_ERR_LAPACK
+       deallocate(rp, piv)
+       if (associated(qp)) deallocate(qp)
+       if (.not. fallback) deallocate(qs)
+       return
+    end if
+    if (rank_mode) then
+       rank = min(kmax_of(rtol), size(qp, 2))
+    else
+       rank = rank_from_diag_@T(rp, rtol)
+    end if
+    allocate(q(op%m, rank), r(rank, op%n))
+    if (fallback) then
+       q = qp(:, 1:rank)
+    else
+       call gemm_@T('N', 'N', op%m, rank, size(qs, 2), qs, max(1, op%m), &
+            qp, max(1, size(qp, 1)), q, max(1, op%m))
+       deallocate(qs)
+    end if
+    r = rp(1:rank, :)
+    deallocate(qp, rp)
+  end subroutine qr_core_@T
+
+  recursive subroutine svd_core_@T(@OPARGS, rtol, bs, pit, es, iseed, u, s, &
+       vt, ierr)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: bs, pit, es
+    integer, intent(inout) :: iseed(4)
+    @S, pointer :: u(:,:), vt(:,:)
+    real(dp), pointer :: s(:)
+    integer, intent(out) :: ierr
+    type(op_t) :: opa
+    @S, pointer :: qs(:,:), b(:,:), up(:,:), vp(:,:)
+    real(dp), pointer :: d(:), sp(:)
+    logical :: rank_mode, fallback
+    integer :: mn, flag, k, rank, info
+
+    nullify(u, s, vt)
+
+    ! Wide matrix: factor the adjoint and swap the factors
+    if (op%m < op%n) then
+       opa = op
+       opa%m = op%n; opa%n = op%m; opa%adj = .not. op%adj
+       call svd_core_@T(opa, a, mv, ipar, rpar, zpar, rtol, bs, pit, es, &
+            iseed, up, s, vp, ierr)
+       if (ierr /= RLA_OK) return
+       allocate(u(op%m, size(vp, 1)), vt(size(up, 2), op%n))
+       u = @ADJ(vp)
+       vt = @ADJ(up)
+       deallocate(up, vp)
+       return
+    end if
+
+    mn = min(op%m, op%n)
+    rank_mode = rtol >= 1
+    call orth_core_@T(@OPARGS, rtol, bs, pit, es, iseed, qs, d, flag, ierr)
+    if (ierr /= RLA_OK) return
+    deallocate(d)
+    k = mn
+    if (flag == 0) k = size(qs, 2)
+    fallback = (flag /= 0 .or. k >= mn) .and. .not. rank_mode
+
+    if (fallback) then
+       deallocate(qs)
+       call get_matrix_@T(@OPARGS, b)
+    else
+       call qh_times_a_@T(@OPARGS, size(qs, 2), qs, b)
+    end if
+    call svd_@T(b, up, sp, vp, info)
+    deallocate(b)
+    if (info /= 0) then
+       ierr = RLA_ERR_LAPACK
+       deallocate(up, sp, vp)
+       if (.not. fallback) deallocate(qs)
+       return
+    end if
+    if (rank_mode) then
+       rank = min(kmax_of(rtol), size(sp))
+    else
+       rank = rank_from_svals(sp, rtol)
+    end if
+    allocate(u(op%m, rank), s(rank), vt(rank, op%n))
+    if (fallback) then
+       u = up(:, 1:rank)
+    else
+       call gemm_@T('N', 'N', op%m, rank, size(qs, 2), qs, max(1, op%m), &
+            up, max(1, size(up, 1)), u, max(1, op%m))
+       deallocate(qs)
+    end if
+    s = sp(1:rank)
+    vt = vp(1:rank, :)
+    deallocate(up, sp, vp)
+  end subroutine svd_core_@T
+
+  subroutine ids_core_@T(@OPARGS, rtol, bs, pit, es, meth, iseed, k, piv, &
+       t, ierr)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: bs, pit, es, meth
+    integer, intent(inout) :: iseed(4)
+    integer, intent(out) :: k, ierr
+    integer, pointer :: piv(:)
+    @S, pointer :: t(:,:)
+    @S, pointer :: q(:,:), r(:,:)
+    real(dp) :: rts
+
+    nullify(t)
+    k = 0
+    call qr_core_@T(@OPARGS, rtol, bs, pit, es, iseed, q, r, piv, ierr)
+    if (ierr /= RLA_OK) return
+    deallocate(q)
+    k = size(r, 1)
+    rts = rtol
+    if (rtol >= 1) rts = 0
+    call compute_t_@T(@OPARGS, r, piv, k, meth, rts, t, ierr)
+    deallocate(r)
+  end subroutine ids_core_@T
+
+  subroutine idq_core_@T(@OPARGS, rtol, meth, k, piv, t, ierr)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: meth
+    integer, intent(out) :: k, ierr
+    integer, pointer :: piv(:)
+    @S, pointer :: t(:,:)
+    @S, pointer :: am(:,:), w(:,:), r(:,:), qd(:,:)
+    real(dp) :: rts
+    integer :: n, info
+
+    nullify(t)
+    n = op%n
+    ierr = RLA_OK
+    call get_matrix_@T(@OPARGS, am)
+    ! The QR overwrites its input: keep A only when lstsq needs it
+    if (meth == METHOD_LSTSQ) then
+       allocate(w(op%m, n))
+       w = am
+       call qrpiv_@T(op%m, n, w, r, piv, qd, .false., info)
+    else
+       call qrpiv_@T(op%m, n, am, r, piv, qd, .false., info)
+    end if
+    if (info /= 0) then
+       ierr = RLA_ERR_LAPACK
+       k = 0
+       deallocate(r)
+       if (associated(am)) deallocate(am)
+       return
+    end if
+    if (rtol >= 1) then
+       k = min(kmax_of(rtol), min(op%m, n))
+       rts = 0
+    else
+       k = rank_from_diag_@T(r, rtol)
+       rts = rtol
+    end if
+    if (k == 0 .or. k == n) then
+       allocate(t(k, n - k))
+    else if (meth == METHOD_LSTSQ) then
+       call t_lstsq_@T(am, piv, k, t, ierr)
+    else
+       call compute_t_@T(@OPARGS, r, piv, k, meth, rts, t, ierr)
+    end if
+    if (associated(am)) deallocate(am)
+    deallocate(r)
+  end subroutine idq_core_@T
+
+  ! T (k x (n-k), allocated) from R (rows 1:k used) and the pivots
+  subroutine compute_t_@T(@OPARGS, r, piv, k, meth, rts, t, ierr)
+@OPDECL
+    @S, intent(in) :: r(:,:)
+    integer, intent(in) :: piv(:), k, meth
+    real(dp), intent(in) :: rts
+    @S, pointer :: t(:,:)
+    integer, intent(out) :: ierr
+    @S, pointer :: am(:,:)
+    ierr = RLA_OK
+    select case (meth)
+    case (METHOD_LSTSQ)
+       if (k == 0 .or. k >= op%n) then
+          allocate(t(k, op%n - k))
+          t = 0
+       else
+          call get_matrix_@T(@OPARGS, am)
+          call t_lstsq_@T(am, piv, k, t, ierr)
+          deallocate(am)
+       end if
+    case (METHOD_SVD)
+       call t_svd_@T(r, k, rts, t, ierr)
+    case default
+       call t_fast_@T(r, k, rts, t, ierr)
+    end select
+  end subroutine compute_t_@T
+
+  ! T = lstsq(A(:, piv(1:k)), A(:, piv(k+1:n)))
+  subroutine t_lstsq_@T(am, piv, k, t, ierr)
+    @S, intent(in) :: am(:,:)
+    integer, intent(in) :: piv(:), k
+    @S, pointer :: t(:,:)
+    integer, intent(out) :: ierr
+    integer :: info, n
+    n = size(am, 2)
+    ierr = RLA_OK
+    call lstsq_@T(am(:, piv(1:k)), am(:, piv(k+1:n)), t, info)
+    if (info /= 0) ierr = RLA_ERR_LAPACK
+  end subroutine t_lstsq_@T
+
+  ! T = pinv(R11) R12, dropping singular values below max(rts, eps) * smax
+  subroutine t_svd_@T(r, k, rts, t, ierr)
+    @S, intent(in) :: r(:,:)
+    integer, intent(in) :: k
+    real(dp), intent(in) :: rts
+    @S, pointer :: t(:,:)
+    integer, intent(out) :: ierr
+    @S, pointer :: u(:,:), vt(:,:)
+    real(dp), pointer :: s(:)
+    @S, allocatable :: uk(:,:), vk(:,:), r12(:,:), w(:,:)
+    integer, allocatable :: keep(:)
+    real(dp) :: smax, cut
+    integer :: n, nk, i, info
+
+    n = size(r, 2)
+    ierr = RLA_OK
+    allocate(t(k, n - k))
+    t = 0
+    if (k == 0) return
+    call svd_@T(r(1:k, 1:k), u, s, vt, info)
+    if (info /= 0) then
+       ierr = RLA_ERR_LAPACK
+       deallocate(u, s, vt)
+       return
+    end if
+    smax = maxval(s)
+    cut = max(rts, eps)*smax
+    nk = count(s >= cut)
+    if (smax > 0 .and. nk > 0) then
+       allocate(keep(nk), uk(k, nk), vk(nk, k), r12(k, n - k), w(nk, n - k))
+       keep = pack((/ (i, i = 1, k) /), s >= cut)
+       uk = u(:, keep)
+       vk = vt(keep, :)
+       r12 = r(1:k, k+1:n)
+       call gemm_@T('@TC', 'N', nk, n - k, k, uk, k, r12, k, w, nk)
+       do i = 1, nk
+          w(i, :) = w(i, :) / s(keep(i))
+       end do
+       call gemm_@T('@TC', 'N', k, n - k, nk, vk, nk, w, nk, t, k)
+       deallocate(keep, uk, vk, r12, w)
+    end if
+    deallocate(u, s, vt)
+  end subroutine t_svd_@T
+
+  ! T = R11 \ R12 by triangular solve, or t_svd if R11 is near-singular
+  subroutine t_fast_@T(r, k, rts, t, ierr)
+    @S, intent(in) :: r(:,:)
+    integer, intent(in) :: k
+    real(dp), intent(in) :: rts
+    @S, pointer :: t(:,:)
+    integer, intent(out) :: ierr
+    real(dp) :: dmin, dmax
+    integer :: n, i
+
+    n = size(r, 2)
+    ierr = RLA_OK
+    if (k == 0) then
+       allocate(t(0, n))
+       return
+    end if
+    dmin = abs(r(1, 1)); dmax = dmin
+    do i = 2, k
+       dmin = min(dmin, abs(r(i, i)))
+       dmax = max(dmax, abs(r(i, i)))
+    end do
+    if (dmin <= eps*dmax) then
+       call t_svd_@T(r, k, rts, t, ierr)
+       return
+    end if
+    allocate(t(k, n - k))
+    t = r(1:k, k+1:n)
+    call trsm_@T(k, n - k, r, size(r, 1), t, k)
+  end subroutine t_fast_@T
+
+  ! ==================================================================
+  ! @NAME: drivers behind the public rla_@T* routines (argument checks,
+  ! capacity checks, copy-out). iseed is updated only on success.
+  ! ==================================================================
+
+  subroutine drv_orth_@T(@OPARGS, rtol, nb, npow, nextra, iseed, kcap, k, &
+       q, ldq, diagr, flag, ier)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: nb, npow, nextra, kcap, ldq
+    integer, intent(inout) :: iseed(4)
+    integer, intent(out) :: k, flag, ier
+    @S, intent(inout) :: q(ldq, *)
+    real(dp), intent(inout) :: diagr(*)
+    @S, pointer :: qq(:,:)
+    real(dp), pointer :: d(:)
+    integer :: seed(4)
+    k = 0
+    flag = 1
+    call check_sketch(op, rtol, nb, npow, nextra, iseed, kcap, ier)
+    if (ier == RLA_OK .and. ldq < max(1, op%m)) ier = RLA_ERR_ARG
+    if (ier /= RLA_OK) return
+    seed = iseed
+    call orth_core_@T(@OPARGS, rtol, nb, npow, nextra, seed, qq, d, flag, ier)
+    if (ier /= RLA_OK) then
+       flag = 1
+       return
+    end if
+    k = size(qq, 2)
+    if (k > kcap) then
+       ier = RLA_ERR_KCAP
+    else
+       q(1:op%m, 1:k) = qq
+       diagr(1:k) = d
+       iseed = seed
+    end if
+    deallocate(qq, d)
+  end subroutine drv_orth_@T
+
+  subroutine drv_qr_@T(@OPARGS, rtol, nb, npow, nextra, iseed, kcap, k, &
+       q, ldq, r, ldr, piv, ier)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: nb, npow, nextra, kcap, ldq, ldr
+    integer, intent(inout) :: iseed(4)
+    integer, intent(out) :: k, ier
+    @S, intent(inout) :: q(ldq, *), r(ldr, *)
+    integer, intent(inout) :: piv(*)
+    @S, pointer :: qq(:,:), rr(:,:)
+    integer, pointer :: pp(:)
+    integer :: seed(4)
+    k = 0
+    call check_sketch(op, rtol, nb, npow, nextra, iseed, kcap, ier)
+    if (ier == RLA_OK .and. (ldq < max(1, op%m) .or. ldr < max(1, kcap))) &
+         ier = RLA_ERR_ARG
+    if (ier /= RLA_OK) return
+    seed = iseed
+    call qr_core_@T(@OPARGS, rtol, nb, npow, nextra, seed, qq, rr, pp, ier)
+    if (ier /= RLA_OK) return
+    k = size(qq, 2)
+    if (k > kcap) then
+       ier = RLA_ERR_KCAP
+    else
+       q(1:op%m, 1:k) = qq
+       r(1:k, 1:op%n) = rr
+       piv(1:op%n) = pp
+       iseed = seed
+    end if
+    deallocate(qq, rr, pp)
+  end subroutine drv_qr_@T
+
+  subroutine drv_svd_@T(@OPARGS, rtol, nb, npow, nextra, iseed, kcap, k, &
+       u, ldu, s, vt, ldvt, ier)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: nb, npow, nextra, kcap, ldu, ldvt
+    integer, intent(inout) :: iseed(4)
+    integer, intent(out) :: k, ier
+    @S, intent(inout) :: u(ldu, *), vt(ldvt, *)
+    real(dp), intent(inout) :: s(*)
+    @S, pointer :: uu(:,:), vv(:,:)
+    real(dp), pointer :: ss(:)
+    integer :: seed(4)
+    k = 0
+    call check_sketch(op, rtol, nb, npow, nextra, iseed, kcap, ier)
+    if (ier == RLA_OK .and. (ldu < max(1, op%m) .or. ldvt < max(1, kcap))) &
+         ier = RLA_ERR_ARG
+    if (ier /= RLA_OK) return
+    seed = iseed
+    call svd_core_@T(@OPARGS, rtol, nb, npow, nextra, seed, uu, ss, vv, ier)
+    if (ier /= RLA_OK) return
+    k = size(ss)
+    if (k > kcap) then
+       ier = RLA_ERR_KCAP
+    else
+       u(1:op%m, 1:k) = uu
+       s(1:k) = ss
+       vt(1:k, 1:op%n) = vv
+       iseed = seed
+    end if
+    deallocate(uu, ss, vv)
+  end subroutine drv_svd_@T
+
+  subroutine drv_ids_@T(@OPARGS, rtol, nb, npow, nextra, method, iseed, &
+       kcap, k, piv, t, ldt, ier)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: nb, npow, nextra, method, kcap, ldt
+    integer, intent(inout) :: iseed(4)
+    integer, intent(out) :: k, ier
+    integer, intent(inout) :: piv(*)
+    @S, intent(inout) :: t(ldt, *)
+    @S, pointer :: tt(:,:)
+    integer, pointer :: pp(:)
+    integer :: seed(4)
+    k = 0
+    call check_method(method, ier)
+    if (ier == RLA_OK) &
+         call check_sketch(op, rtol, nb, npow, nextra, iseed, kcap, ier)
+    if (ier == RLA_OK .and. ldt < max(1, kcap)) ier = RLA_ERR_ARG
+    if (ier /= RLA_OK) return
+    seed = iseed
+    call ids_core_@T(@OPARGS, rtol, nb, npow, nextra, method, seed, k, pp, &
+         tt, ier)
+    if (ier /= RLA_OK) then
+       k = 0
+       if (associated(pp)) deallocate(pp)
+       if (associated(tt)) deallocate(tt)
+       return
+    end if
+    call copy_id_@T(op%n, k, pp, tt, kcap, piv, t, ldt, ier)
+    if (ier == RLA_OK) iseed = seed
+  end subroutine drv_ids_@T
+
+  subroutine drv_idq_@T(@OPARGS, rtol, method, kcap, k, piv, t, ldt, ier)
+@OPDECL
+    real(dp), intent(in) :: rtol
+    integer, intent(in) :: method, kcap, ldt
+    integer, intent(out) :: k, ier
+    integer, intent(inout) :: piv(*)
+    @S, intent(inout) :: t(ldt, *)
+    @S, pointer :: tt(:,:)
+    integer, pointer :: pp(:)
+    k = 0
+    call check_method(method, ier)
+    if (ier == RLA_OK) call check_shape(op, rtol, 0, kcap, ier)
+    if (ier == RLA_OK .and. ldt < max(1, kcap)) ier = RLA_ERR_ARG
+    if (ier /= RLA_OK) return
+    call idq_core_@T(@OPARGS, rtol, method, k, pp, tt, ier)
+    if (ier /= RLA_OK) then
+       k = 0
+       if (associated(pp)) deallocate(pp)
+       if (associated(tt)) deallocate(tt)
+       return
+    end if
+    call copy_id_@T(op%n, k, pp, tt, kcap, piv, t, ldt, ier)
+  end subroutine drv_idq_@T
+
+  subroutine copy_id_@T(n, k, pp, tt, kcap, piv, t, ldt, ier)
+    integer, intent(in) :: n, k, kcap, ldt
+    integer, pointer :: pp(:)
+    @S, pointer :: tt(:,:)
+    integer, intent(inout) :: piv(*)
+    @S, intent(inout) :: t(ldt, *)
+    integer, intent(out) :: ier
+    ier = RLA_OK
+    if (k > kcap) then
+       ier = RLA_ERR_KCAP
+    else
+       piv(1:n) = pp
+       t(1:k, 1:n-k) = tt
+    end if
+    deallocate(pp, tt)
+  end subroutine copy_id_@T
