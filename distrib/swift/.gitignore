@@ -1,0 +1,6 @@
+# SwiftPM build output (one directory per backend)
+.build/
+.build-*/
+.swiftpm/
+# Library package: dependency versions are resolved by the consumer
+Package.resolved
