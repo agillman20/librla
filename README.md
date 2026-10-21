@@ -163,6 +163,12 @@ distrib/
 │   └── demo/
 │       ├── demo_utils.jl  # Demo utilities (includes hilbert matrix)
 │       └── demo*.jl       # Demo suite (demo01-demo05)
+├── cpp/                   # Experimental C++17 port (header-only, LAPACK)
+├── rust/                  # Experimental Rust port (crate librla, LAPACK)
+├── swift/                 # Experimental Swift port (SwiftPM LibRLA, LAPACK)
+├── fortran03/             # Experimental Fortran 2003 port (module librla, LAPACK)
+├── fortran95/             # Experimental Fortran 95 port (external subroutines, LAPACK)
+├── fortran77/             # Experimental Fortran 77 port (self-contained, any precision)
 ├── compare/               # External library comparisons
 └── notes/                 # AI-generated notes and attribution
 ```
@@ -174,6 +180,30 @@ distrib/
 | Python | Python 3.9+, NumPy >= 1.20, SciPy >= 1.7 |
 | MATLAB | R2018a or later, OR Octave 6.0+ |
 | Julia | 1.10 or later (LinearAlgebra, Random standard libraries) |
+
+## Experimental ports
+
+`distrib/cpp`, `distrib/rust`, `distrib/swift`, `distrib/fortran03`,
+`distrib/fortran95` and `distrib/fortran77` are experimental ports (version
+0.1.0) tracking the 1.2.1 semantics for real and complex double precision,
+dense and matrix-free. All but the Fortran 77 port call LAPACK/BLAS
+(Accelerate by default on macOS, OpenBLAS or system LAPACK elsewhere) and draw
+the random test matrix from LAPACK `dlarnv`/`zlarnv`, so the same seed gives
+the same sketch in every port. See each directory's README.md for build,
+test and API details. The Fortran 95 port offers LAPACK-style external
+subroutines callable from Fortran 77 and C; the Fortran 2003 port offers a
+module with allocatable outputs and optional arguments. The Fortran 77 port
+has the Fortran 95 calling sequences plus a work array, carries its own QR,
+SVD and generator (no LAPACK), and can be compiled in quad precision.
+
+| Port | Requirements |
+|------|-------------|
+| C++ | C++17 compiler, CMake 3.16+ |
+| Rust | Rust 2021 edition (cargo), `num-complex` |
+| Swift | Swift 6 / SwiftPM, swift-numerics; macOS (Linux untested) |
+| Fortran 2003 | Fortran 2003 compiler (gfortran), make |
+| Fortran 95 | Fortran 95 compiler (gfortran), make |
+| Fortran 77 | Fortran 77 compiler with `real *8`/`complex *16` (gfortran), make; no LAPACK |
 
 
 ## Examples
