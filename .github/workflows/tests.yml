@@ -6,10 +6,12 @@ on:
     paths:
       - 'distrib/**'
       - '.github/workflows/tests.yml'
+      - '.github/scripts/**'
   pull_request:
     paths:
       - 'distrib/**'
       - '.github/workflows/tests.yml'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 concurrency:
@@ -80,3 +82,160 @@ jobs:
         working-directory: distrib/matlab/test
         run: |
           octave --no-gui --quiet --eval "addpath('..'); exit_code = test_all(); exit(exit_code)"
+
+  # Experimental ports: system LAPACK backed by OpenBLAS. Each job saves its
+  # CROSSPORT lines for the crossport job below.
+  cpp:
+    name: C++ port
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      OPENBLAS_NUM_THREADS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LAPACK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack-dev libopenblas-dev
+      - name: Build
+        run: |
+          cmake -S distrib/cpp -B build -DLIBRLA_LAPACK=System -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+      - name: Run tests
+        run: ./build/test_all | tee test.log
+      - name: Run demo
+        run: ./build/demo_basic
+      - name: Save CROSSPORT lines
+        run: grep '^CROSSPORT' test.log > cpp.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossport-cpp
+          path: cpp.txt
+
+  rust:
+    name: Rust port
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: distrib/rust
+    env:
+      OPENBLAS_NUM_THREADS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LAPACK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack-dev libopenblas-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: cargo test --release
+      - name: Run demo
+        run: cargo run --release --example demo
+      - name: Save CROSSPORT lines
+        run: cargo run --release --example crossport | tee "$GITHUB_WORKSPACE/rust.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossport-rust
+          path: rust.txt
+
+  fortran03:
+    name: Fortran 2003 port
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: distrib/fortran03
+    env:
+      OPENBLAS_NUM_THREADS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gfortran and LAPACK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran liblapack-dev libopenblas-dev
+      - name: Run tests
+        run: make test | tee test.log
+      - name: Run demo
+        run: make demo
+      - name: Save CROSSPORT lines
+        run: grep '^CROSSPORT' test.log > "$GITHUB_WORKSPACE/fortran03.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossport-fortran03
+          path: fortran03.txt
+
+  fortran95:
+    name: Fortran 95 port
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: distrib/fortran95
+    env:
+      OPENBLAS_NUM_THREADS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gfortran and LAPACK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran liblapack-dev libopenblas-dev
+      - name: Check that the generated sources match their templates
+        run: python3 tools/generate.py --check
+      - name: Run tests
+        run: make test | tee test.log
+      - name: Run demo
+        run: make demo
+      - name: Save CROSSPORT lines
+        run: grep '^CROSSPORT' test.log > "$GITHUB_WORKSPACE/fortran95.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossport-fortran95
+          path: fortran95.txt
+
+  fortran77:
+    name: Fortran 77 port
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: distrib/fortran77
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gfortran
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran
+      - name: Check that the generated sources match their templates
+        run: python3 tools/generate.py --check
+      - name: Run tests
+        run: make test | tee test.log
+      - name: Run demo
+        run: make demo
+      - name: Run tests in quad precision
+        run: make test-quad | tail -3
+      - name: Save CROSSPORT lines
+        run: grep '^CROSSPORT' test.log > "$GITHUB_WORKSPACE/fortran77.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossport-fortran77
+          path: fortran77.txt
+
+  crossport:
+    name: Cross-port consistency
+    needs: [cpp, rust, fortran03, fortran95, fortran77]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: crossport-*
+          merge-multiple: true
+          path: crossport
+      - name: Compare CROSSPORT lines
+        run: >-
+          python3 .github/scripts/check_crossport.py crossport/cpp.txt
+          crossport/rust.txt crossport/fortran03.txt crossport/fortran95.txt
+          crossport/fortran77.txt
