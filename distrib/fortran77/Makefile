@@ -1,7 +1,8 @@
 # librla Fortran 77 port
 #
 #   make test                      build and run the test suite
-#   make test-quad                 the same, promoted to quad precision
+#   make test-quad                 quad-precision check (test/test_quad.f)
+#   make test-quad-full            the full suite promoted to quad (minutes)
 #   make demo                      build and run the demo
 #   make lib                       build build/librla77.a
 #   make clean
@@ -24,7 +25,7 @@ QUAD = -freal-8-real-16 -fdefault-integer-8
 BUILD ?= build
 FFLAGS += $(OPT) $(WARN)
 
-.PHONY: all lib test test-quad demo clean generate
+.PHONY: all lib test test-quad test-quad-full demo clean generate
 
 all: lib $(BUILD)/test_all $(BUILD)/demo_basic
 
@@ -33,7 +34,10 @@ lib: $(BUILD)/librla77.a
 test: $(BUILD)/test_all
 	./$(BUILD)/test_all
 
-test-quad: $(BUILD)-quad/test_all
+test-quad: $(BUILD)-quad/test_quad
+	./$(BUILD)-quad/test_quad
+
+test-quad-full: $(BUILD)-quad/test_all
 	./$(BUILD)-quad/test_all
 
 demo: $(BUILD)/demo_basic
@@ -59,6 +63,9 @@ $(BUILD)-quad/librla77.o: src/librla77.f | $(BUILD)-quad
 	$(FC) $(FFLAGS) $(QUAD) -c $< -o $@
 
 $(BUILD)-quad/test_all: test/test_all.f $(BUILD)-quad/librla77.o
+	$(FC) $(FFLAGS) $(QUAD) $< $(BUILD)-quad/librla77.o -o $@
+
+$(BUILD)-quad/test_quad: test/test_quad.f $(BUILD)-quad/librla77.o
 	$(FC) $(FFLAGS) $(QUAD) $< $(BUILD)-quad/librla77.o -o $@
 
 clean:

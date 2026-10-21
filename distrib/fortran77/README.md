@@ -45,7 +45,8 @@ current one does; tested with gfortran 15). There is nothing to link.
 ```bash
 cd distrib/fortran77
 make test        # build build/librla77.a and run the test suite
-make test-quad   # the same suite promoted to quad precision (a few minutes)
+make test-quad   # quad-precision check on a 100 x 80 Hilbert matrix (seconds)
+make test-quad-full  # the whole suite promoted to quad precision (minutes)
 make demo        # build and run demo/demo_basic.f
 make clean
 ```
@@ -297,8 +298,7 @@ python3 tools/generate.py --check    # exit 1 if a generated file is stale (CI r
 
 ## Tests
 
-`make test` runs `build/test_all`; `make test-quad` runs the same suite
-promoted to quad precision. It checks, for real and complex input: the
+`make test` runs `build/test_all`. It checks, for real and complex input: the
 generator against the LAPACK reference values, the workspace query and the
 `lw` error, orth/qr/svd/id in both modes on tall and wide matrices and
 through `lda > m`, the deterministic fallbacks (bitwise against the QR
@@ -309,3 +309,12 @@ materialization, power iteration and seed reproducibility. It also runs
 every routine, dense and matrix-free, in both modes on tall, wide and
 full-rank input with `lw` exactly the queried size and checks that nothing
 is written past it. Then it prints the `CROSSPORT` lines.
+`make test-quad-full` runs the same suite promoted to quad precision.
+
+`make test-quad` builds `test/test_quad.f` with the quad flags: 17 checks
+on the 100 x 80 Hilbert matrix and its complex counterpart, whose singular
+values fall far below double precision. It checks that `eps` is promoted
+and the generator exact, the full SVD (residual and orthogonality in units
+of the quad `eps`), the truncated SVD with early exit, the four sketches
+and `id_qrpiv` at `rtol = 1e-25`, and `rla_dqrcp` stopping early. In a
+double-precision build 9 of the 17 checks fail.

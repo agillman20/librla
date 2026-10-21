@@ -214,8 +214,8 @@ jobs:
         run: make test | tee test.log
       - name: Run demo
         run: make demo
-      - name: Run tests in quad precision
-        run: make test-quad | tail -3
+      - name: Run the quad-precision check
+        run: make test-quad
       - name: Save CROSSPORT lines
         run: grep '^CROSSPORT' test.log > "$GITHUB_WORKSPACE/fortran77.txt"
       - uses: actions/upload-artifact@v4
