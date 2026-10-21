@@ -1,0 +1,8 @@
+# CMake build directories
+build/
+build-*/
+# stray binaries from manual builds
+/test_all
+/demo_basic
+*.o
+*.dSYM/
