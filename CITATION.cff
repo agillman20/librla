@@ -24,6 +24,7 @@ identifiers:
     description: GitHub repo
   - type: doi
     value: 10.5281/zenodo.23029492
+doi: 10.5281/zenodo.23029492
 repository-code: 'https://github.com/agillman20/librla'
 abstract: >-
   Randomized Linear Algebra Library. A unified,
