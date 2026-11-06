@@ -204,13 +204,13 @@ k, piv, T = id_sketch(A, 1e-6, power_iter=2, method='svd')
 
 | Language | Requirements |
 |----------|-------------|
-| Python | Python 3.9+, NumPy >= 1.20, SciPy >= 1.7 |
+| Python | Python 3.10+, NumPy >= 1.20, SciPy >= 1.7 |
 
 ## Installation
 
 ### Python
 
-**Requirements:** Python 3.9+, NumPy >= 1.20, SciPy >= 1.7
+**Requirements:** Python 3.10+, NumPy >= 1.20, SciPy >= 1.7
 
 **Option 1: Add to Python path (recommended for testing)**
 ```python

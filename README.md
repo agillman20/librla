@@ -173,7 +173,7 @@ distrib/
 
 | Language | Requirements |
 |----------|-------------|
-| Python | Python 3.9+, NumPy >= 1.20, SciPy >= 1.7 |
+| Python | Python 3.10+, NumPy >= 1.20, SciPy >= 1.7 |
 | MATLAB | R2018a or later, OR Octave 6.0+ |
 | Julia | 1.10 or later (LinearAlgebra, Random standard libraries) |
 
